@@ -3,24 +3,20 @@ import os
 with open('index.html', 'r', encoding='utf-8') as f:
     html = f.read()
 
-with open('tailwind.js', 'r', encoding='utf-8') as f:
-    tw_js = f.read()
+with open('tailwind.min.css', 'r', encoding='utf-8') as f:
+    tw_css = f.read()
 
 with open('html2pdf.bundle.min.js', 'r', encoding='utf-8') as f:
     pdf_js = f.read()
 
-# Replace Tailwind tag
-target_tw = """  <!-- Tailwind CSS (Offline local with CDN fallback) -->
-  <script src="./tailwind.js"></script>
-  <script>
-    if (typeof tailwind === 'undefined') {
-      document.write('<script src="https://cdn.tailwindcss.com"><\\/script>');
-    }
-  </script>"""
+# Replace Tailwind stylesheet link with inlined style
+target_css_link = '<link rel="stylesheet" href="./tailwind.min.css" />'
+inline_css = "<style>\n" + tw_css + "\n</style>"
 
-inline_tw = "<script>\n" + tw_js + "\n</script>"
+if target_css_link in html:
+    html = html.replace(target_css_link, inline_css)
 
-# Replace html2pdf tag
+# Replace html2pdf script tag with inlined script
 target_pdf = """  <!-- html2pdf (Offline local with CDN fallback) -->
   <script src="./html2pdf.bundle.min.js"></script>
   <script>
@@ -30,12 +26,6 @@ target_pdf = """  <!-- html2pdf (Offline local with CDN fallback) -->
   </script>"""
 
 inline_pdf = "<script>\n" + pdf_js + "\n</script>"
-
-if target_tw in html:
-    html = html.replace(target_tw, inline_tw)
-else:
-    # Alternative direct script tag replace
-    html = html.replace('<script src="./tailwind.js"></script>', inline_tw)
 
 if target_pdf in html:
     html = html.replace(target_pdf, inline_pdf)

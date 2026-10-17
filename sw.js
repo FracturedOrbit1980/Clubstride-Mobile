@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gameon-v6';
+const CACHE_NAME = 'gameon-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const ASSETS = [
   './icon-180.png',
   './icon-192.png',
   './icon-512.png',
-  './tailwind.js',
+  './tailwind.min.css',
   './html2pdf.bundle.min.js'
 ];
 

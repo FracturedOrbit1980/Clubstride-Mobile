@@ -22,29 +22,8 @@
   <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
   <link rel="shortcut icon" href="./icon-192.png" />
 
-  <!-- Tailwind CSS (Offline local with CDN fallback) -->
-  <script src="./tailwind.js"></script>
-  <script>
-    if (typeof tailwind === 'undefined') {
-      document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
-    }
-  </script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            obsidian: { 950: '#070d18', 900: '#0a1222', 800: '#111b2f', 700: '#1b2a47' },
-            cyber: { cyan: '#00f2fe', mint: '#10b981', emerald: '#059669', darkgreen: '#064e3b' }
-          },
-          fontFamily: {
-            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
+  <!-- Minified Built Tailwind CSS (100% Offline PWA) -->
+  <link rel="stylesheet" href="./tailwind.min.css" />
 
   <!-- html2pdf (Offline local with CDN fallback) -->
   <script src="./html2pdf.bundle.min.js"></script>
@@ -487,9 +466,14 @@
             </button>
           </div>
 
-          <button onclick="App.openExportModal('selected')" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs flex items-center space-x-1.5 shadow-md active:scale-95 transition">
-            <span>📥 Export Selected PDF</span>
-          </button>
+          <div class="flex items-center space-x-2">
+            <button id="btnCreatePdfReport" onclick="App.openPdfReportModal()" class="btn-primary px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md">
+              <span>📄 Create PDF Report</span>
+            </button>
+            <button onclick="App.openExportModal('selected')" class="btn-secondary px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md">
+              <span>📥 Export Selected</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -771,6 +755,91 @@
     </div>
   </div>
 
+  <!-- 5. PDF REPORT GENERATOR MODAL (Single Match & Date Range) -->
+  <div id="modalPdfReport" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card modal-sheet w-full max-w-lg rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <span>📄</span>
+            <span>Create PDF Report</span>
+          </h3>
+          <p class="text-xs text-slate-400">Export tactical intelligence for a single fixture or aggregated date range</p>
+        </div>
+        <button onclick="App.closeModals()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition active:scale-95">✕</button>
+      </div>
+
+      <!-- Segmented Tab Switcher (Single Match vs Date Range) -->
+      <div class="grid grid-cols-2 gap-1.5 p-1 bg-obsidian-950/80 rounded-xl border border-white/10 text-xs font-bold">
+        <button id="pdfTabBtn_single" type="button" onclick="App.switchPdfReportMode('single')" class="py-2 rounded-lg text-center transition bg-emerald-500 text-white shadow">
+          Single Match
+        </button>
+        <button id="pdfTabBtn_range" type="button" onclick="App.switchPdfReportMode('range')" class="py-2 rounded-lg text-center transition text-slate-400 hover:text-white">
+          Date Range
+        </button>
+      </div>
+
+      <!-- PANE 1: SINGLE MATCH -->
+      <div id="pdfPane_single" class="space-y-3.5">
+        <div>
+          <label class="text-slate-300 font-semibold text-xs block mb-1">Select Match Fixture</label>
+          <select id="pdfSelectMatch" onchange="App.onPdfMatchSelected(this.value)" class="w-full bg-obsidian-950 border border-white/15 text-white text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-400">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <div id="pdfSingleMatchPreview" class="p-3 rounded-xl bg-obsidian-950/60 border border-white/10 space-y-1.5 text-xs text-slate-300">
+          <!-- Dynamically updated preview -->
+        </div>
+
+        <button onclick="App.generateSingleMatchPdf()" class="btn-primary w-full py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg">
+          <span>📄</span>
+          <span>Generate Single Match PDF</span>
+        </button>
+      </div>
+
+      <!-- PANE 2: DATE RANGE -->
+      <div id="pdfPane_range" class="space-y-3.5 hidden">
+        <div>
+          <label class="text-slate-300 font-semibold text-xs block mb-1.5">Quick Date Presets</label>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button type="button" onclick="App.applyPdfDatePreset('7d')" class="btn-secondary py-1.5 px-1 rounded-lg text-[11px] font-bold text-center">Last 7d</button>
+            <button type="button" onclick="App.applyPdfDatePreset('month')" class="btn-secondary py-1.5 px-1 rounded-lg text-[11px] font-bold text-center">This Month</button>
+            <button type="button" onclick="App.applyPdfDatePreset('season')" class="btn-secondary py-1.5 px-1 rounded-lg text-[11px] font-bold text-center">Season</button>
+            <button type="button" onclick="App.applyPdfDatePreset('all')" class="btn-secondary py-1.5 px-1 rounded-lg text-[11px] font-bold text-center">All Time</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="text-slate-400 block mb-1 font-medium">From Date</label>
+            <input type="date" id="pdfRangeStartDate" onchange="App.updatePdfRangePreview()" class="w-full bg-obsidian-950 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-emerald-400" />
+          </div>
+          <div>
+            <label class="text-slate-400 block mb-1 font-medium">To Date</label>
+            <input type="date" id="pdfRangeEndDate" onchange="App.updatePdfRangePreview()" class="w-full bg-obsidian-950 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-emerald-400" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-slate-400 block mb-1 text-xs font-medium">Team Filter (Optional)</label>
+          <select id="pdfRangeTeamFilter" onchange="App.updatePdfRangePreview()" class="w-full bg-obsidian-950 border border-white/10 rounded-xl p-2 text-white text-xs focus:outline-none focus:border-emerald-400">
+            <option value="all">All Teams</option>
+          </select>
+        </div>
+
+        <div id="pdfRangeMatchesSummary" class="p-3 rounded-xl bg-obsidian-950/60 border border-white/10 text-xs text-slate-300">
+          <!-- Summary count of matches found -->
+        </div>
+
+        <button onclick="App.generateDateRangePdf()" class="btn-primary w-full py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg">
+          <span>📊</span>
+          <span>Generate Date Range PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 4. PDF EXPORT LEDGER TEMPLATE -->
   <div id="pdfExportContainer" class="hidden p-8 bg-white text-slate-900 font-sans space-y-6">
     <div class="flex items-center justify-between border-b-2 border-slate-900 pb-4">
@@ -969,6 +1038,15 @@
             { x: 80, y: 46 },
             { x: 34, y: 22 },
             { x: 66, y: 22 }
+          ],
+          '2-1-2-1': [
+            { x: 50, y: 88 },
+            { x: 28, y: 70 },
+            { x: 72, y: 70 },
+            { x: 50, y: 54 },
+            { x: 30, y: 38 },
+            { x: 70, y: 38 },
+            { x: 50, y: 20 }
           ]
         },
         '9': {
@@ -1026,6 +1104,17 @@
             { x: 50, y: 48 },
             { x: 74, y: 48 },
             { x: 50, y: 22 }
+          ],
+          '3-1-3-1': [
+            { x: 50, y: 90 },
+            { x: 22, y: 72 },
+            { x: 50, y: 70 },
+            { x: 78, y: 72 },
+            { x: 50, y: 56 },
+            { x: 22, y: 40 },
+            { x: 50, y: 38 },
+            { x: 78, y: 40 },
+            { x: 50, y: 20 }
           ]
         },
         '11': {
@@ -1106,6 +1195,32 @@
             { x: 72, y: 50 },
             { x: 38, y: 24 },
             { x: 62, y: 24 }
+          ],
+          '3-4-3': [
+            { x: 50, y: 90 },
+            { x: 24, y: 75 },
+            { x: 50, y: 74 },
+            { x: 76, y: 75 },
+            { x: 16, y: 50 },
+            { x: 38, y: 50 },
+            { x: 62, y: 50 },
+            { x: 84, y: 50 },
+            { x: 22, y: 24 },
+            { x: 50, y: 20 },
+            { x: 78, y: 24 }
+          ],
+          '4-5-1': [
+            { x: 50, y: 90 },
+            { x: 16, y: 75 },
+            { x: 38, y: 75 },
+            { x: 62, y: 75 },
+            { x: 84, y: 75 },
+            { x: 14, y: 48 },
+            { x: 32, y: 52 },
+            { x: 50, y: 46 },
+            { x: 68, y: 52 },
+            { x: 86, y: 48 },
+            { x: 50, y: 20 }
           ]
         }
       },
@@ -1440,6 +1555,10 @@
         AppState.themeStyle = team.themeStyle || 'glass';
         AppState.match.fieldPositions = JSON.parse(JSON.stringify(team.fieldPositions || {}));
         if (team.format) AppState.match.format = team.format;
+        if (team.formation) {
+          AppState.match.formation = team.formation;
+          this.populateFormationSelect(team.formation);
+        }
         this.applyTheme();
 
         // Reset match active starters / timers for fresh team load
@@ -1848,9 +1967,15 @@
       },
 
       onFormationChanged(name) {
+        AppState.match.formation = name;
+        if (AppState.teams && AppState.currentTeamId) {
+          const team = AppState.teams.find(t => t.id === AppState.currentTeamId);
+          if (team) team.formation = name;
+        }
         this.applyFormationPositions(name);
         this.updateFormationDeleteButtonVisibility();
         this.renderPitchTokens();
+        this.saveStorage();
         this.toast('Formation preset loaded: ' + name);
       },
 
@@ -2480,6 +2605,10 @@
         modal.classList.add('flex');
       },
 
+      saveEvent() {
+        return this.confirmEvent();
+      },
+
       confirmEvent() {
         const type = AppState.currentEventType;
         const selector = document.getElementById('eventPlayerSelector');
@@ -2526,7 +2655,7 @@
           AppState.match.ourGoals = Math.max(0, (AppState.match.ourGoals || 0) + delta);
           const el = document.getElementById('scoreboardGoals');
           if (el) el.innerText = AppState.match.ourGoals;
-        } else if (team === 'opponent') {
+        } else if (team === 'opponent' || team === 'opp') {
           AppState.match.opponentGoals = Math.max(0, (AppState.match.opponentGoals || 0) + delta);
           const el = document.getElementById('scoreboardOpponentGoals');
           if (el) el.innerText = AppState.match.opponentGoals;
@@ -2536,6 +2665,10 @@
       },
 
       // Requirement 2: Delete/Undo wrongly logged event from timeline
+      deleteTimelineEvent(evId) {
+        return this.deleteEvent(evId);
+      },
+
       deleteEvent(evId) {
         const evIndex = AppState.events.findIndex(e => e.id === evId);
         if (evIndex === -1) return;
@@ -2578,6 +2711,7 @@
         }
 
         // Create completed match archive
+        const currentFormation = AppState.match.formation || (document.getElementById('formationSelect') ? document.getElementById('formationSelect').value : '') || '2-3-1';
         const matchRecord = {
           id: AppState.match.id || ('m_' + Date.now()),
           title: AppState.match.title || 'Match',
@@ -2585,6 +2719,7 @@
           opponent: opp,
           date: AppState.match.date || new Date().toISOString().split('T')[0],
           format: AppState.match.format || '7',
+          formation: currentFormation,
           ourGoals: AppState.match.ourGoals || 0,
           opponentGoals: AppState.match.opponentGoals || 0,
           durationSeconds: AppState.clock.seconds || 0,
@@ -3201,6 +3336,692 @@
         `;
       },
 
+
+      // --- DUAL-MODE PDF REPORT GENERATION (Single Match & Date Range) ---
+      formatPdfDuration(seconds) {
+        const s = Math.max(0, Math.round(seconds || 0));
+        if (s >= 3600) {
+          const hrs = Math.floor(s / 3600);
+          const mins = Math.floor((s % 3600) / 60);
+          return `${hrs}h ${mins}m`;
+        }
+        const mins = Math.floor(s / 60);
+        const rem = s % 60;
+        return `${String(mins).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+      },
+
+      openPdfReportModal(defaultMatchId = null) {
+        this.closeModals();
+        const modal = document.getElementById('modalPdfReport');
+        if (!modal) return;
+
+        // Populate match select dropdown
+        const select = document.getElementById('pdfSelectMatch');
+        if (select) {
+          select.innerHTML = '';
+          const history = AppState.matchHistory || [];
+          
+          if (AppState.clock.seconds > 0 || (AppState.events && AppState.events.length > 0)) {
+            const opt = document.createElement('option');
+            opt.value = 'live';
+            opt.innerText = `[Live Match] vs ${AppState.match.opponent || 'Opponent'} (${AppState.match.ourGoals || 0}-${AppState.match.opponentGoals || 0})`;
+            select.appendChild(opt);
+          }
+
+          history.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.innerText = `${m.date || 'No Date'} — vs ${m.opponent || 'Opponent'} (${m.ourGoals || 0}-${m.opponentGoals || 0}) [${m.title || 'Match'}]`;
+            select.appendChild(opt);
+          });
+
+          if (!select.options || select.options.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.innerText = 'No matches recorded yet';
+            select.appendChild(opt);
+          }
+
+          if (defaultMatchId) {
+            select.value = defaultMatchId;
+            this.switchPdfReportMode('single');
+          }
+        }
+
+        // Populate team filter options for date range
+        const teamSelect = document.getElementById('pdfRangeTeamFilter');
+        if (teamSelect) {
+          teamSelect.innerHTML = '<option value="all">All Teams</option>';
+          if (AppState.teams && AppState.teams.length > 0) {
+            AppState.teams.forEach(t => {
+              const opt = document.createElement('option');
+              opt.value = t.id;
+              opt.innerText = t.name;
+              if (t.id === AppState.currentTeamId) opt.selected = true;
+              teamSelect.appendChild(opt);
+            });
+          }
+        }
+
+        // Set default dates if empty
+        const startInput = document.getElementById('pdfRangeStartDate');
+        const endInput = document.getElementById('pdfRangeEndDate');
+        if (startInput && !startInput.value) {
+          this.applyPdfDatePreset('month');
+        } else {
+          this.updatePdfRangePreview();
+        }
+
+        if (select && select.value) {
+          this.onPdfMatchSelected(select.value);
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      },
+
+      switchPdfReportMode(mode) {
+        const btnSingle = document.getElementById('pdfTabBtn_single');
+        const btnRange = document.getElementById('pdfTabBtn_range');
+        const paneSingle = document.getElementById('pdfPane_single');
+        const paneRange = document.getElementById('pdfPane_range');
+
+        if (mode === 'single') {
+          if (btnSingle) { btnSingle.className = 'py-2 rounded-lg text-center transition bg-emerald-500 text-white shadow'; }
+          if (btnRange) { btnRange.className = 'py-2 rounded-lg text-center transition text-slate-400 hover:text-white'; }
+          if (paneSingle) paneSingle.classList.remove('hidden');
+          if (paneRange) paneRange.classList.add('hidden');
+        } else {
+          if (btnSingle) { btnSingle.className = 'py-2 rounded-lg text-center transition text-slate-400 hover:text-white'; }
+          if (btnRange) { btnRange.className = 'py-2 rounded-lg text-center transition bg-emerald-500 text-white shadow'; }
+          if (paneSingle) paneSingle.classList.add('hidden');
+          if (paneRange) paneRange.classList.remove('hidden');
+          this.updatePdfRangePreview();
+        }
+      },
+
+      onPdfMatchSelected(matchId) {
+        const preview = document.getElementById('pdfSingleMatchPreview');
+        if (!preview) return;
+        
+        let target = null;
+        if (matchId === 'live') {
+          target = AppState.match;
+        } else if (AppState.matchHistory) {
+          target = AppState.matchHistory.find(m => m.id === matchId);
+        }
+
+        if (!target) {
+          preview.innerHTML = '<span class="text-slate-400 italic">No match selected</span>';
+          return;
+        }
+
+        const teamName = target.teamName || AppState.currentTeamName || 'GameOn';
+        const opp = target.opponent || 'Opponent';
+        const score = `${target.ourGoals || 0} - ${target.opponentGoals || 0}`;
+        const fmt = target.format ? `${target.format}v${target.format}` : '7v7';
+        const formation = target.formation || 'Standard';
+        const dur = target.durationSeconds ? this.formatPdfDuration(target.durationSeconds) : this.formatPdfDuration(AppState.clock.seconds);
+
+        preview.innerHTML = `
+          <div class="flex items-center justify-between font-bold text-white">
+            <span>${teamName} vs ${opp}</span>
+            <span class="text-emerald-400">${score}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 text-[11px] text-slate-400 pt-1 border-t border-white/10">
+            <div><span class="text-slate-500">Date:</span> ${target.date || 'Today'}</div>
+            <div><span class="text-slate-500">Format:</span> ${fmt}</div>
+            <div><span class="text-slate-500">Formation:</span> ${formation}</div>
+            <div><span class="text-slate-500">Played:</span> ${dur}</div>
+            <div><span class="text-slate-500">Events:</span> ${(target.events || []).length} logged</div>
+          </div>
+        `;
+      },
+
+      applyPdfDatePreset(preset) {
+        const today = new Date();
+        const toStr = today.toISOString().split('T')[0];
+        let fromStr = toStr;
+
+        if (preset === '7d') {
+          const d = new Date(today);
+          d.setDate(d.getDate() - 7);
+          fromStr = d.toISOString().split('T')[0];
+        } else if (preset === 'month') {
+          const d = new Date(today.getFullYear(), today.getMonth(), 1);
+          fromStr = d.toISOString().split('T')[0];
+        } else if (preset === 'season') {
+          const year = today.getMonth() >= 7 ? today.getFullYear() : today.getFullYear() - 1;
+          fromStr = `${year}-08-01`;
+        } else if (preset === 'all') {
+          fromStr = '2020-01-01';
+        }
+
+        const startInput = document.getElementById('pdfRangeStartDate');
+        const endInput = document.getElementById('pdfRangeEndDate');
+        if (startInput) startInput.value = fromStr;
+        if (endInput) endInput.value = toStr;
+        this.updatePdfRangePreview();
+      },
+
+      updatePdfRangePreview() {
+        const summary = document.getElementById('pdfRangeMatchesSummary');
+        if (!summary) return;
+
+        const startInput = document.getElementById('pdfRangeStartDate');
+        const endInput = document.getElementById('pdfRangeEndDate');
+        const teamSelect = document.getElementById('pdfRangeTeamFilter');
+
+        const startDate = startInput ? startInput.value : '';
+        const endDate = endInput ? endInput.value : '';
+        const teamId = teamSelect ? teamSelect.value : 'all';
+
+        const history = AppState.matchHistory || [];
+        const matched = history.filter(m => {
+          const d = m.date || '';
+          if (startDate && d < startDate) return false;
+          if (endDate && d > endDate) return false;
+          if (teamId && teamId !== 'all') {
+            const team = (AppState.teams || []).find(t => t.id === teamId);
+            if (team && m.teamName && m.teamName !== team.name) return false;
+          }
+          return true;
+        });
+
+        if (matched.length === 0) {
+          summary.innerHTML = `<span class="text-amber-400 font-medium">⚠️ No matches found in this range. Try adjusting dates.</span>`;
+        } else {
+          let w = 0, d = 0, l = 0, gf = 0, ga = 0;
+          matched.forEach(m => {
+            const og = m.ourGoals || 0;
+            const tg = m.opponentGoals || 0;
+            gf += og; ga += tg;
+            if (og > tg) w++;
+            else if (og === tg) d++;
+            else l++;
+          });
+          summary.innerHTML = `
+            <div class="flex items-center justify-between font-bold text-white">
+              <span>${matched.length} Match${matched.length > 1 ? 'es' : ''} in Range</span>
+              <span class="text-emerald-400 font-mono">${w}W - ${d}D - ${l}L</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+              Goals: ${gf} scored, ${ga} conceded (Diff: ${gf - ga >= 0 ? '+' : ''}${gf - ga})
+            </div>
+          `;
+        }
+      },
+
+      generateSingleMatchPdf(matchId = null) {
+        if (!matchId) {
+          const select = document.getElementById('pdfSelectMatch');
+          matchId = select ? select.value : null;
+        }
+
+        let target = null;
+        let isLive = false;
+        if (matchId === 'live' || (!matchId && AppState.clock.seconds > 0)) {
+          target = AppState.match;
+          isLive = true;
+        } else if (matchId && AppState.matchHistory) {
+          target = AppState.matchHistory.find(m => m.id === matchId);
+        }
+
+        if (!target) {
+          this.toast('Please select a valid match fixture.', '⚠️');
+          return;
+        }
+
+        const teamName = target.teamName || AppState.currentTeamName || 'GameOn';
+        const opponent = target.opponent || 'Opponent';
+        const date = target.date || new Date().toISOString().split('T')[0];
+        const fmt = target.format ? `${target.format}v${target.format}` : '7v7';
+        const formation = target.formation || 'Standard';
+        const finalScore = `${target.ourGoals || 0} - ${target.opponentGoals || 0}`;
+        const durationSec = isLive ? (AppState.clock.seconds || 0) : (target.durationSeconds || 0);
+        const playerTimers = isLive ? AppState.playerTimers : (target.playerTimers || {});
+        const events = isLive ? AppState.events : (target.events || []);
+        const starters = isLive ? AppState.match.starters : (target.starters || []);
+
+        const container = document.getElementById('pdfExportContainer');
+        if (!container) return;
+
+        let tableRowsHtml = '';
+        AppState.squad.forEach(p => {
+          const pitchSec = playerTimers[p.id] || 0;
+          const benchSec = Math.max(0, durationSec - pitchSec);
+          const goals = events.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
+          const assists = events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
+          const subsIn = events.filter(e => e.type === 'Sub' && e.playerInId === p.id).length;
+          const subsOut = events.filter(e => e.type === 'Sub' && e.playerOutId === p.id).length;
+          const isStarter = starters.includes(p.id);
+
+          tableRowsHtml += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 7px 10px; font-weight: bold; color: #1e293b;">#${p.number}</td>
+              <td style="padding: 7px 10px; font-weight: 600; color: #0f172a;">${p.name}</td>
+              <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">${p.position || 'MID'}</td>
+              <td style="padding: 7px 10px; color: ${isStarter ? '#047857' : '#475569'}; font-weight: 600;">${isStarter ? 'Starter' : 'Bench'}</td>
+              <td style="padding: 7px 10px; text-align: center; font-family: monospace; font-weight: bold; color: #059669;">${this.formatPdfDuration(pitchSec)}</td>
+              <td style="padding: 7px 10px; text-align: center; font-family: monospace; color: #64748b;">${this.formatPdfDuration(benchSec)}</td>
+              <td style="padding: 7px 10px; text-align: center; font-weight: bold; color: ${goals > 0 ? '#059669' : '#94a3b8'};">${goals}</td>
+              <td style="padding: 7px 10px; text-align: center; font-weight: bold; color: ${assists > 0 ? '#0284c7' : '#94a3b8'};">${assists}</td>
+              <td style="padding: 7px 10px; text-align: center; color: #475569;">${subsIn}</td>
+              <td style="padding: 7px 10px; text-align: center; color: #475569;">${subsOut}</td>
+            </tr>
+          `;
+        });
+
+        let timelineHtml = '';
+        if (!events || events.length === 0) {
+          timelineHtml = '<div style="color: #94a3b8; font-style: italic; padding: 6px 0;">No match events recorded for this fixture.</div>';
+        } else {
+          events.forEach(ev => {
+            let icon = '•';
+            let label = '';
+            if (ev.type === 'Goal') { icon = '⚽'; label = `GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
+            else if (ev.type === 'Assist') { icon = '👟'; label = `ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
+            else if (ev.type === 'Sub') { icon = '⇄'; label = `SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`; }
+            else { label = `${ev.type} - ${ev.playerName || ''}`; }
+
+            timelineHtml += `
+              <div style="padding: 4px 0; display: flex; align-items: center; color: #334155; font-size: 11px;">
+                <span style="font-family: monospace; font-weight: bold; color: #059669; min-width: 50px;">[${this.formatPdfDuration(ev.matchTimeSeconds)}]</span>
+                <span style="margin: 0 6px;">${icon}</span>
+                <span>${label}</span>
+              </div>
+            `;
+          });
+        }
+
+        const dateGen = new Date().toLocaleString();
+        container.innerHTML = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; padding: 24px;">
+            <!-- HEADER -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #059669; padding-bottom: 12px; margin-bottom: 18px;">
+              <div>
+                <div style="font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #0f172a;">
+                  Game<span style="color: #059669;">On</span> <span style="font-size: 14px; font-weight: 700; color: #475569; text-transform: uppercase; margin-left: 6px;">Match Performance Report</span>
+                </div>
+                <div style="font-size: 13px; color: #64748b; margin-top: 3px;">Tactical Rotations, Playing Time & Official Timeline</div>
+              </div>
+              <div style="text-align: right; font-size: 11px; color: #64748b;">
+                <div style="font-weight: bold; color: #1e293b; font-size: 13px;">${date}</div>
+                <div>Generated: ${dateGen}</div>
+              </div>
+            </div>
+
+            <!-- SCOREBOARD CARD -->
+            <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Fixture</div>
+                <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${teamName} <span style="color: #64748b; font-weight: 600;">vs</span> ${opponent}</div>
+                <div style="font-size: 12px; color: #475569; margin-top: 3px;">Format: <strong>${fmt}</strong> &bull; Formation: <strong>${formation}</strong></div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Final Score</div>
+                <div style="font-size: 26px; font-weight: 900; color: #059669; font-variant-numeric: tabular-nums;">${finalScore}</div>
+                <div style="font-size: 11px; color: #64748b; font-family: monospace;">Duration: ${this.formatPdfDuration(durationSec)}</div>
+              </div>
+            </div>
+
+            <!-- PLAYER PERFORMANCE TABLE -->
+            <div style="margin-bottom: 22px; page-break-inside: avoid;">
+              <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #1e293b; margin-bottom: 8px;">Player Playing Time & Statistics</div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden;">
+                <thead>
+                  <tr style="background-color: #0f172a; color: #ffffff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <th style="padding: 8px 10px;">#</th>
+                    <th style="padding: 8px 10px;">Player</th>
+                    <th style="padding: 8px 10px;">Pos</th>
+                    <th style="padding: 8px 10px;">Role</th>
+                    <th style="padding: 8px 10px; text-align: center;">Pitch Min</th>
+                    <th style="padding: 8px 10px; text-align: center;">Bench Min</th>
+                    <th style="padding: 8px 10px; text-align: center;">Goals</th>
+                    <th style="padding: 8px 10px; text-align: center;">Assists</th>
+                    <th style="padding: 8px 10px; text-align: center;">In</th>
+                    <th style="padding: 8px 10px; text-align: center;">Out</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRowsHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- TIMELINE SECTION -->
+            <div style="margin-bottom: 24px; page-break-inside: avoid;">
+              <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #1e293b; margin-bottom: 8px;">Match Timeline & Key Events</div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #059669; border-radius: 10px; padding: 12px 16px;">
+                ${timelineHtml}
+              </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #94a3b8;">
+              <div>Made with GameOn &bull; Tactical Pitch, Live Rotations & Match Intelligence</div>
+              <div>Page 1 of 1 &bull; ${date}</div>
+            </div>
+          </div>
+        `;
+
+        this.closeModals();
+        container.classList.remove('hidden');
+
+        const safeTeam = String(teamName).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const safeOpp = String(opponent).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const fileName = `GameOn_${safeTeam}_${safeOpp}_${date}.pdf`;
+
+        if (typeof html2pdf !== 'undefined') {
+          this.toast('Generating Single Match PDF... 📄');
+          const opt = {
+            margin: [8, 8, 8, 8],
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          html2pdf().set(opt).from(container).save().then(() => {
+            container.classList.add('hidden');
+            App.toast('PDF Exported successfully! 📄');
+          }).catch(err => {
+            console.error('PDF error:', err);
+            container.classList.add('hidden');
+            window.print();
+          });
+        } else {
+          window.print();
+          container.classList.add('hidden');
+        }
+      },
+
+      generateDateRangePdf(startDate = null, endDate = null, teamId = null) {
+        if (!startDate) {
+          const sIn = document.getElementById('pdfRangeStartDate');
+          startDate = sIn ? sIn.value : '';
+        }
+        if (!endDate) {
+          const eIn = document.getElementById('pdfRangeEndDate');
+          endDate = eIn ? eIn.value : '';
+        }
+        if (!teamId) {
+          const tSel = document.getElementById('pdfRangeTeamFilter');
+          teamId = tSel ? tSel.value : 'all';
+        }
+
+        const history = AppState.matchHistory || [];
+        const matchedMatches = history.filter(m => {
+          const d = m.date || '';
+          if (startDate && d < startDate) return false;
+          if (endDate && d > endDate) return false;
+          if (teamId && teamId !== 'all') {
+            const team = (AppState.teams || []).find(t => t.id === teamId);
+            if (team && m.teamName && m.teamName !== team.name) return false;
+          }
+          return true;
+        });
+
+        if (matchedMatches.length === 0) {
+          this.toast('No matches found in the selected date range. Try expanding your range.', '⚠️');
+          return;
+        }
+
+        let wins = 0, draws = 0, losses = 0, gf = 0, ga = 0;
+        matchedMatches.forEach(m => {
+          const og = m.ourGoals || 0;
+          const tg = m.opponentGoals || 0;
+          gf += og; ga += tg;
+          if (og > tg) wins++;
+          else if (og === tg) draws++;
+          else losses++;
+        });
+
+        // Compute player totals across ALL squad members
+        const playerStats = {};
+        AppState.squad.forEach(p => {
+          playerStats[p.id] = {
+            player: p,
+            matchesPlayed: 0,
+            starts: 0,
+            totalSeconds: 0,
+            goals: 0,
+            assists: 0,
+            subsIn: 0,
+            subsOut: 0
+          };
+        });
+
+        matchedMatches.forEach(m => {
+          const starters = m.starters || [];
+          const timers = m.playerTimers || {};
+          const events = m.events || [];
+
+          AppState.squad.forEach(p => {
+            const st = playerStats[p.id];
+            const isStarter = starters.includes(p.id);
+            const pitchSec = timers[p.id] || 0;
+            const hadEvent = events.some(e => e.playerId === p.id || e.playerInId === p.id || e.playerOutId === p.id);
+
+            if (isStarter || pitchSec > 0 || hadEvent) {
+              st.matchesPlayed += 1;
+              if (isStarter) st.starts += 1;
+            }
+            st.totalSeconds += pitchSec;
+            st.goals += events.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
+            st.assists += events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
+            st.subsIn += events.filter(e => e.type === 'Sub' && e.playerInId === p.id).length;
+            st.subsOut += events.filter(e => e.type === 'Sub' && e.playerOutId === p.id).length;
+          });
+        });
+
+        // Sort by total seconds descending
+        const statsList = Object.values(playerStats).sort((a, b) => b.totalSeconds - a.totalSeconds);
+
+        let maxGoals = 0, maxAssists = 0, maxSeconds = 0;
+        let sumTotalSec = 0, sumGoals = 0, sumAssists = 0, sumSubsIn = 0, sumSubsOut = 0;
+
+        statsList.forEach(st => {
+          if (st.goals > maxGoals) maxGoals = st.goals;
+          if (st.assists > maxAssists) maxAssists = st.assists;
+          if (st.totalSeconds > maxSeconds) maxSeconds = st.totalSeconds;
+
+          sumTotalSec += st.totalSeconds;
+          sumGoals += st.goals;
+          sumAssists += st.assists;
+          sumSubsIn += st.subsIn;
+          sumSubsOut += st.subsOut;
+        });
+
+        const activePlayerCount = statsList.filter(s => s.matchesPlayed > 0).length || 1;
+        const avgSquadSec = Math.round(sumTotalSec / activePlayerCount);
+
+        let playerRowsHtml = '';
+        statsList.forEach(st => {
+          const p = st.player;
+          const avgSec = st.matchesPlayed > 0 ? Math.round(st.totalSeconds / st.matchesPlayed) : 0;
+          
+          let highlights = [];
+          if (maxGoals > 0 && st.goals === maxGoals) highlights.push('⚽ Top Scorer');
+          if (maxAssists > 0 && st.assists === maxAssists) highlights.push('👟 Top Assists');
+          if (maxSeconds > 0 && st.totalSeconds === maxSeconds) highlights.push('⏱️ Most Mins');
+
+          const highlightBadge = highlights.length > 0 
+            ? `<div style="font-size: 9px; color: #047857; font-weight: bold; margin-top: 2px;">${highlights.join(' &bull; ')}</div>` 
+            : '';
+
+          playerRowsHtml += `
+            <tr style="border-bottom: 1px solid #e2e8f0; ${highlights.length > 0 ? 'background-color: #f0fdf4;' : ''}">
+              <td style="padding: 7px 10px; font-weight: bold; color: #1e293b;">#${p.number}</td>
+              <td style="padding: 7px 10px; font-weight: 600; color: #0f172a;">
+                ${p.name}
+                ${highlightBadge}
+              </td>
+              <td style="padding: 7px 10px; color: #64748b; font-family: monospace;">${p.position || 'MID'}</td>
+              <td style="padding: 7px 10px; text-align: center; font-weight: bold; color: #334155;">${st.matchesPlayed}</td>
+              <td style="padding: 7px 10px; text-align: center; color: #475569;">${st.starts}</td>
+              <td style="padding: 7px 10px; text-align: center; font-family: monospace; font-weight: bold; color: #059669;">${this.formatPdfDuration(st.totalSeconds)}</td>
+              <td style="padding: 7px 10px; text-align: center; font-family: monospace; color: #64748b;">${this.formatPdfDuration(avgSec)}</td>
+              <td style="padding: 7px 10px; text-align: center; font-weight: bold; color: ${st.goals > 0 ? '#059669' : '#94a3b8'};">${st.goals}</td>
+              <td style="padding: 7px 10px; text-align: center; font-weight: bold; color: ${st.assists > 0 ? '#0284c7' : '#94a3b8'};">${st.assists}</td>
+              <td style="padding: 7px 10px; text-align: center; color: #475569;">${st.subsIn}</td>
+              <td style="padding: 7px 10px; text-align: center; color: #475569;">${st.subsOut}</td>
+            </tr>
+          `;
+        });
+
+        let matchesListHtml = '';
+        matchedMatches.forEach(m => {
+          const og = m.ourGoals || 0;
+          const tg = m.opponentGoals || 0;
+          let badgeColor = '#64748b';
+          let badgeLabel = 'DRAW';
+          if (og > tg) { badgeColor = '#059669'; badgeLabel = 'WIN'; }
+          else if (og < tg) { badgeColor = '#e11d48'; badgeLabel = 'LOSS'; }
+
+          matchesListHtml += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 6px 10px; font-weight: 600; color: #1e293b;">${m.date || ''}</td>
+              <td style="padding: 6px 10px; color: #0f172a;">${m.opponent || 'Opponent'}</td>
+              <td style="padding: 6px 10px; color: #64748b;">${m.format ? m.format + 'v' + m.format : '7v7'}</td>
+              <td style="padding: 6px 10px; font-weight: bold; font-family: monospace;">${og} - ${tg}</td>
+              <td style="padding: 6px 10px; text-align: center;">
+                <span style="background-color: ${badgeColor}; color: #ffffff; padding: 2px 7px; border-radius: 6px; font-size: 9px; font-weight: bold;">${badgeLabel}</span>
+              </td>
+            </tr>
+          `;
+        });
+
+        const activeTeamName = (teamId && teamId !== 'all') 
+          ? ((AppState.teams || []).find(t => t.id === teamId)?.name || 'Team') 
+          : (AppState.currentTeamName || 'GameOn FC');
+
+        const dateGen = new Date().toLocaleString();
+        const container = document.getElementById('pdfExportContainer');
+        if (!container) return;
+
+        container.innerHTML = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; padding: 24px;">
+            <!-- HEADER -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #059669; padding-bottom: 12px; margin-bottom: 18px;">
+              <div>
+                <div style="font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #0f172a;">
+                  Game<span style="color: #059669;">On</span> <span style="font-size: 14px; font-weight: 700; color: #475569; text-transform: uppercase; margin-left: 6px;">Squad Performance Ledger</span>
+                </div>
+                <div style="font-size: 13px; color: #64748b; margin-top: 3px;">Date Range Aggregate Report & Fair Playing Time Analysis</div>
+              </div>
+              <div style="text-align: right; font-size: 11px; color: #64748b;">
+                <div style="font-weight: bold; color: #1e293b; font-size: 13px;">${startDate} to ${endDate}</div>
+                <div>Generated: ${dateGen}</div>
+              </div>
+            </div>
+
+            <!-- SUMMARY CARD -->
+            <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Team / Range Scope</div>
+                <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${activeTeamName}</div>
+                <div style="font-size: 12px; color: #475569; margin-top: 3px;">Fixtures Included: <strong>${matchedMatches.length} Matches</strong></div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Overall Record</div>
+                <div style="font-size: 22px; font-weight: 900; color: #059669; font-variant-numeric: tabular-nums;">${wins}W &bull; ${draws}D &bull; ${losses}L</div>
+                <div style="font-size: 11px; color: #64748b;">GF: ${gf} | GA: ${ga} | GD: ${gf - ga >= 0 ? '+' : ''}${gf - ga}</div>
+              </div>
+            </div>
+
+            <!-- MATCHES LIST TABLE -->
+            <div style="margin-bottom: 22px; page-break-inside: avoid;">
+              <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #1e293b; margin-bottom: 8px;">Fixtures in Date Range (${matchedMatches.length})</div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden;">
+                <thead>
+                  <tr style="background-color: #1e293b; color: #ffffff; font-size: 10px; text-transform: uppercase;">
+                    <th style="padding: 7px 10px;">Date</th>
+                    <th style="padding: 7px 10px;">Opponent</th>
+                    <th style="padding: 7px 10px;">Format</th>
+                    <th style="padding: 7px 10px;">Score</th>
+                    <th style="padding: 7px 10px; text-align: center;">Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${matchesListHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- SQUAD TOTALS TABLE -->
+            <div style="margin-bottom: 24px;">
+              <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #1e293b; margin-bottom: 8px;">Squad Totals & Playing Time Breakdown (Sorted by Minutes)</div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden;">
+                <thead>
+                  <tr style="background-color: #0f172a; color: #ffffff; font-size: 10px; text-transform: uppercase;">
+                    <th style="padding: 8px 10px;">#</th>
+                    <th style="padding: 8px 10px;">Player</th>
+                    <th style="padding: 8px 10px;">Pos</th>
+                    <th style="padding: 8px 10px; text-align: center;">Apps</th>
+                    <th style="padding: 8px 10px; text-align: center;">Starts</th>
+                    <th style="padding: 8px 10px; text-align: center;">Total Min</th>
+                    <th style="padding: 8px 10px; text-align: center;">Avg Min</th>
+                    <th style="padding: 8px 10px; text-align: center;">Goals</th>
+                    <th style="padding: 8px 10px; text-align: center;">Assists</th>
+                    <th style="padding: 8px 10px; text-align: center;">In</th>
+                    <th style="padding: 8px 10px; text-align: center;">Out</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${playerRowsHtml}
+                  <!-- TOTALS ROW -->
+                  <tr style="background-color: #f1f5f9; font-weight: bold; border-top: 2px solid #cbd5e1;">
+                    <td colspan="3" style="padding: 9px 10px; text-transform: uppercase; font-size: 10px; color: #334155;">Totals / Squad Averages</td>
+                    <td style="padding: 9px 10px; text-align: center; color: #334155;">${matchedMatches.length}</td>
+                    <td style="padding: 9px 10px; text-align: center; color: #334155;">-</td>
+                    <td style="padding: 9px 10px; text-align: center; font-family: monospace; color: #059669;">${this.formatPdfDuration(sumTotalSec)}</td>
+                    <td style="padding: 9px 10px; text-align: center; font-family: monospace; color: #475569;">${this.formatPdfDuration(avgSquadSec)}</td>
+                    <td style="padding: 9px 10px; text-align: center; color: #059669;">${sumGoals}</td>
+                    <td style="padding: 9px 10px; text-align: center; color: #0284c7;">${sumAssists}</td>
+                    <td style="padding: 9px 10px; text-align: center; color: #475569;">${sumSubsIn}</td>
+                    <td style="padding: 9px 10px; text-align: center; color: #475569;">${sumSubsOut}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- FOOTER -->
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #94a3b8;">
+              <div>Made with GameOn &bull; Tactical Pitch, Live Rotations & Match Intelligence</div>
+              <div>Page 1 of 1 &bull; ${startDate} to ${endDate}</div>
+            </div>
+          </div>
+        `;
+
+        this.closeModals();
+        container.classList.remove('hidden');
+
+        const safeTeam = String(activeTeamName).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const fileName = `GameOn_${safeTeam}_${startDate}_to_${endDate}.pdf`;
+
+        if (typeof html2pdf !== 'undefined') {
+          this.toast('Generating Date Range PDF... 📊');
+          const opt = {
+            margin: [8, 8, 8, 8],
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          html2pdf().set(opt).from(container).save().then(() => {
+            container.classList.add('hidden');
+            App.toast('PDF Exported successfully! 📄');
+          }).catch(err => {
+            console.error('PDF error:', err);
+            container.classList.add('hidden');
+            window.print();
+          });
+        } else {
+          window.print();
+          container.classList.add('hidden');
+        }
+      },
+
       openExportModal(matchId = null) {
         let targetMatch = AppState.match;
         let targetEvents = AppState.events;
@@ -3451,7 +4272,7 @@
 
       closeModals() {
         AppState.editingPlayerId = null;
-        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation').forEach(m => {
+        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalPdfReport').forEach(m => {
           m.classList.add('hidden');
           m.classList.remove('flex');
         });
