@@ -301,6 +301,9 @@ Check your Browserslist config to be sure that your targets are set up correctly
           <span class="text-[11px] text-slate-400 uppercase font-bold">Preset:</span>
           <select id="formationSelect" onchange="App.onFormationChanged(this.value)" class="bg-obsidian-950 border border-white/15 text-white text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyber-cyan">
           </select>
+          <button id="btnDeleteCustomFormation" type="button" onclick="App.deleteCurrentCustomFormation()" class="hidden w-7 h-7 rounded-xl bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs items-center justify-center transition active:scale-95" title="Delete this custom formation">
+            🗑️
+          </button>
         </div>
 
         <div class="flex items-center space-x-1.5">
@@ -350,8 +353,8 @@ Check your Browserslist config to be sure that your targets are set up correctly
 
         <div class="mt-2 px-1 flex items-center justify-between text-[11px] text-white/70">
           <span>Drag tokens to adjust tactical roles</span>
-          <button onclick="App.saveCurrentFormation()" class="px-2 py-0.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/20 text-cyber-mint text-[10px] font-semibold flex items-center space-x-1">
-            <span>💾 Save Positions</span>
+          <button onclick="App.openSaveFormationModal()" class="px-2.5 py-1 rounded-xl bg-obsidian-950/90 hover:bg-obsidian-900 border border-cyber-cyan/40 text-cyber-cyan text-[11px] font-semibold flex items-center space-x-1.5 shadow-sm active:scale-95 transition" title="Save current positions as a custom formation">
+            <span>💾 Save As Formation</span>
           </button>
         </div>
       </div>
@@ -363,9 +366,14 @@ Check your Browserslist config to be sure that your targets are set up correctly
             <h3 class="text-sm font-bold text-white">Starting Lineup vs Reserves</h3>
             <p class="text-xs text-slate-400" id="starterQuotaText">Required starters: 7</p>
           </div>
-          <span id="starterStatusBadge" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30">
-            ✓ 7/7 Starters Ready
-          </span>
+          <div class="flex items-center space-x-1.5">
+            <button type="button" onclick="App.sortLineupByPosition(true)" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 active:scale-95 transition" title="Sort starters by designated pitch position (GK → DEF → MID → FWD)">
+              <span>⚡ Sort by Position</span>
+            </button>
+            <span id="starterStatusBadge" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30">
+              ✓ 7/7 Starters Ready
+            </span>
+          </div>
         </div>
 
         <!-- BENCH RESERVES CAROUSEL -->
@@ -609,7 +617,7 @@ Check your Browserslist config to be sure that your targets are set up correctly
   <div id="modalAddPlayer" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-bold text-white">Add Squad Player</h3>
+        <h3 id="modalAddPlayerTitle" class="text-base font-bold text-white">Add Squad Player</h3>
         <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
 
@@ -635,18 +643,21 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 <option value="RB">RB (Right Back)</option>
                 <option value="LWB">LWB (Left Wing Back)</option>
                 <option value="RWB">RWB (Right Wing Back)</option>
+                <option value="DEF">DEF (Defender)</option>
               </optgroup>
               <optgroup label="Midfielders" class="bg-obsidian-900 text-slate-300">
                 <option value="CDM">CDM (Defensive Mid)</option>
                 <option value="CAM">CAM (Attacking Mid)</option>
                 <option value="LM">LM (Left Mid)</option>
                 <option value="RM">RM (Right Mid)</option>
+                <option value="MID">MID (Midfielder)</option>
               </optgroup>
               <optgroup label="Forwards / Attackers" class="bg-obsidian-900 text-slate-300">
                 <option value="LW">LW (Left Wing)</option>
                 <option value="RW">RW (Right Wing)</option>
                 <option value="CF">CF (Centre Forward)</option>
                 <option value="S">S (Striker)</option>
+                <option value="FWD">FWD (Forward)</option>
               </optgroup>
             </select>
           </div>
@@ -654,8 +665,37 @@ Check your Browserslist config to be sure that your targets are set up correctly
       </div>
 
       <div class="pt-2">
-        <button onclick="App.saveNewPlayer()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95">
+        <button id="modalAddPlayerSubmitBtn" onclick="App.saveNewPlayer()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95">
           Add to Squad
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. SAVE CUSTOM FORMATION MODAL -->
+  <div id="modalSaveFormation" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white">Save Custom Formation</h3>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="text-slate-400 font-medium block mb-1">Formation Name</label>
+          <input type="text" id="inputFormationName" class="w-full bg-obsidian-950 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-cyber-cyan" placeholder="e.g. 2-3-1 Attacking Wings" />
+        </div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          Saves the current pitch positions of your <span id="saveFormationPlayerCount" class="text-cyber-cyan font-bold">7</span> starters as a reusable tactical formation preset.
+        </p>
+      </div>
+
+      <div class="pt-2 flex space-x-2">
+        <button type="button" onclick="App.closeModals()" class="flex-1 py-2.5 rounded-xl bg-obsidian-950 border border-white/15 text-slate-300 font-bold text-xs">
+          Cancel
+        </button>
+        <button type="button" onclick="App.confirmSaveFormation()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs shadow-md active:scale-95">
+          Save Formation
         </button>
       </div>
     </div>
@@ -908,6 +948,27 @@ Check your Browserslist config to be sure that your targets are set up correctly
             { x: 70, y: 65 },
             { x: 50, y: 42 },
             { x: 50, y: 20 }
+          ],
+          '2-2': [
+            { x: 50, y: 88 },
+            { x: 30, y: 64 },
+            { x: 70, y: 64 },
+            { x: 30, y: 28 },
+            { x: 70, y: 28 }
+          ],
+          '1-1-2': [
+            { x: 50, y: 88 },
+            { x: 50, y: 65 },
+            { x: 50, y: 44 },
+            { x: 30, y: 24 },
+            { x: 70, y: 24 }
+          ],
+          '3-1': [
+            { x: 50, y: 88 },
+            { x: 22, y: 66 },
+            { x: 50, y: 68 },
+            { x: 78, y: 66 },
+            { x: 50, y: 22 }
           ]
         },
         '7': {
@@ -928,6 +989,33 @@ Check your Browserslist config to be sure that your targets are set up correctly
             { x: 34, y: 44 },
             { x: 66, y: 44 },
             { x: 50, y: 22 }
+          ],
+          '2-2-2': [
+            { x: 50, y: 88 },
+            { x: 28, y: 68 },
+            { x: 72, y: 68 },
+            { x: 30, y: 46 },
+            { x: 70, y: 46 },
+            { x: 32, y: 22 },
+            { x: 68, y: 22 }
+          ],
+          '3-1-2': [
+            { x: 50, y: 88 },
+            { x: 22, y: 70 },
+            { x: 50, y: 68 },
+            { x: 78, y: 70 },
+            { x: 50, y: 46 },
+            { x: 34, y: 22 },
+            { x: 66, y: 22 }
+          ],
+          '1-3-2': [
+            { x: 50, y: 88 },
+            { x: 50, y: 68 },
+            { x: 20, y: 46 },
+            { x: 50, y: 46 },
+            { x: 80, y: 46 },
+            { x: 34, y: 22 },
+            { x: 66, y: 22 }
           ]
         },
         '9': {
@@ -951,6 +1039,39 @@ Check your Browserslist config to be sure that your targets are set up correctly
             { x: 40, y: 48 },
             { x: 60, y: 48 },
             { x: 82, y: 48 },
+            { x: 50, y: 22 }
+          ],
+          '3-2-3': [
+            { x: 50, y: 90 },
+            { x: 22, y: 72 },
+            { x: 50, y: 70 },
+            { x: 78, y: 72 },
+            { x: 36, y: 50 },
+            { x: 64, y: 50 },
+            { x: 20, y: 26 },
+            { x: 50, y: 22 },
+            { x: 80, y: 26 }
+          ],
+          '2-4-2': [
+            { x: 50, y: 90 },
+            { x: 30, y: 72 },
+            { x: 70, y: 72 },
+            { x: 18, y: 50 },
+            { x: 40, y: 50 },
+            { x: 60, y: 50 },
+            { x: 82, y: 50 },
+            { x: 36, y: 24 },
+            { x: 64, y: 24 }
+          ],
+          '4-3-1': [
+            { x: 50, y: 90 },
+            { x: 16, y: 72 },
+            { x: 38, y: 72 },
+            { x: 62, y: 72 },
+            { x: 84, y: 72 },
+            { x: 26, y: 48 },
+            { x: 50, y: 48 },
+            { x: 74, y: 48 },
             { x: 50, y: 22 }
           ]
         },
@@ -980,9 +1101,68 @@ Check your Browserslist config to be sure that your targets are set up correctly
             { x: 86, y: 50 },
             { x: 38, y: 24 },
             { x: 62, y: 24 }
+          ],
+          '4-4-2': [
+            { x: 50, y: 90 },
+            { x: 16, y: 75 },
+            { x: 38, y: 75 },
+            { x: 62, y: 75 },
+            { x: 84, y: 75 },
+            { x: 16, y: 50 },
+            { x: 38, y: 50 },
+            { x: 62, y: 50 },
+            { x: 84, y: 50 },
+            { x: 36, y: 24 },
+            { x: 64, y: 24 }
+          ],
+          '4-2-3-1': [
+            { x: 50, y: 90 },
+            { x: 16, y: 75 },
+            { x: 38, y: 75 },
+            { x: 62, y: 75 },
+            { x: 84, y: 75 },
+            { x: 36, y: 58 },
+            { x: 64, y: 58 },
+            { x: 20, y: 38 },
+            { x: 50, y: 36 },
+            { x: 80, y: 38 },
+            { x: 50, y: 20 }
+          ],
+          '4-1-4-1': [
+            { x: 50, y: 90 },
+            { x: 16, y: 75 },
+            { x: 38, y: 75 },
+            { x: 62, y: 75 },
+            { x: 84, y: 75 },
+            { x: 50, y: 60 },
+            { x: 18, y: 42 },
+            { x: 38, y: 42 },
+            { x: 62, y: 42 },
+            { x: 82, y: 42 },
+            { x: 50, y: 20 }
+          ],
+          '5-3-2': [
+            { x: 50, y: 90 },
+            { x: 12, y: 72 },
+            { x: 30, y: 76 },
+            { x: 50, y: 75 },
+            { x: 70, y: 76 },
+            { x: 88, y: 72 },
+            { x: 28, y: 50 },
+            { x: 50, y: 52 },
+            { x: 72, y: 50 },
+            { x: 38, y: 24 },
+            { x: 62, y: 24 }
           ]
         }
-      }
+      },
+      customFormations: {
+        '5': {},
+        '7': {},
+        '9': {},
+        '11': {}
+      },
+      editingPlayerId: null
     };
 
     const App = {
@@ -1389,6 +1569,10 @@ Check your Browserslist config to be sure that your targets are set up correctly
           const sStyle = localStorage.getItem('gameon_theme_style');
           if (sStyle) AppState.themeStyle = sStyle;
 
+          const sCF = localStorage.getItem('gameon_custom_formations');
+          if (sCF) AppState.customFormations = JSON.parse(sCF);
+          else if (!AppState.customFormations) AppState.customFormations = { '5': {}, '7': {}, '9': {}, '11': {} };
+
           const sTeams = localStorage.getItem('gameon_teams');
           if (sTeams) AppState.teams = JSON.parse(sTeams);
           else AppState.teams = [];
@@ -1427,6 +1611,7 @@ Check your Browserslist config to be sure that your targets are set up correctly
           if (AppState.teams) localStorage.setItem('gameon_teams', JSON.stringify(AppState.teams));
           if (AppState.currentTeamId) localStorage.setItem('gameon_current_team_id', AppState.currentTeamId);
           if (AppState.currentTeamName) localStorage.setItem('gameon_current_team_name', AppState.currentTeamName);
+          if (AppState.customFormations) localStorage.setItem('gameon_custom_formations', JSON.stringify(AppState.customFormations));
         } catch (e) {
           console.error('saveStorage error:', e);
         }
@@ -1581,15 +1766,7 @@ Check your Browserslist config to be sure that your targets are set up correctly
         document.getElementById('activeMatchFormatBadge').innerText = `${fmt}v${fmt}`;
         document.getElementById('starterQuotaText').innerText = `Required starters: ${quota}`;
 
-        const select = document.getElementById('formationSelect');
-        select.innerHTML = '';
-        const presets = AppState.formations[fmt] || {};
-        Object.keys(presets).forEach(name => {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.innerText = name;
-          select.appendChild(opt);
-        });
+        this.populateFormationSelect();
 
         AppState.squad.forEach(p => {
           if (AppState.match.availability[p.id] === undefined) {
@@ -1599,22 +1776,129 @@ Check your Browserslist config to be sure that your targets are set up correctly
 
         if (AppState.match.starters.length === 0) {
           const avail = AppState.squad.filter(p => AppState.match.availability[p.id]);
+          // Sort available players by designated pitch position (GK -> DEF -> MID -> FWD)
+          avail.sort((a, b) => this.getPositionRank(a.position) - this.getPositionRank(b.position));
           AppState.match.starters = avail.slice(0, quota).map(p => p.id);
           AppState.match.bench = avail.slice(quota).map(p => p.id);
+        } else {
+          this.sortStartersByPosition();
         }
 
-        this.applyFormationPositions(select.value || Object.keys(presets)[0]);
+        const select = document.getElementById('formationSelect');
+        const defaultName = select ? select.value : Object.keys(AppState.formations[fmt])[0];
+        this.applyFormationPositions(defaultName);
+      },
+
+      getPositionRank(pos) {
+        if (!pos) return 2;
+        const p = String(pos).trim().toUpperCase();
+        if (p === 'GK') return 0;
+        if (['CB', 'LB', 'RB', 'LWB', 'RWB', 'DEF'].includes(p)) return 1;
+        if (['CDM', 'CAM', 'LM', 'RM', 'MID', 'CM'].includes(p)) return 2;
+        if (['LW', 'RW', 'CF', 'S', 'FWD', 'ST'].includes(p)) return 3;
+        return 2;
+      },
+
+      sortStartersByPosition() {
+        AppState.match.starters.sort((aId, bId) => {
+          const pA = AppState.squad.find(p => p.id === aId);
+          const pB = AppState.squad.find(p => p.id === bId);
+          const rankA = this.getPositionRank(pA ? pA.position : '');
+          const rankB = this.getPositionRank(pB ? pB.position : '');
+          if (rankA !== rankB) return rankA - rankB;
+          return (pA ? pA.number : 0) - (pB ? pB.number : 0);
+        });
+      },
+
+      sortLineupByPosition(showToast = false) {
+        this.sortStartersByPosition();
+        const select = document.getElementById('formationSelect');
+        const currentFormation = select ? select.value : null;
+        if (currentFormation) {
+          this.applyFormationPositions(currentFormation);
+        }
+        this.renderPitchTokens();
+        this.renderRoster();
+        if (showToast) {
+          this.toast('Starting lineup sorted by positions (GK → DEF → MID → FWD) ⚡');
+        }
+      },
+
+      getAllFormations(fmt) {
+        const builtIns = AppState.formations[fmt] || {};
+        const customs = (AppState.customFormations && AppState.customFormations[fmt]) || {};
+        return { ...builtIns, ...customs };
+      },
+
+      populateFormationSelect(selectedName) {
+        const fmt = AppState.match.format;
+        const select = document.getElementById('formationSelect');
+        if (!select) return;
+        select.innerHTML = '';
+
+        const builtIns = AppState.formations[fmt] || {};
+        const customs = (AppState.customFormations && AppState.customFormations[fmt]) || {};
+
+        const optGroupPresets = document.createElement('optgroup');
+        optGroupPresets.label = 'Standard Formations';
+        Object.keys(builtIns).forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.innerText = name;
+          optGroupPresets.appendChild(opt);
+        });
+        select.appendChild(optGroupPresets);
+
+        const customKeys = Object.keys(customs);
+        if (customKeys.length > 0) {
+          const optGroupCustom = document.createElement('optgroup');
+          optGroupCustom.label = 'Custom Formations';
+          customKeys.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.innerText = `⭐ ${name}`;
+            optGroupCustom.appendChild(opt);
+          });
+          select.appendChild(optGroupCustom);
+        }
+
+        if (selectedName && (builtIns[selectedName] || customs[selectedName])) {
+          select.value = selectedName;
+        } else {
+          select.value = Object.keys(builtIns)[0] || '';
+        }
+
+        this.updateFormationDeleteButtonVisibility();
+      },
+
+      updateFormationDeleteButtonVisibility() {
+        const fmt = AppState.match.format;
+        const select = document.getElementById('formationSelect');
+        const btn = document.getElementById('btnDeleteCustomFormation');
+        if (!select || !btn) return;
+        const isCustom = AppState.customFormations && AppState.customFormations[fmt] && !!AppState.customFormations[fmt][select.value];
+        if (isCustom) {
+          btn.classList.remove('hidden');
+          btn.classList.add('flex');
+        } else {
+          btn.classList.add('hidden');
+          btn.classList.remove('flex');
+        }
       },
 
       onFormationChanged(name) {
         this.applyFormationPositions(name);
+        this.updateFormationDeleteButtonVisibility();
         this.renderPitchTokens();
         this.toast('Formation preset loaded: ' + name);
       },
 
       applyFormationPositions(name) {
         const fmt = AppState.match.format;
-        const formationSlots = (AppState.formations[fmt] && AppState.formations[fmt][name]) || [];
+        this.sortStartersByPosition();
+
+        const allPresets = this.getAllFormations(fmt);
+        const formationSlots = allPresets[name] || allPresets[Object.keys(allPresets)[0]] || [];
         
         AppState.match.starters.forEach((pid, idx) => {
           if (formationSlots[idx]) {
@@ -1629,9 +1913,69 @@ Check your Browserslist config to be sure that your targets are set up correctly
         this.saveStorage();
       },
 
+      openSaveFormationModal() {
+        const count = AppState.match.starters.length;
+        const countEl = document.getElementById('saveFormationPlayerCount');
+        if (countEl) countEl.innerText = count;
+        const input = document.getElementById('inputFormationName');
+        if (input) input.value = '';
+        const m = document.getElementById('modalSaveFormation');
+        if (m) {
+          m.classList.remove('hidden');
+          m.classList.add('flex');
+          setTimeout(() => { if (input) input.focus(); }, 100);
+        }
+      },
+
       saveCurrentFormation() {
+        this.openSaveFormationModal();
+      },
+
+      confirmSaveFormation() {
+        const fmt = AppState.match.format;
+        const input = document.getElementById('inputFormationName');
+        let name = input ? input.value.trim() : '';
+
+        if (!name) {
+          const currentCount = Object.keys((AppState.customFormations && AppState.customFormations[fmt]) || {}).length + 1;
+          name = `Custom Formation ${currentCount}`;
+        }
+
+        this.saveCustomFormation(name);
+        this.closeModals();
+        this.toast(`Formation "${name}" saved! 💾`);
+      },
+
+      saveCustomFormation(name, customSlots = null) {
+        const fmt = AppState.match.format;
+        const slots = customSlots || AppState.match.starters.map(pid => {
+          return { ...(AppState.match.fieldPositions[pid] || { x: 50, y: 50 }) };
+        }).sort((a, b) => b.y - a.y); // Deepest y (GK) becomes slot 0
+
+        if (!AppState.customFormations) AppState.customFormations = { '5': {}, '7': {}, '9': {}, '11': {} };
+        if (!AppState.customFormations[fmt]) AppState.customFormations[fmt] = {};
+        AppState.customFormations[fmt][name] = slots;
+
         this.saveStorage();
-        this.toast('Custom pitch layout saved!');
+        this.populateFormationSelect(name);
+        return name;
+      },
+
+      deleteCurrentCustomFormation() {
+        const fmt = AppState.match.format;
+        const select = document.getElementById('formationSelect');
+        if (!select) return;
+        const name = select.value;
+        if (!AppState.customFormations || !AppState.customFormations[fmt] || !AppState.customFormations[fmt][name]) return;
+
+        if (confirm(`Delete custom formation "${name}"?`)) {
+          delete AppState.customFormations[fmt][name];
+          this.saveStorage();
+          this.populateFormationSelect();
+          this.applyFormationPositions(select.value);
+          this.renderPitchTokens();
+          this.toast(`Custom formation "${name}" deleted.`);
+        }
       },
 
       renderPitchTokens() {
@@ -1875,7 +2219,11 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 ${isAvail ? '✓ Avail' : '✗ Out'}
               </button>
 
-              <button onclick="App.deletePlayer('${p.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs">
+              <button type="button" onclick="App.openEditPlayerModal('${p.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-cyber-cyan/20 text-slate-400 hover:text-cyber-cyan transition flex items-center justify-center text-xs" title="Edit player name, number or position">
+                ✏️
+              </button>
+
+              <button onclick="App.deletePlayer('${p.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete player from squad">
                 🗑️
               </button>
             </div>
@@ -2357,6 +2705,7 @@ Check your Browserslist config to be sure that your targets are set up correctly
           kitColor: AppState.kitColor,
           theme: AppState.theme,
           themeStyle: AppState.themeStyle,
+          customFormations: AppState.customFormations || { '5': {}, '7': {}, '9': {}, '11': {} },
           customLogo: localStorage.getItem('gameon_custom_logo') || null
         };
 
@@ -2407,6 +2756,7 @@ Check your Browserslist config to be sure that your targets are set up correctly
             if (data.kitColor) AppState.kitColor = data.kitColor;
             if (data.theme) AppState.theme = data.theme;
             if (data.themeStyle) AppState.themeStyle = data.themeStyle;
+            if (data.customFormations) AppState.customFormations = data.customFormations;
             if (data.customLogo) localStorage.setItem('gameon_custom_logo', data.customLogo);
 
             this.saveStorage();
@@ -2721,9 +3071,31 @@ Check your Browserslist config to be sure that your targets are set up correctly
       },
 
       openAddPlayerModal() {
+        AppState.editingPlayerId = null;
+        const title = document.getElementById('modalAddPlayerTitle');
+        if (title) title.innerText = 'Add Squad Player';
         document.getElementById('inputPlayerName').value = '';
         document.getElementById('inputPlayerNumber').value = '';
-        const _mAdd = document.getElementById('modalAddPlayer'); _mAdd.classList.remove('hidden'); _mAdd.classList.add('flex');
+        document.getElementById('inputPlayerPosition').value = 'CB';
+        const submitBtn = document.getElementById('modalAddPlayerSubmitBtn');
+        if (submitBtn) submitBtn.innerText = 'Add to Squad';
+        const _mAdd = document.getElementById('modalAddPlayer');
+        if (_mAdd) { _mAdd.classList.remove('hidden'); _mAdd.classList.add('flex'); }
+      },
+
+      openEditPlayerModal(pid) {
+        const p = AppState.squad.find(item => item.id === pid);
+        if (!p) return;
+        AppState.editingPlayerId = pid;
+        const title = document.getElementById('modalAddPlayerTitle');
+        if (title) title.innerText = 'Edit Squad Player';
+        document.getElementById('inputPlayerName').value = p.name;
+        document.getElementById('inputPlayerNumber').value = p.number;
+        document.getElementById('inputPlayerPosition').value = p.position;
+        const submitBtn = document.getElementById('modalAddPlayerSubmitBtn');
+        if (submitBtn) submitBtn.innerText = 'Save Changes';
+        const _mAdd = document.getElementById('modalAddPlayer');
+        if (_mAdd) { _mAdd.classList.remove('hidden'); _mAdd.classList.add('flex'); }
       },
 
       saveNewPlayer() {
@@ -2731,31 +3103,44 @@ Check your Browserslist config to be sure that your targets are set up correctly
         const num = parseInt(document.getElementById('inputPlayerNumber').value);
         const pos = document.getElementById('inputPlayerPosition').value;
 
-        if (!name || isNaN(num)) {
+        if (!name || isNaN(num) || num < 1 || num > 99) {
           this.toast('Please provide a valid name and shirt number (1-99)');
           return;
         }
 
-        const newPlayer = {
-          id: 'p_' + Date.now(),
-          number: num,
-          name: name,
-          position: pos
-        };
+        if (AppState.editingPlayerId) {
+          const p = AppState.squad.find(item => item.id === AppState.editingPlayerId);
+          if (p) {
+            p.name = name;
+            p.number = num;
+            p.position = pos;
+            this.toast(`Player #${num} ${name} updated! ✏️`);
+          }
+          AppState.editingPlayerId = null;
+        } else {
+          const newPlayer = {
+            id: 'p_' + Date.now(),
+            number: num,
+            name: name,
+            position: pos
+          };
 
-        AppState.squad.push(newPlayer);
-        AppState.match.availability[newPlayer.id] = true;
-        AppState.match.bench.push(newPlayer.id);
+          AppState.squad.push(newPlayer);
+          AppState.match.availability[newPlayer.id] = true;
+          AppState.match.bench.push(newPlayer.id);
+          this.toast(`Player #${num} ${name} added to squad!`);
+        }
 
         this.saveStorage();
         this.closeModals();
         this.renderRoster();
         this.renderPitchTokens();
-        this.toast(`Player #${num} ${name} added to squad!`);
+        this.renderBenchReserves();
       },
 
       closeModals() {
-        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams').forEach(m => {
+        AppState.editingPlayerId = null;
+        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation').forEach(m => {
           m.classList.add('hidden');
           m.classList.remove('flex');
         });

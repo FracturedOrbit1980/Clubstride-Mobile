@@ -37,8 +37,8 @@ console.log('✓ "Add to Squad" button text verified');
 
 // 5. Verify service worker cache version
 const sw = fs.readFileSync('sw.js', 'utf-8');
-assert(sw.includes("CACHE_NAME = 'gameon-v3'"), 'sw.js cache version is not gameon-v3');
-console.log('✓ sw.js cache version bumped to gameon-v3');
+assert(sw.includes("CACHE_NAME = 'gameon-v4'"), 'sw.js cache version is not gameon-v4');
+console.log('✓ sw.js cache version bumped to gameon-v4');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
@@ -223,6 +223,104 @@ App.loadStorage();
 assert.strictEqual(AppState.matchHistory.length, 1, 'loadStorage failed to restore matchHistory');
 console.log('✓ localStorage data persistence survives refresh / restart');
 
+// ==========================================
+// NEW FEATURE TESTS: Formations, Sorting, Custom Presets, Player Editing
+// ==========================================
+
+// 13. Test Additional Tactical Formations for all formats
+assert(Object.keys(AppState.formations['5']).length >= 5, '5v5 should have at least 5 formations');
+assert(AppState.formations['5']['2-2'], '5v5 2-2 formation missing');
+assert(AppState.formations['5']['1-1-2'], '5v5 1-1-2 formation missing');
+assert(AppState.formations['5']['3-1'], '5v5 3-1 formation missing');
+
+assert(Object.keys(AppState.formations['7']).length >= 5, '7v7 should have at least 5 formations');
+assert(AppState.formations['7']['2-2-2'], '7v7 2-2-2 formation missing');
+assert(AppState.formations['7']['3-1-2'], '7v7 3-1-2 formation missing');
+assert(AppState.formations['7']['1-3-2'], '7v7 1-3-2 formation missing');
+
+assert(Object.keys(AppState.formations['9']).length >= 5, '9v9 should have at least 5 formations');
+assert(AppState.formations['9']['3-2-3'], '9v9 3-2-3 formation missing');
+assert(AppState.formations['9']['2-4-2'], '9v9 2-4-2 formation missing');
+assert(AppState.formations['9']['4-3-1'], '9v9 4-3-1 formation missing');
+
+assert(Object.keys(AppState.formations['11']).length >= 6, '11v11 should have at least 6 formations');
+assert(AppState.formations['11']['4-4-2'], '11v11 4-4-2 formation missing');
+assert(AppState.formations['11']['4-2-3-1'], '11v11 4-2-3-1 formation missing');
+assert(AppState.formations['11']['4-1-4-1'], '11v11 4-1-4-1 formation missing');
+assert(AppState.formations['11']['5-3-2'], '11v11 5-3-2 formation missing');
+console.log('✓ Additional tactical formations available across all formats (5v5, 7v7, 9v9, 11v11)');
+
+// 14. Test Starting Lineups Sort Players Based on Designated Position
+const fwdPlayer = AppState.squad.find(p => ['FWD', 'S', 'LW', 'RW'].includes(p.position)) || AppState.squad[0];
+const midPlayer = AppState.squad.find(p => ['MID', 'CDM', 'CAM', 'LM', 'RM'].includes(p.position)) || AppState.squad[1];
+const defPlayer = AppState.squad.find(p => ['DEF', 'CB', 'LB', 'RB'].includes(p.position)) || AppState.squad[2];
+const gkPlayer = AppState.squad.find(p => p.position === 'GK') || AppState.squad[3];
+
+AppState.match.starters = [fwdPlayer.id, midPlayer.id, defPlayer.id, gkPlayer.id];
+App.sortStartersByPosition();
+assert.strictEqual(AppState.match.starters[0], gkPlayer.id, 'Goalkeeper must be first in sorted starters');
+assert.strictEqual(AppState.match.starters[1], defPlayer.id, 'Defender must be second in sorted starters');
+assert.strictEqual(AppState.match.starters[2], midPlayer.id, 'Midfielder must be third in sorted starters');
+assert.strictEqual(AppState.match.starters[3], fwdPlayer.id, 'Forward must be fourth in sorted starters');
+
+assert.strictEqual(App.getPositionRank('GK'), 0, 'GK rank should be 0');
+assert.strictEqual(App.getPositionRank('CB'), 1, 'CB rank should be 1 (DEF)');
+assert.strictEqual(App.getPositionRank('CDM'), 2, 'CDM rank should be 2 (MID)');
+assert.strictEqual(App.getPositionRank('S'), 3, 'S rank should be 3 (FWD)');
+console.log('✓ Starting lineups correctly sorted based on designated pitch position (GK → DEF → MID → FWD)');
+
+// 15. Test Moving Players & Saving Multiple Formations with Custom Names
+AppState.match.format = '7';
+AppState.match.starters = AppState.squad.slice(0, 7).map(p => p.id);
+AppState.match.starters.forEach((pid, idx) => {
+  AppState.match.fieldPositions[pid] = { x: 30 + idx * 5, y: 80 - idx * 8 };
+});
+
+const customFormationName1 = 'Diamond Press 7v7';
+App.saveCustomFormation(customFormationName1);
+assert(AppState.customFormations['7'][customFormationName1], 'Custom formation 1 was not saved');
+assert.strictEqual(AppState.customFormations['7'][customFormationName1].length, 7, 'Custom formation should have 7 slots');
+
+const customFormationName2 = 'Ultra Attacking Overload';
+App.saveCustomFormation(customFormationName2);
+assert(AppState.customFormations['7'][customFormationName2], 'Custom formation 2 was not saved');
+
+App.saveStorage();
+const reloadedCF = JSON.parse(storage['gameon_custom_formations']);
+assert(reloadedCF['7'][customFormationName1], 'Custom formation 1 not in localStorage');
+assert(reloadedCF['7'][customFormationName2], 'Custom formation 2 not in localStorage');
+
+const formationSelect = document.getElementById('formationSelect');
+formationSelect.value = customFormationName1;
+App.onFormationChanged(customFormationName1);
+
+// Test deletion of custom formation
+App.deleteCurrentCustomFormation();
+assert(!AppState.customFormations['7'][customFormationName1], 'Custom formation was not deleted');
+console.log('✓ Saving multiple custom formations with custom names, switching, and deleting verified');
+
+// 16. Test Player Edit Once Created
+const playerToEdit = AppState.squad[0];
+const originalId = playerToEdit.id;
+
+App.openEditPlayerModal(originalId);
+assert.strictEqual(AppState.editingPlayerId, originalId, 'editingPlayerId not set on openEditPlayerModal');
+assert.strictEqual(document.getElementById('inputPlayerName').value, playerToEdit.name, 'Player name not prefilled');
+assert.strictEqual(document.getElementById('inputPlayerNumber').value, playerToEdit.number, 'Player number not prefilled');
+assert.strictEqual(document.getElementById('inputPlayerPosition').value, playerToEdit.position, 'Player position not prefilled');
+
+document.getElementById('inputPlayerName').value = 'Renaldo Sterling';
+document.getElementById('inputPlayerNumber').value = 77;
+document.getElementById('inputPlayerPosition').value = 'RW';
+App.saveNewPlayer();
+
+const editedPlayer = AppState.squad.find(p => p.id === originalId);
+assert.strictEqual(editedPlayer.name, 'Renaldo Sterling', 'Player name was not updated');
+assert.strictEqual(editedPlayer.number, 77, 'Player number was not updated');
+assert.strictEqual(editedPlayer.position, 'RW', 'Player position was not updated');
+assert.strictEqual(AppState.editingPlayerId, null, 'editingPlayerId was not reset');
+console.log('✓ Editing existing players (name, number, position) verified with immediate squad update');
+
 console.log('\n=========================================');
-console.log('ALL 12 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
+console.log('ALL 16 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
