@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gameon-v5';
+const CACHE_NAME = 'gameon-v6';
 const ASSETS = [
   './',
   './index.html',

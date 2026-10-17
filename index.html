@@ -450,8 +450,8 @@
       <div class="glass-card rounded-[24px] p-4 space-y-3">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-sm font-bold text-white">Minutes Management & Game Analytics</h3>
-            <p class="text-xs text-slate-400">Select multiple games to pull combined playing time and totals</p>
+            <h3 class="text-sm font-bold text-white">Playing Time Reporting & Game Analytics</h3>
+            <p class="text-xs text-slate-400">Select multiple games to pull totalled playing time and official match records</p>
           </div>
           <span id="selectedGamesBadge" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/30">
             All Games
@@ -652,34 +652,7 @@
     </div>
   </div>
 
-  <!-- 6. EDIT GAME MINUTES MODAL -->
-  <div id="modalEditGameMinutes" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[85vh] flex flex-col">
-      <div class="flex items-center justify-between flex-shrink-0">
-        <div>
-          <h3 class="text-base font-bold text-white">Manage Game Minutes</h3>
-          <p class="text-xs text-cyber-cyan truncate max-w-[240px]" id="editGameMinutesSubtitle">Match Playing Time</p>
-        </div>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
-      </div>
-      
-      <p class="text-[11px] text-slate-400 flex-shrink-0 leading-relaxed">
-        Adjust playing time for each squad member in this game. Totals and reports recalculate immediately.
-      </p>
 
-      <!-- Scrollable Player Minutes List -->
-      <div id="editGameMinutesList" class="overflow-y-auto space-y-2 flex-1 pr-1 text-xs"></div>
-
-      <div class="pt-2 flex space-x-2 flex-shrink-0 border-t border-white/10">
-        <button type="button" onclick="App.closeModals()" class="flex-1 py-2.5 rounded-xl bg-obsidian-950 border border-white/15 text-slate-300 font-bold text-xs">
-          Cancel
-        </button>
-        <button type="button" onclick="App.saveGameMinutes()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs shadow-md active:scale-95">
-          Save Minutes
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- 3. DEDICATED GOAL / ASSIST MODAL -->
   <div id="modalEvent" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
@@ -1144,8 +1117,7 @@
       },
       editingPlayerId: null,
       selectedGameIds: null,
-      expandedGameIds: {},
-      editingGameId: null
+      expandedGameIds: {}
     };
 
     const App = {
@@ -2871,148 +2843,7 @@
         this.renderStats();
       },
 
-      adjustPlayerGameMinutes(gameId, playerId, deltaMinutes) {
-        let targetGame = null;
-        let targetTimers = null;
 
-        if (gameId === 'live') {
-          targetGame = AppState.match;
-          targetTimers = AppState.playerTimers;
-        } else if (AppState.matchHistory) {
-          targetGame = AppState.matchHistory.find(m => m.id === gameId);
-          if (targetGame) {
-            if (!targetGame.playerTimers) targetGame.playerTimers = {};
-            targetTimers = targetGame.playerTimers;
-          }
-        }
-
-        if (!targetGame || !targetTimers) return;
-
-        const currentSec = targetTimers[playerId] || 0;
-        const newSec = Math.max(0, currentSec + deltaMinutes * 60);
-        targetTimers[playerId] = newSec;
-
-        const p = AppState.squad.find(item => item.id === playerId);
-        const pName = p ? p.name : 'Player';
-
-        this.saveStorage();
-        this.renderStats();
-        this.toast(`${pName}: ${Math.round(newSec / 60)} min (${deltaMinutes > 0 ? '+' : ''}${deltaMinutes}m) ⏱️`);
-      },
-
-      openEditGameMinutesModal(gameId) {
-        AppState.editingGameId = gameId;
-        let targetGame = null;
-        let targetTimers = null;
-        let gameTitle = '';
-
-        if (gameId === 'live') {
-          targetGame = AppState.match;
-          targetTimers = AppState.playerTimers;
-          gameTitle = `Live Match: ${targetGame.title || 'GameOn'} vs ${targetGame.opponent || 'Opponent'}`;
-        } else if (AppState.matchHistory) {
-          targetGame = AppState.matchHistory.find(m => m.id === gameId);
-          if (targetGame) {
-            if (!targetGame.playerTimers) targetGame.playerTimers = {};
-            targetTimers = targetGame.playerTimers;
-            gameTitle = `${targetGame.title || 'Match'} vs ${targetGame.opponent || 'Opponent'} (${targetGame.date || ''})`;
-          }
-        }
-
-        if (!targetGame) return;
-
-        const subtitle = document.getElementById('editGameMinutesSubtitle');
-        if (subtitle) subtitle.innerText = gameTitle;
-
-        const list = document.getElementById('editGameMinutesList');
-        if (list) {
-          list.innerHTML = '';
-          AppState.squad.forEach(p => {
-            const sec = (targetTimers && targetTimers[p.id]) || 0;
-            const mins = Math.round(sec / 60);
-            const isStarter = (targetGame.starters || []).includes(p.id);
-
-            const row = document.createElement('div');
-            row.className = 'glass-card rounded-xl p-2.5 flex items-center justify-between gap-2 border border-white/10';
-            row.innerHTML = `
-              <div class="flex items-center space-x-2 truncate">
-                <span class="w-6 h-6 rounded-lg bg-obsidian-950 border border-white/15 text-cyber-cyan font-bold text-[10px] flex items-center justify-center flex-shrink-0">
-                  ${p.number}
-                </span>
-                <div class="truncate">
-                  <div class="text-white font-bold text-xs truncate">${p.name}</div>
-                  <div class="text-[10px] text-slate-400">${p.position} • ${isStarter ? 'Starter' : 'Bench'}</div>
-                </div>
-              </div>
-              <div class="flex items-center space-x-1 flex-shrink-0">
-                <button type="button" onclick="App.stepInputMinutes('${p.id}', -5)" class="w-7 h-7 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white text-[10px] font-bold active:scale-95 transition" title="-5 Minutes">
-                  -5
-                </button>
-                <button type="button" onclick="App.stepInputMinutes('${p.id}', -1)" class="w-7 h-7 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white text-xs font-bold active:scale-95 transition" title="-1 Minute">
-                  -1
-                </button>
-                <div class="relative flex items-center">
-                  <input type="number" id="inputGameMin_${p.id}" value="${mins}" min="0" max="150" class="w-14 bg-obsidian-950 border border-cyber-cyan/40 rounded-lg py-1 px-1 text-center font-mono font-bold text-xs text-cyber-mint focus:outline-none focus:border-cyber-cyan" />
-                  <span class="text-[10px] text-slate-400 ml-1">m</span>
-                </div>
-                <button type="button" onclick="App.stepInputMinutes('${p.id}', 1)" class="w-7 h-7 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white text-xs font-bold active:scale-95 transition" title="+1 Minute">
-                  +1
-                </button>
-                <button type="button" onclick="App.stepInputMinutes('${p.id}', 5)" class="w-7 h-7 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white text-[10px] font-bold active:scale-95 transition" title="+5 Minutes">
-                  +5
-                </button>
-              </div>
-            `;
-            list.appendChild(row);
-          });
-        }
-
-        const modal = document.getElementById('modalEditGameMinutes');
-        if (modal) {
-          modal.classList.remove('hidden');
-          modal.classList.add('flex');
-        }
-      },
-
-      stepInputMinutes(playerId, delta) {
-        const input = document.getElementById('inputGameMin_' + playerId);
-        if (input) {
-          const val = parseInt(input.value) || 0;
-          input.value = Math.max(0, val + delta);
-        }
-      },
-
-      saveGameMinutes() {
-        const gameId = AppState.editingGameId;
-        let targetGame = null;
-        let targetTimers = null;
-
-        if (gameId === 'live') {
-          targetGame = AppState.match;
-          targetTimers = AppState.playerTimers;
-        } else if (AppState.matchHistory) {
-          targetGame = AppState.matchHistory.find(m => m.id === gameId);
-          if (targetGame) {
-            if (!targetGame.playerTimers) targetGame.playerTimers = {};
-            targetTimers = targetGame.playerTimers;
-          }
-        }
-
-        if (!targetGame || !targetTimers) return;
-
-        AppState.squad.forEach(p => {
-          const input = document.getElementById('inputGameMin_' + p.id);
-          if (input) {
-            const mins = Math.max(0, parseInt(input.value) || 0);
-            targetTimers[p.id] = mins * 60;
-          }
-        });
-
-        this.saveStorage();
-        this.closeModals();
-        this.renderStats();
-        this.toast(`Minutes saved for ${targetGame.title || 'game'}! ⏱️`);
-      },
 
       renderStats() {
         const container = document.getElementById('statsCardsContainer');
@@ -3234,9 +3065,6 @@
                 <button type="button" onclick="App.toggleGameDetail('live')" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition">
                   <span>${isLiveExpanded ? '▲ Hide Detail' : '🔍 Game Detail'}</span>
                 </button>
-                <button type="button" onclick="App.openEditGameMinutesModal('live')" class="px-2.5 py-1 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/25 border border-cyber-cyan/30 text-cyber-cyan font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition">
-                  <span>⏱️ Manage Minutes</span>
-                </button>
               </div>
               <span class="text-[11px] text-slate-400 font-mono">${(AppState.events || []).length} events</span>
             </div>
@@ -3283,9 +3111,6 @@
                   <button type="button" onclick="App.toggleGameDetail('${m.id}')" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition" title="View breakdown of player minutes & timeline">
                     <span>${isExpanded ? '▲ Hide Detail' : '🔍 Game Detail'}</span>
                   </button>
-                  <button type="button" onclick="App.openEditGameMinutesModal('${m.id}')" class="px-2.5 py-1 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/25 border border-cyber-cyan/30 text-cyber-cyan font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition" title="Edit player minutes for this match">
-                    <span>⏱️ Manage Minutes</span>
-                  </button>
                 </div>
 
                 <div class="flex items-center space-x-2">
@@ -3313,7 +3138,6 @@
         let rowsHtml = '';
         AppState.squad.forEach(p => {
           const sec = pTimers[p.id] || 0;
-          const mins = Math.round(sec / 60);
           const isStarter = pStarters.includes(p.id);
           const goals = pEvents.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
           const assists = pEvents.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
@@ -3336,17 +3160,9 @@
               <div class="flex items-center space-x-2 flex-shrink-0">
                 ${goals > 0 ? `<span class="text-[10px] text-emerald-400 font-bold">⚽ ${goals}</span>` : ''}
                 ${assists > 0 ? `<span class="text-[10px] text-sky-400 font-bold">👟 ${assists}</span>` : ''}
-                <div class="flex items-center space-x-1">
-                  <button type="button" onclick="App.adjustPlayerGameMinutes('${gameId}', '${p.id}', -1)" class="w-6 h-6 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold active:scale-95 transition" title="-1 Minute">
-                    −
-                  </button>
-                  <span class="w-12 text-center font-mono font-bold text-cyber-mint text-xs bg-obsidian-900/90 py-0.5 rounded border border-white/10">
-                    ${mins}m
-                  </span>
-                  <button type="button" onclick="App.adjustPlayerGameMinutes('${gameId}', '${p.id}', 1)" class="w-6 h-6 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold active:scale-95 transition" title="+1 Minute">
-                    +
-                  </button>
-                </div>
+                <span class="px-2.5 py-1 rounded-lg font-mono font-bold text-cyber-mint text-xs bg-obsidian-900/90 border border-cyber-mint/30" title="Official Tracked Playing Time">
+                  ${this.formatTime(sec)}
+                </span>
               </div>
             </div>
           `;
@@ -3368,10 +3184,8 @@
         return `
           <div class="pt-2 border-t border-white/10 space-y-3 bg-obsidian-950/40 p-3 rounded-2xl mt-2">
             <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              <span>Player Minutes & Playing Time</span>
-              <button type="button" onclick="App.openEditGameMinutesModal('${gameId}')" class="text-cyber-cyan hover:underline capitalize text-[11px]">
-                ⚙️ Full Editor
-              </button>
+              <span>Official Match Playing Time (Read-Only)</span>
+              <span class="text-[10px] text-cyber-mint font-mono font-normal">⏱️ Tracked Record</span>
             </div>
             <div class="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
               ${rowsHtml}
@@ -3637,8 +3451,7 @@
 
       closeModals() {
         AppState.editingPlayerId = null;
-        AppState.editingGameId = null;
-        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalEditGameMinutes').forEach(m => {
+        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation').forEach(m => {
           m.classList.add('hidden');
           m.classList.remove('flex');
         });

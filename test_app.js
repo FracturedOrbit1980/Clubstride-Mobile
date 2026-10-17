@@ -6,7 +6,7 @@ const html = fs.readFileSync('index.html', 'utf-8');
 // 1. Verify HTML elements exist
 const expectedIds = [
   'modalMatchSetup', 'modalAddPlayer', 'modalSaveFormation', 'modalEvent', 'modalTeams',
-  'modalEditGameMinutes', 'editGameMinutesList', 'selectedGamesBadge',
+  'selectedGamesBadge',
   'activeMatchTitleDisplay', 'activeMatchFormatBadge', 'activeMatchDateBadge',
   'tabBtn_pitch', 'tabBtn_live', 'tabBtn_roster', 'tabBtn_stats',
   'section_pitch', 'section_live', 'section_roster', 'section_stats',
@@ -38,8 +38,8 @@ console.log('✓ "Add to Squad" button text verified');
 
 // 5. Verify service worker cache version
 const sw = fs.readFileSync('sw.js', 'utf-8');
-assert(sw.includes("CACHE_NAME = 'gameon-v5'"), 'sw.js cache version is not gameon-v5');
-console.log('✓ sw.js cache version bumped to gameon-v5');
+assert(sw.includes("CACHE_NAME = 'gameon-v6'"), 'sw.js cache version is not gameon-v6');
+console.log('✓ sw.js cache version bumped to gameon-v6');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
@@ -400,34 +400,27 @@ App.renderStats();
 console.log('✓ Multi-select games to pull totalled minutes verified');
 
 // ==========================================
-// TEST 18: Game Detail Breakdown & Manage Minutes per Game
+// TEST 18: Game Detail Breakdown & Tamper-Proof Read-Only Minutes Reporting
 // ==========================================
 // Test toggling Game Detail accordion
 App.toggleGameDetail('m_test_1');
 assert(AppState.expandedGameIds['m_test_1'], 'Game detail for m_test_1 should be expanded');
 
-// Test quick adjusting minutes on a game (+5 mins = +300s)
-const initialSec = sampleMatch1.playerTimers[p0Id];
-App.adjustPlayerGameMinutes('m_test_1', p0Id, 5);
-assert.strictEqual(sampleMatch1.playerTimers[p0Id], initialSec + 300, 'Player minutes not adjusted by +5 mins');
+// Verify Game Detail HTML is generated and shows read-only official time badge
+const detailHtml = App.renderGameDetailHtml('m_test_1', sampleMatch1, sampleMatch1.playerTimers, sampleMatch1.events, sampleMatch1.starters);
+assert(detailHtml.includes('Official Match Playing Time (Read-Only)'), 'Detail should state Official Match Playing Time (Read-Only)');
+assert(detailHtml.includes('title="Official Tracked Playing Time"'), 'Detail should tag playing time as Official Tracked Playing Time');
 
-// Test quick decrementing minutes (-2 mins = -120s)
-App.adjustPlayerGameMinutes('m_test_1', p0Id, -2);
-assert.strictEqual(sampleMatch1.playerTimers[p0Id], initialSec + 180, 'Player minutes not adjusted by -2 mins');
+// Verify that manual minute tampering/editing functions do NOT exist
+assert.strictEqual(typeof App.adjustPlayerGameMinutes, 'undefined', 'adjustPlayerGameMinutes must not be defined (editing time prohibited)');
+assert.strictEqual(typeof App.openEditGameMinutesModal, 'undefined', 'openEditGameMinutesModal must not be defined (editing time prohibited)');
+assert.strictEqual(typeof App.saveGameMinutes, 'undefined', 'saveGameMinutes must not be defined (editing time prohibited)');
 
-// Test opening Manage Game Minutes Modal
-App.openEditGameMinutesModal('m_test_1');
-assert.strictEqual(AppState.editingGameId, 'm_test_1', 'editingGameId not set on modal open');
-
-// Test stepping minutes input helper
-App.stepInputMinutes(p0Id, 10);
-
-// Test saving edited minutes
-App.saveGameMinutes();
-assert.strictEqual(AppState.editingGameId, null, 'editingGameId not reset on save');
-App.saveStorage();
-assert(storage['gameon_history'], 'Updated match history not persisted');
-console.log('✓ Game detail breakdown & manage minutes per game verified');
+// Verify that sample match player minutes remain strictly intact and unedited
+assert.strictEqual(sampleMatch1.playerTimers[p0Id], 1800, 'Match 1 player 0 time must remain exact tracked duration (30 mins)');
+assert.strictEqual(sampleMatch1.playerTimers[p1Id], 2400, 'Match 1 player 1 time must remain exact tracked duration (40 mins)');
+assert.strictEqual(sampleMatch2.playerTimers[p0Id], 1200, 'Match 2 player 0 time must remain exact tracked duration (20 mins)');
+console.log('✓ Tamper-proof read-only playing time reporting & game detail breakdown verified');
 
 console.log('\n=========================================');
 console.log('ALL 18 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
