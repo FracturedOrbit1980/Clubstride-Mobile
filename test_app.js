@@ -5,7 +5,8 @@ const html = fs.readFileSync('index.html', 'utf-8');
 
 // 1. Verify HTML elements exist
 const expectedIds = [
-  'modalMatchSetup', 'modalAddPlayer', 'modalEvent', 'modalTeams',
+  'modalMatchSetup', 'modalAddPlayer', 'modalSaveFormation', 'modalEvent', 'modalTeams',
+  'modalEditGameMinutes', 'editGameMinutesList', 'selectedGamesBadge',
   'activeMatchTitleDisplay', 'activeMatchFormatBadge', 'activeMatchDateBadge',
   'tabBtn_pitch', 'tabBtn_live', 'tabBtn_roster', 'tabBtn_stats',
   'section_pitch', 'section_live', 'section_roster', 'section_stats',
@@ -37,8 +38,8 @@ console.log('✓ "Add to Squad" button text verified');
 
 // 5. Verify service worker cache version
 const sw = fs.readFileSync('sw.js', 'utf-8');
-assert(sw.includes("CACHE_NAME = 'gameon-v4'"), 'sw.js cache version is not gameon-v4');
-console.log('✓ sw.js cache version bumped to gameon-v4');
+assert(sw.includes("CACHE_NAME = 'gameon-v5'"), 'sw.js cache version is not gameon-v5');
+console.log('✓ sw.js cache version bumped to gameon-v5');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
@@ -321,6 +322,113 @@ assert.strictEqual(editedPlayer.position, 'RW', 'Player position was not updated
 assert.strictEqual(AppState.editingPlayerId, null, 'editingPlayerId was not reset');
 console.log('✓ Editing existing players (name, number, position) verified with immediate squad update');
 
+// ==========================================
+// TEST 17: Multi-Select Games to Pull Totalled Minutes
+// ==========================================
+const p0Id = AppState.squad[0].id;
+const p1Id = AppState.squad[1].id;
+
+const sampleMatch1 = {
+  id: 'm_test_1',
+  title: 'League Match 1',
+  teamName: 'GameOn FC',
+  opponent: 'Red Hawks',
+  date: '2026-10-10',
+  format: '7',
+  ourGoals: 2,
+  opponentGoals: 1,
+  durationSeconds: 3000,
+  playerTimers: {
+    [p0Id]: 1800, // 30 mins
+    [p1Id]: 2400  // 40 mins
+  },
+  starters: [p0Id, p1Id],
+  events: [
+    { id: 'ev_g1', type: 'Goal', playerId: p0Id, matchTimeSeconds: 600 }
+  ]
+};
+
+const sampleMatch2 = {
+  id: 'm_test_2',
+  title: 'Cup Semi-Final',
+  teamName: 'GameOn FC',
+  opponent: 'Blue Sharks',
+  date: '2026-10-15',
+  format: '7',
+  ourGoals: 3,
+  opponentGoals: 2,
+  durationSeconds: 3600,
+  playerTimers: {
+    [p0Id]: 1200, // 20 mins
+    [p1Id]: 0     // 0 mins
+  },
+  starters: [p0Id],
+  events: [
+    { id: 'ev_g2', type: 'Goal', playerId: p0Id, matchTimeSeconds: 900 },
+    { id: 'ev_g3', type: 'Goal', playerId: p1Id, matchTimeSeconds: 1500 }
+  ]
+};
+
+AppState.matchHistory = [sampleMatch1, sampleMatch2];
+
+// Test selectAllGames
+App.selectAllGames();
+let selected = App.getSelectedGameIds();
+assert(selected.includes('m_test_1'), 'm_test_1 should be selected');
+assert(selected.includes('m_test_2'), 'm_test_2 should be selected');
+
+// Test toggleGameSelection
+App.toggleGameSelection('m_test_2');
+selected = App.getSelectedGameIds();
+assert(selected.includes('m_test_1'), 'm_test_1 should still be selected');
+assert(!selected.includes('m_test_2'), 'm_test_2 should be deselected');
+
+// Test selectRecentGames
+App.selectRecentGames(1);
+selected = App.getSelectedGameIds();
+assert.strictEqual(selected.length, 1, 'Only 1 match should be selected');
+assert.strictEqual(selected[0], 'm_test_1', 'Recent match should be m_test_1');
+
+// Test deselectAllGames
+App.deselectAllGames();
+selected = App.getSelectedGameIds();
+assert.strictEqual(selected.length, 0, 'No games should be selected');
+
+// Reselect both to verify pulled totals rendering
+App.selectAllGames();
+App.renderStats();
+console.log('✓ Multi-select games to pull totalled minutes verified');
+
+// ==========================================
+// TEST 18: Game Detail Breakdown & Manage Minutes per Game
+// ==========================================
+// Test toggling Game Detail accordion
+App.toggleGameDetail('m_test_1');
+assert(AppState.expandedGameIds['m_test_1'], 'Game detail for m_test_1 should be expanded');
+
+// Test quick adjusting minutes on a game (+5 mins = +300s)
+const initialSec = sampleMatch1.playerTimers[p0Id];
+App.adjustPlayerGameMinutes('m_test_1', p0Id, 5);
+assert.strictEqual(sampleMatch1.playerTimers[p0Id], initialSec + 300, 'Player minutes not adjusted by +5 mins');
+
+// Test quick decrementing minutes (-2 mins = -120s)
+App.adjustPlayerGameMinutes('m_test_1', p0Id, -2);
+assert.strictEqual(sampleMatch1.playerTimers[p0Id], initialSec + 180, 'Player minutes not adjusted by -2 mins');
+
+// Test opening Manage Game Minutes Modal
+App.openEditGameMinutesModal('m_test_1');
+assert.strictEqual(AppState.editingGameId, 'm_test_1', 'editingGameId not set on modal open');
+
+// Test stepping minutes input helper
+App.stepInputMinutes(p0Id, 10);
+
+// Test saving edited minutes
+App.saveGameMinutes();
+assert.strictEqual(AppState.editingGameId, null, 'editingGameId not reset on save');
+App.saveStorage();
+assert(storage['gameon_history'], 'Updated match history not persisted');
+console.log('✓ Game detail breakdown & manage minutes per game verified');
+
 console.log('\n=========================================');
-console.log('ALL 16 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
+console.log('ALL 18 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
