@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gameon-v7';
+﻿const CACHE_NAME = 'Clubstride Mobile-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -36,3 +36,5 @@ self.addEventListener('fetch', (e) => {
     })
   );
 });
+
+

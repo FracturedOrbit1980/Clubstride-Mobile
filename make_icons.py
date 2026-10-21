@@ -1,4 +1,4 @@
-from PIL import Image
+﻿from PIL import Image
 import base64
 
 try:
@@ -26,3 +26,5 @@ try:
     print('Successfully generated icon.png, icon-180.png, icon-192.png, icon-512.png')
 except Exception as e:
     print('PIL error:', e)
+
+

@@ -1,5 +1,5 @@
-Add-Type -AssemblyName System.Drawing
-$srcPath = "C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app\icon.jpg"
+﻿Add-Type -AssemblyName System.Drawing
+$srcPath = "C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app\icon.jpg"
 $src = [System.Drawing.Image]::FromFile($srcPath)
 
 function Resize-Image($w, $h, $dest) {
@@ -14,12 +14,14 @@ function Resize-Image($w, $h, $dest) {
     $bmp.Dispose()
 }
 
-Resize-Image 180 180 "C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app\icon-180.png"
-Resize-Image 192 192 "C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app\icon-192.png"
-Resize-Image 512 512 "C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app\icon-512.png"
-Resize-Image 512 512 "C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app\icon.png"
+Resize-Image 180 180 "C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app\icon-180.png"
+Resize-Image 192 192 "C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app\icon-192.png"
+Resize-Image 512 512 "C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app\icon-512.png"
+Resize-Image 512 512 "C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app\icon.png"
 $src.Dispose()
 
-$b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app\icon-192.png"))
-[IO.File]::WriteAllText("C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app\icon_b64_png.txt", $b64)
+$b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app\icon-192.png"))
+[IO.File]::WriteAllText("C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app\icon_b64_png.txt", $b64)
 Write-Host "Success generating PNG icons"
+
+

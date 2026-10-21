@@ -1,8 +1,8 @@
-Add-Type -AssemblyName System.Drawing
+﻿Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Drawing.Imaging
 
-$srcPath = "C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app\logo_new.jpg"
-$appDir  = "C:\Users\Robert.Delport\.gemini\antigravity\scratch\gameon-app"
+$srcPath = "C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app\logo_new.jpg"
+$appDir  = "C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app"
 
 # Load source image
 $src = [System.Drawing.Image]::FromFile($srcPath)
@@ -54,3 +54,5 @@ $b64_jpg  = [Convert]::ToBase64String($bytesJpg)
 Write-Host "icon_b64.txt written ($($b64_jpg.Length) chars)"
 
 Write-Host "All icons generated successfully!"
+
+

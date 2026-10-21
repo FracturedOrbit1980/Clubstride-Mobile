@@ -1,6 +1,6 @@
-{
-  "name": "GameOn - Tactical Pitch & Live Rotations",
-  "short_name": "GameOn",
+﻿{
+  "name": "Clubstride Mobile - Tactical Pitch & Live Rotations",
+  "short_name": "Clubstride Mobile",
   "description": "Tactical Pitch, Live Rotations & Match Intelligence for Soccer Coaches",
   "start_url": "./index.html",
   "scope": "./",
@@ -23,3 +23,5 @@
     }
   ]
 }
+
+

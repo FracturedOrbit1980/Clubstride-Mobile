@@ -1,4 +1,4 @@
-import os
+﻿import os
 
 with open('index.html', 'r', encoding='utf-8') as f:
     html = f.read()
@@ -32,7 +32,9 @@ if target_pdf in html:
 else:
     html = html.replace('<script src="./html2pdf.bundle.min.js"></script>', inline_pdf)
 
-with open('gameon.html', 'w', encoding='utf-8') as f:
+with open('Clubstride Mobile.html', 'w', encoding='utf-8') as f:
     f.write(html)
 
-print("Created 100% self-contained gameon.html. Total size:", len(html))
+print("Created 100% self-contained Clubstride Mobile.html. Total size:", len(html))
+
+

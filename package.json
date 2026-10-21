@@ -1,7 +1,7 @@
-{
-  "name": "gameon-app",
+﻿{
+  "name": "Clubstride Mobile-app",
   "version": "1.0.0",
-  "description": "**GameOn** is an offline-first Progressive Web App (PWA) designed specifically for grassroots soccer coaches. It runs completely locally in the browser on desktop, tablet, or mobile phone, requiring zero backend server, zero login, and no internet connection during match day.",
+  "description": "**Clubstride Mobile** is an offline-first Progressive Web App (PWA) designed specifically for grassroots soccer coaches. It runs completely locally in the browser on desktop, tablet, or mobile phone, requiring zero backend server, zero login, and no internet connection during match day.",
   "main": "html2pdf.bundle.min.js",
   "scripts": {
     "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/input.css -o ./tailwind.min.css --minify",
@@ -10,17 +10,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FracturedOrbit1980/GameOn.git"
+    "url": "git+https://github.com/FracturedOrbit1980/Clubstride Mobile.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/FracturedOrbit1980/GameOn/issues"
+    "url": "https://github.com/FracturedOrbit1980/Clubstride Mobile/issues"
   },
-  "homepage": "https://github.com/FracturedOrbit1980/GameOn#readme",
+  "homepage": "https://github.com/FracturedOrbit1980/Clubstride Mobile#readme",
   "devDependencies": {
     "tailwindcss": "^3.4.17"
   }
 }
+
+

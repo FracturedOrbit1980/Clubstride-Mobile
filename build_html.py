@@ -1,4 +1,4 @@
-import os
+﻿import os
 
 with open('icon_b64.txt', 'r', encoding='utf-8') as f:
     icon_b64 = f.read().strip()
@@ -11,12 +11,12 @@ html_template = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>GameOn — Tactical Pitch & Live Rotations</title>
+  <title>Clubstride Mobile â€” Tactical Pitch & Live Rotations</title>
   <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#0a1222" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="GameOn" />
+  <meta name="apple-mobile-web-app-title" content="Clubstride Mobile" />
   
   <!-- Apple Home Screen Icons -->
   <link rel="apple-touch-icon" href="./icon-180.png" />
@@ -111,7 +111,7 @@ html_template = """<!DOCTYPE html>
   <!-- HEADER -->
   <header class="sticky top-0 z-40 bg-obsidian-950/85 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between">
     <div class="flex items-center space-x-3">
-      <img id="appHeaderIcon" src="./icon.jpg" alt="GameOn" class="w-9 h-9 rounded-xl shadow-lg ring-1 ring-cyber-cyan/40 object-cover" />
+      <img id="appHeaderIcon" src="./icon.jpg" alt="Clubstride Mobile" class="w-9 h-9 rounded-xl shadow-lg ring-1 ring-cyber-cyan/40 object-cover" />
       <div>
         <div class="flex items-center">
           <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">Game</span>
@@ -123,10 +123,10 @@ html_template = """<!DOCTYPE html>
     <!-- Header Actions (Day/Night, PDF) -->
     <div class="flex items-center space-x-2">
       <button id="themeToggleBtn" onclick="App.toggleDayNight()" class="w-9 h-9 rounded-2xl bg-obsidian-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95" title="Toggle Day/Night Turf Mode">
-        <span id="themeIcon">🌙</span>
+        <span id="themeIcon">ðŸŒ™</span>
       </button>
       <button onclick="App.openExportModal()" class="px-2.5 py-1.5 rounded-2xl bg-cyber-cyan/10 hover:bg-cyber-cyan/20 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 transition active:scale-95">
-        <span>📄</span>
+        <span>ðŸ“„</span>
         <span>PDF</span>
       </button>
     </div>
@@ -139,7 +139,7 @@ html_template = """<!DOCTYPE html>
     <div class="glass-card rounded-[24px] p-3.5 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyber-cyan/20 to-cyber-mint/20 border border-cyber-cyan/40 flex items-center justify-center text-lg">
-          ⚽
+          âš½
         </div>
         <div>
           <h2 id="activeMatchTitleDisplay" class="font-bold text-sm tracking-wide text-white">Match 1 vs Echo Strikers</h2>
@@ -150,7 +150,7 @@ html_template = """<!DOCTYPE html>
         </div>
       </div>
       <button onclick="App.openMatchSetupModal()" class="px-3 py-1.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-white/10 text-xs font-semibold text-cyber-cyan transition active:scale-95">
-        Setup ⚙️
+        Setup âš™ï¸
       </button>
     </div>
 
@@ -160,7 +160,7 @@ html_template = """<!DOCTYPE html>
         <span>Tactics</span>
       </button>
       <button id="tabBtn_live" onclick="App.switchTab('live')" class="py-2 rounded-xl text-center transition flex flex-col items-center justify-center text-slate-400 hover:text-white">
-        <span>Live ⏱️</span>
+        <span>Live â±ï¸</span>
       </button>
       <button id="tabBtn_roster" onclick="App.switchTab('roster')" class="py-2 rounded-xl text-center transition flex flex-col items-center justify-center text-slate-400 hover:text-white">
         <span>Squad</span>
@@ -229,7 +229,7 @@ html_template = """<!DOCTYPE html>
         <div class="mt-2 px-1 flex items-center justify-between text-[11px] text-white/70">
           <span>Drag tokens to adjust tactical roles</span>
           <button onclick="App.saveCurrentFormation()" class="px-2 py-0.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/20 text-cyber-mint text-[10px] font-semibold flex items-center space-x-1">
-            <span>💾 Save Positions</span>
+            <span>ðŸ’¾ Save Positions</span>
           </button>
         </div>
       </div>
@@ -242,7 +242,7 @@ html_template = """<!DOCTYPE html>
             <p class="text-xs text-slate-400" id="starterQuotaText">Required starters: 7</p>
           </div>
           <span id="starterStatusBadge" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30">
-            ✓ 7/7 Starters Ready
+            âœ“ 7/7 Starters Ready
           </span>
         </div>
 
@@ -274,7 +274,7 @@ html_template = """<!DOCTYPE html>
 
           <!-- Scoreboard Summary -->
           <div class="flex items-center space-x-2 text-sm font-black">
-            <span class="text-white" id="scoreboardTeam">GameOn</span>
+            <span class="text-white" id="scoreboardTeam">Clubstride Mobile</span>
             <span id="scoreboardGoals" class="px-2 py-0.5 rounded-lg bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40 font-mono text-base">0</span>
             <span class="text-slate-500">:</span>
             <span id="scoreboardOpponentGoals" class="px-2 py-0.5 rounded-lg bg-white/10 text-slate-300 font-mono text-base">0</span>
@@ -287,27 +287,27 @@ html_template = """<!DOCTYPE html>
           <div id="matchClockDisplay" class="font-mono text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300">
             00:00
           </div>
-          <p id="clockStatusSubtext" class="text-xs text-cyber-cyan font-medium mt-1">Clock Paused — Ready to Kickoff</p>
+          <p id="clockStatusSubtext" class="text-xs text-cyber-cyan font-medium mt-1">Clock Paused â€” Ready to Kickoff</p>
         </div>
 
         <!-- Clock Action Controls -->
         <div class="flex items-center justify-center space-x-2 mt-4">
           <button id="clockToggleBtn" onclick="App.toggleTimer()" class="flex-1 max-w-[140px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition">
-            START ▶
+            START â–¶
           </button>
           <button onclick="App.resetTimer()" class="px-4 py-2.5 rounded-2xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/10 text-slate-300 font-bold text-xs active:scale-95 transition">
-            Reset ↺
+            Reset â†º
           </button>
         </div>
 
         <!-- DEDICATED GOAL & ASSIST ACTION BUTTONS -->
         <div class="grid grid-cols-2 gap-2.5 mt-4 pt-3 border-t border-white/10">
           <button onclick="App.openEventModal('Goal')" class="py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
-            <span class="text-base">⚽</span>
+            <span class="text-base">âš½</span>
             <span>+ Goal</span>
           </button>
           <button onclick="App.openEventModal('Assist')" class="py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
-            <span class="text-base">👟</span>
+            <span class="text-base">ðŸ‘Ÿ</span>
             <span>+ Assist</span>
           </button>
         </div>
@@ -392,7 +392,7 @@ html_template = """<!DOCTYPE html>
         </div>
         <div class="flex justify-end">
           <button onclick="App.openExportModal()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs flex items-center space-x-1.5 shadow-md active:scale-95">
-            <span>📥 Export Match Summary PDF</span>
+            <span>ðŸ“¥ Export Match Summary PDF</span>
           </button>
         </div>
       </div>
@@ -405,19 +405,19 @@ html_template = """<!DOCTYPE html>
   <!-- BOTTOM FLOATING PWA NAVIGATION DOCK -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-obsidian-950/90 backdrop-blur-lg border-t border-white/10 px-6 py-2 flex items-center justify-around pb-safe">
     <button onclick="App.switchTab('pitch')" class="dock-btn flex flex-col items-center text-cyber-cyan" data-dock="pitch">
-      <span class="text-xl">📋</span>
+      <span class="text-xl">ðŸ“‹</span>
       <span class="text-[10px] font-bold mt-0.5">Tactics</span>
     </button>
     <button onclick="App.switchTab('live')" class="dock-btn flex flex-col items-center text-slate-400 hover:text-white" data-dock="live">
-      <span class="text-xl">⏱️</span>
+      <span class="text-xl">â±ï¸</span>
       <span class="text-[10px] font-bold mt-0.5">Live Match</span>
     </button>
     <button onclick="App.switchTab('roster')" class="dock-btn flex flex-col items-center text-slate-400 hover:text-white" data-dock="roster">
-      <span class="text-xl">👥</span>
+      <span class="text-xl">ðŸ‘¥</span>
       <span class="text-[10px] font-bold mt-0.5">Squad</span>
     </button>
     <button onclick="App.switchTab('stats')" class="dock-btn flex flex-col items-center text-slate-400 hover:text-white" data-dock="stats">
-      <span class="text-xl">📊</span>
+      <span class="text-xl">ðŸ“Š</span>
       <span class="text-[10px] font-bold mt-0.5">Analytics</span>
     </button>
   </nav>
@@ -429,7 +429,7 @@ html_template = """<!DOCTYPE html>
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-white">Match Configuration</h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">âœ•</button>
       </div>
 
       <div class="space-y-3 text-xs">
@@ -469,7 +469,7 @@ html_template = """<!DOCTYPE html>
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-white">Add Squad Player</h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">âœ•</button>
       </div>
 
       <div class="space-y-3 text-xs">
@@ -507,9 +507,9 @@ html_template = """<!DOCTYPE html>
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 id="eventModalTitle" class="text-base font-bold text-white flex items-center space-x-2">
-          <span>⚽ Register Goal</span>
+          <span>âš½ Register Goal</span>
         </h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">âœ•</button>
       </div>
 
       <p class="text-xs text-slate-300">Select the squad member who achieved this:</p>
@@ -533,7 +533,7 @@ html_template = """<!DOCTYPE html>
       <div class="flex items-center space-x-3">
         <img id="pdfIcon" src="./icon.jpg" class="w-14 h-14 rounded-2xl object-cover" />
         <div>
-          <h1 class="text-2xl font-black text-slate-900">GameOn <span class="text-emerald-600 font-bold">Tactical Ledger</span></h1>
+          <h1 class="text-2xl font-black text-slate-900">Clubstride Mobile <span class="text-emerald-600 font-bold">Tactical Ledger</span></h1>
           <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Official Match Intelligence & Performance Report</p>
         </div>
       </div>
@@ -546,7 +546,7 @@ html_template = """<!DOCTYPE html>
     <div class="bg-slate-100 rounded-2xl p-4 flex justify-between items-center">
       <div>
         <div class="text-xs uppercase font-bold text-slate-500">Match Fixture</div>
-        <div class="text-lg font-black text-slate-800" id="pdfFixtureTitle">GameOn vs Echo Strikers</div>
+        <div class="text-lg font-black text-slate-800" id="pdfFixtureTitle">Clubstride Mobile vs Echo Strikers</div>
       </div>
       <div class="text-right">
         <div class="text-xs uppercase font-bold text-slate-500">Result & Duration</div>
@@ -578,14 +578,14 @@ html_template = """<!DOCTYPE html>
     </div>
 
     <div class="text-[10px] text-center text-slate-400 pt-6 border-t border-slate-200">
-      Generated locally on device via GameOn PWA — Tactical Pitch, Live Rotations & Match Intelligence.
+      Generated locally on device via Clubstride Mobile PWA â€” Tactical Pitch, Live Rotations & Match Intelligence.
     </div>
   </div>
 
   <!-- FLOATING TOAST -->
   <div id="toastPod" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none max-w-xs w-full px-4">
     <div id="toastInner" class="bg-obsidian-900/95 backdrop-blur-md border border-cyber-cyan/50 text-white rounded-2xl p-3 shadow-2xl flex items-center space-x-2 text-xs font-semibold">
-      <span id="toastIcon">✨</span>
+      <span id="toastIcon">âœ¨</span>
       <span id="toastMessage">Notification</span>
     </div>
   </div>
@@ -763,7 +763,7 @@ html_template = """<!DOCTYPE html>
 
         window.addEventListener('appinstalled', () => {
           deferredInstallPrompt = null;
-          App.toast('GameOn installed to home screen! 🚀');
+          App.toast('Clubstride Mobile installed to home screen! ðŸš€');
         });
       },
 
@@ -772,7 +772,7 @@ html_template = """<!DOCTYPE html>
           deferredInstallPrompt.prompt();
           deferredInstallPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
-              App.toast('Installing GameOn icon...');
+              App.toast('Installing Clubstride Mobile icon...');
             }
             deferredInstallPrompt = null;
           });
@@ -780,9 +780,9 @@ html_template = """<!DOCTYPE html>
           // If iOS or already installed, show clear guide modal
           const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
           if (isIOS) {
-            this.toast('Tap Share [↑] then "Add to Home Screen" 📲', '💡');
+            this.toast('Tap Share [â†‘] then "Add to Home Screen" ðŸ“²', 'ðŸ’¡');
           } else {
-            this.toast('Tap Chrome Menu (⋮) then "Add to Home screen" 📲', '💡');
+            this.toast('Tap Chrome Menu (â‹®) then "Add to Home screen" ðŸ“²', 'ðŸ’¡');
           }
         }
       },
@@ -802,22 +802,22 @@ html_template = """<!DOCTYPE html>
 
       loadStorage() {
         try {
-          const sQ = localStorage.getItem('gameon_squad');
+          const sQ = localStorage.getItem('Clubstride Mobile_squad');
           if (sQ) AppState.squad = JSON.parse(sQ);
 
-          const sM = localStorage.getItem('gameon_match');
+          const sM = localStorage.getItem('Clubstride Mobile_match');
           if (sM) AppState.match = JSON.parse(sM);
 
-          const sE = localStorage.getItem('gameon_events');
+          const sE = localStorage.getItem('Clubstride Mobile_events');
           if (sE) AppState.events = JSON.parse(sE);
 
-          const sT = localStorage.getItem('gameon_timers');
+          const sT = localStorage.getItem('Clubstride Mobile_timers');
           if (sT) AppState.playerTimers = JSON.parse(sT);
 
-          const sK = localStorage.getItem('gameon_kit');
+          const sK = localStorage.getItem('Clubstride Mobile_kit');
           if (sK) AppState.kitColor = sK;
 
-          const sTh = localStorage.getItem('gameon_theme');
+          const sTh = localStorage.getItem('Clubstride Mobile_theme');
           if (sTh) AppState.theme = sTh;
           this.applyTheme();
         } catch (e) {}
@@ -825,12 +825,12 @@ html_template = """<!DOCTYPE html>
 
       saveStorage() {
         try {
-          localStorage.setItem('gameon_squad', JSON.stringify(AppState.squad));
-          localStorage.setItem('gameon_match', JSON.stringify(AppState.match));
-          localStorage.setItem('gameon_events', JSON.stringify(AppState.events));
-          localStorage.setItem('gameon_timers', JSON.stringify(AppState.playerTimers));
-          localStorage.setItem('gameon_kit', AppState.kitColor);
-          localStorage.setItem('gameon_theme', AppState.theme);
+          localStorage.setItem('Clubstride Mobile_squad', JSON.stringify(AppState.squad));
+          localStorage.setItem('Clubstride Mobile_match', JSON.stringify(AppState.match));
+          localStorage.setItem('Clubstride Mobile_events', JSON.stringify(AppState.events));
+          localStorage.setItem('Clubstride Mobile_timers', JSON.stringify(AppState.playerTimers));
+          localStorage.setItem('Clubstride Mobile_kit', AppState.kitColor);
+          localStorage.setItem('Clubstride Mobile_theme', AppState.theme);
         } catch (e) {}
       },
 
@@ -838,7 +838,7 @@ html_template = """<!DOCTYPE html>
         AppState.theme = AppState.theme === 'night' ? 'day' : 'night';
         this.applyTheme();
         this.saveStorage();
-        this.toast(AppState.theme === 'day' ? '☀️ Day Mode (High Turf Contrast)' : '🌙 Night Mode (Cyber Glow)');
+        this.toast(AppState.theme === 'day' ? 'â˜€ï¸ Day Mode (High Turf Contrast)' : 'ðŸŒ™ Night Mode (Cyber Glow)');
       },
 
       applyTheme() {
@@ -852,13 +852,13 @@ html_template = """<!DOCTYPE html>
           body.classList.add('bg-slate-100', 'text-slate-900');
           pitchCont.classList.remove('pitch-night');
           pitchCont.classList.add('pitch-day');
-          themeIcon.innerText = '☀️';
+          themeIcon.innerText = 'â˜€ï¸';
         } else {
           body.classList.add('bg-obsidian-950', 'text-slate-100');
           body.classList.remove('bg-slate-100', 'text-slate-900');
           pitchCont.classList.remove('pitch-day');
           pitchCont.classList.add('pitch-night');
-          themeIcon.innerText = '🌙';
+          themeIcon.innerText = 'ðŸŒ™';
         }
       },
 
@@ -1061,10 +1061,10 @@ html_template = """<!DOCTYPE html>
         const count = starters.length;
         if (count === quota) {
           badge.className = 'px-2.5 py-1 rounded-xl text-xs font-bold bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30';
-          badge.innerText = `✓ ${count}/${quota} Starters Ready`;
+          badge.innerText = `âœ“ ${count}/${quota} Starters Ready`;
         } else {
           badge.className = 'px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
-          badge.innerText = `⚠ ${count}/${quota} Starters (Need ${quota})`;
+          badge.innerText = `âš  ${count}/${quota} Starters (Need ${quota})`;
         }
 
         this.renderBenchReserves();
@@ -1095,7 +1095,7 @@ html_template = """<!DOCTYPE html>
             </div>
             <div>
               <div class="text-white font-semibold text-xs leading-none">${p.name}</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">${p.position} • Tap to Start</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">${p.position} â€¢ Tap to Start</div>
             </div>
           `;
           container.appendChild(chip);
@@ -1201,11 +1201,11 @@ html_template = """<!DOCTYPE html>
               <button onclick="App.toggleAvailability('${p.id}')" class="px-3 py-1.5 rounded-xl font-bold text-xs transition active:scale-95 ${
                 isAvail ? 'bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
               }">
-                ${isAvail ? '✓ Available' : '✗ Out'}
+                ${isAvail ? 'âœ“ Available' : 'âœ— Out'}
               </button>
 
               <button onclick="App.deletePlayer('${p.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs">
-                🗑️
+                ðŸ—‘ï¸
               </button>
             </div>
           `;
@@ -1269,7 +1269,7 @@ html_template = """<!DOCTYPE html>
         if (AppState.clock.running) {
           clearInterval(AppState.clock.intervalId);
           AppState.clock.running = false;
-          document.getElementById('clockToggleBtn').innerText = 'RESUME ▶';
+          document.getElementById('clockToggleBtn').innerText = 'RESUME â–¶';
           document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
           document.getElementById('clockStatusSubtext').innerText = 'Clock Paused';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-amber-400 font-medium mt-1';
@@ -1286,9 +1286,9 @@ html_template = """<!DOCTYPE html>
             if (AppState.clock.seconds % 5 === 0) App.saveStorage();
           }, 1000);
 
-          document.getElementById('clockToggleBtn').innerText = 'PAUSE ⏸';
+          document.getElementById('clockToggleBtn').innerText = 'PAUSE â¸';
           document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-amber-500 text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
-          document.getElementById('clockStatusSubtext').innerText = '● Live Match In Progress — Accumulating Playing Seconds';
+          document.getElementById('clockStatusSubtext').innerText = 'â— Live Match In Progress â€” Accumulating Playing Seconds';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-cyber-mint font-medium mt-1 glow-pulse';
         }
       },
@@ -1298,8 +1298,8 @@ html_template = """<!DOCTYPE html>
         AppState.clock.running = false;
         AppState.clock.seconds = 0;
         this.updateClockDisplay();
-        document.getElementById('clockToggleBtn').innerText = 'START ▶';
-        document.getElementById('clockStatusSubtext').innerText = 'Clock Reset — Ready to Kickoff';
+        document.getElementById('clockToggleBtn').innerText = 'START â–¶';
+        document.getElementById('clockStatusSubtext').innerText = 'Clock Reset â€” Ready to Kickoff';
         document.getElementById('clockStatusSubtext').className = 'text-xs text-cyber-cyan font-medium mt-1';
         this.toast('Stopwatch reset to 00:00');
       },
@@ -1458,7 +1458,7 @@ html_template = """<!DOCTYPE html>
         this.saveStorage();
         this.renderLiveBoard();
         this.renderPitchTokens();
-        this.toast(`Sub: #${inPlayer.number} ${inPlayer.name} IN ⇄ #${outPlayer.number} ${outPlayer.name} OUT`);
+        this.toast(`Sub: #${inPlayer.number} ${inPlayer.name} IN â‡„ #${outPlayer.number} ${outPlayer.name} OUT`);
       },
 
       cancelSubSelection() {
@@ -1474,7 +1474,7 @@ html_template = """<!DOCTYPE html>
         const title = document.getElementById('eventModalTitle');
         const selector = document.getElementById('eventPlayerSelector');
 
-        title.innerHTML = type === 'Goal' ? '<span>⚽ Register Goal</span>' : '<span>👟 Register Assist</span>';
+        title.innerHTML = type === 'Goal' ? '<span>âš½ Register Goal</span>' : '<span>ðŸ‘Ÿ Register Assist</span>';
         selector.innerHTML = '';
 
         const activeIds = [...AppState.match.starters, ...AppState.match.bench];
@@ -1483,7 +1483,7 @@ html_template = """<!DOCTYPE html>
           if (p) {
             const opt = document.createElement('option');
             opt.value = p.id;
-            opt.innerText = `#${p.number} — ${p.name} (${p.position})`;
+            opt.innerText = `#${p.number} â€” ${p.name} (${p.position})`;
             selector.appendChild(opt);
           }
         });
@@ -1520,7 +1520,7 @@ html_template = """<!DOCTYPE html>
         this.saveStorage();
         this.closeModals();
         this.renderTimeline();
-        this.toast(`${type} logged for #${player.number} ${player.name}! 🎉`);
+        this.toast(`${type} logged for #${player.number} ${player.name}! ðŸŽ‰`);
       },
 
       renderTimeline() {
@@ -1538,17 +1538,17 @@ html_template = """<!DOCTYPE html>
           const item = document.createElement('div');
           item.className = 'p-2.5 rounded-xl bg-obsidian-950 border border-white/5 flex items-center justify-between';
 
-          let icon = '⚽';
+          let icon = 'âš½';
           let text = '';
           if (ev.type === 'Goal') {
-            icon = '⚽';
+            icon = 'âš½';
             text = `<span class="font-bold text-cyber-mint">GOAL</span> by #${ev.playerNumber} ${ev.playerName}`;
           } else if (ev.type === 'Assist') {
-            icon = '👟';
+            icon = 'ðŸ‘Ÿ';
             text = `<span class="font-bold text-sky-400">ASSIST</span> by #${ev.playerNumber} ${ev.playerName}`;
           } else if (ev.type === 'Sub') {
-            icon = '⇄';
-            text = `<span class="font-bold text-amber-300">SUB</span> #${ev.playerInNum} ${ev.playerIn} ⇄ #${ev.playerOutNum} ${ev.playerOut}`;
+            icon = 'â‡„';
+            text = `<span class="font-bold text-amber-300">SUB</span> #${ev.playerInNum} ${ev.playerIn} â‡„ #${ev.playerOutNum} ${ev.playerOut}`;
           }
 
           item.innerHTML = `
@@ -1585,7 +1585,7 @@ html_template = """<!DOCTYPE html>
               </div>
               <div>
                 <div class="font-bold text-sm text-white">${p.name}</div>
-                <div class="text-[11px] text-slate-400 mt-0.5">${p.position} • ${wasStarter ? 'Starter' : 'Bench'}</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">${p.position} â€¢ ${wasStarter ? 'Starter' : 'Bench'}</div>
               </div>
             </div>
 
@@ -1595,8 +1595,8 @@ html_template = """<!DOCTYPE html>
                 <div class="text-[9px] uppercase tracking-wider text-slate-400">Game Time</div>
               </div>
               <div class="flex items-center space-x-1.5 text-xs font-bold">
-                <span class="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">⚽ ${goals}</span>
-                <span class="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30">👟 ${assists}</span>
+                <span class="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">âš½ ${goals}</span>
+                <span class="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30">ðŸ‘Ÿ ${assists}</span>
               </div>
             </div>
           `;
@@ -1640,9 +1640,9 @@ html_template = """<!DOCTYPE html>
           AppState.events.forEach(ev => {
             const item = document.createElement('div');
             let txt = '';
-            if (ev.type === 'Goal') txt = `[${this.formatTime(ev.matchTimeSeconds)}] ⚽ GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period})`;
-            else if (ev.type === 'Assist') txt = `[${this.formatTime(ev.matchTimeSeconds)}] 👟 ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period})`;
-            else if (ev.type === 'Sub') txt = `[${this.formatTime(ev.matchTimeSeconds)}] ⇄ SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
+            if (ev.type === 'Goal') txt = `[${this.formatTime(ev.matchTimeSeconds)}] âš½ GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period})`;
+            else if (ev.type === 'Assist') txt = `[${this.formatTime(ev.matchTimeSeconds)}] ðŸ‘Ÿ ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period})`;
+            else if (ev.type === 'Sub') txt = `[${this.formatTime(ev.matchTimeSeconds)}] â‡„ SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
             item.innerText = txt;
             log.appendChild(item);
           });
@@ -1655,14 +1655,14 @@ html_template = """<!DOCTYPE html>
           this.toast('Generating PDF document...');
           const opt = {
             margin: 10,
-            filename: `GameOn_Match_${AppState.match.title.replace(/\\s+/g, '_')}.pdf`,
+            filename: `Clubstride Mobile_Match_${AppState.match.title.replace(/\\s+/g, '_')}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2 },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
           };
           html2pdf().set(opt).from(el).save().then(() => {
             el.classList.add('hidden');
-            App.toast('PDF Exported successfully! 📄');
+            App.toast('PDF Exported successfully! ðŸ“„');
           }).catch(err => {
             console.error('PDF error:', err);
             el.classList.add('hidden');
@@ -1755,7 +1755,7 @@ html_template = """<!DOCTYPE html>
         });
       },
 
-      toast(msg, icon = '✨') {
+      toast(msg, icon = 'âœ¨') {
         const pod = document.getElementById('toastPod');
         const msgEl = document.getElementById('toastMessage');
         const iconEl = document.getElementById('toastIcon');
@@ -1796,3 +1796,5 @@ html_template = """<!DOCTYPE html>
 with open('index.html', 'w', encoding='utf-8') as out:
     out.write(html_template)
 print("Successfully generated index.html")
+
+
