@@ -1,12 +1,14 @@
-﻿# Clubstride Mobile â€” Tactical Pitch & Live Rotations PWA
+# Clubstride Mobile â€” Tactical Pitch & Live Rotations PWA
 
-[![Web App](https://img.shields.io/badge/Web%20App-Visit-blue)](https://FracturedOrbit1980.github.io/Clubstride Mobile/)
+[![Web App](https://img.shields.io/badge/Web%20App-Visit-blue)](https://FracturedOrbit1980.github.io/Clubstride-Mobile/)
 
 **Clubstride Mobile** is an offline-first Progressive Web App (PWA) designed specifically for grassroots soccer coaches. It runs completely locally in the browser on desktop, tablet, or mobile phone, requiring zero backend server, zero login, and no internet connection during match day.
 
-Hosted live on GitHub Pages: [https://FracturedOrbit1980.github.io/Clubstride Mobile/](https://FracturedOrbit1980.github.io/Clubstride Mobile/)
+Hosted live on GitHub Pages: [https://FracturedOrbit1980.github.io/Clubstride-Mobile/](https://FracturedOrbit1980.github.io/Clubstride-Mobile/)
 
 ---
+
+*Site rebuild trigger – $(Get-Date -Format o)*
 
 ## ðŸš€ Key Features
 
@@ -74,6 +76,8 @@ Accessible via the **"Create PDF report"** button on the Stats screen and on eac
 
 ---
 
+*Site rebuild trigger – $(Get-Date -Format o)*
+
 ## ðŸƒ How to Run Locally
 
 ### Option A: Python HTTP Server (Recommended)
@@ -106,6 +110,8 @@ This updates `Clubstride Mobile.html`, which can be opened directly from disk in
 
 ---
 
+*Site rebuild trigger – $(Get-Date -Format o)*
+
 ## ðŸ§ª Testing
 
 Run the automated test suite covering all 20 specification requirements:
@@ -114,6 +120,8 @@ node test_app.js
 ```
 
 ---
+
+*Site rebuild trigger – $(Get-Date -Format o)*
 
 ## ðŸ“± Mobile Testing Checklist (390x844 Screen)
 
