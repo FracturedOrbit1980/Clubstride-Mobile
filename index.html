@@ -22,6 +22,9 @@
   <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
   <link rel="shortcut icon" href="./icon-192.png" />
 
+  <!-- Clubstride CI tokens -->
+  <link rel="stylesheet" href="./clubstride-tokens.css" />
+
   <!-- Minified Built Tailwind CSS (100% Offline PWA) -->
   <link rel="stylesheet" href="./tailwind.min.css" />
 
@@ -122,6 +125,9 @@
       transform: scale(1.12);
     }
   </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="bg-obsidian-950 text-slate-100 min-h-screen font-sans flex flex-col transition-colors duration-300 select-none pb-24">
 
@@ -133,9 +139,9 @@
       </div>
       <input type="file" id="logoFileInput" accept="image/*" class="hidden" onchange="App.handleLogoUpload(event)" />
       <div>
-        <div class="flex items-center">
-          <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">Game</span>
-          <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-cyber-mint ml-0.5">On</span>
+        <div class="flex items-center space-x-1">
+          <span class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-300">Clubstride</span>
+          <span class="text-[11px] font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan to-cyber-mint uppercase self-end mb-[2px]">Lite</span>
         </div>
       </div>
     </div>
@@ -685,7 +691,7 @@
           <input type="file" id="teamModalLogoInput" accept="image/*" class="hidden" onchange="App.handleTeamLogoUpload(event)" />
           <div class="flex-1">
             <input type="text" id="inputCurrentTeamName" class="w-full bg-obsidian-900 border border-white/15 rounded-xl px-2.5 py-1.5 text-white font-bold text-sm focus:outline-none focus:border-cyber-mint" placeholder="Team Name (e.g. Clubstride Mobile FC)" />
-            <div class="text-[10px] text-slate-400 mt-1" id="currentTeamSquadMeta">10 Players â€¢ Kit Color Synced</div>
+            <div class="text-[10px] text-slate-400 mt-1" id="currentTeamSquadMeta">10 Players â€¢ Kit Colour Synced</div>
           </div>
         </div>
 
@@ -2508,7 +2514,9 @@
                 <div class="font-mono font-bold text-xs text-slate-300">
                   ${this.formatTime(AppState.playerTimers[pid] || 0)}
                 </div>
-                <div class="text-[9px] text-cyber-mint font-semibold">${isSubReady ? 'TAP TO SUB' : 'Bench'}</div>
+                <div class="text-[9px] text-cyber-mint font-semibold flex items-center gap-0.5">
+                  ${isSubReady ? '<span data-sub-badge="in-16" class="cs-sub-chip-badge"></span><span>TAP TO SUB</span>' : '<span>Bench</span>'}
+                </div>
               </div>
             `;
             benchGrid.appendChild(card);
@@ -2894,13 +2902,14 @@
             icon = 'ðŸ‘Ÿ';
             text = `<span class="font-bold text-sky-400">ASSIST</span> by #${ev.playerNumber} ${ev.playerName}`;
           } else if (ev.type === 'Sub') {
-            icon = 'â‡„';
-            text = `<span class="font-bold text-amber-300">SUB</span> #${ev.playerInNum} ${ev.playerIn} â‡„ #${ev.playerOutNum} ${ev.playerOut}`;
+            // Use SubBadge components for sub-in / sub-out icons in timeline
+            icon = '<span data-sub-badge="in-24" class="cs-sub-inline"></span><span data-sub-badge="out-24" class="cs-sub-inline"></span>';
+            text = `<span class="font-bold" style="color:var(--cs-match-sub-in,#3BE38A)">IN</span> #${ev.playerInNum} ${ev.playerIn} <span class="text-slate-400 mx-0.5">|</span> <span class="font-bold" style="color:var(--cs-match-sub-out,#FF8A80)">OUT</span> #${ev.playerOutNum} ${ev.playerOut}`;
           }
 
           item.innerHTML = `
             <div class="flex items-center space-x-2 truncate">
-              <span class="text-base flex-shrink-0">${icon}</span>
+              <span class="text-base flex-shrink-0 inline-flex items-center gap-0.5">${icon}</span>
               <div class="text-xs text-white truncate">${text}</div>
             </div>
             <div class="flex items-center space-x-2 flex-shrink-0">
@@ -4332,6 +4341,9 @@
 
     window.addEventListener('DOMContentLoaded', () => App.init());
   </script>
+  <script src="./src/components/Icon.js"></script>
+  <script src="./src/components/SubBadge.js"></script>
+  <script src="./src/components/cs-init.js"></script>
 </body>
 </html>
 

@@ -1,7 +1,7 @@
-﻿{
-  "name": "Clubstride Mobile - Tactical Pitch & Live Rotations",
-  "short_name": "Clubstride Mobile",
-  "description": "Tactical Pitch, Live Rotations & Match Intelligence for Soccer Coaches",
+{
+  "name": "Clubstride Lite",
+  "short_name": "Clubstride",
+  "description": "Clubstride Lite - Tactical Pitch and Live Rotations for grassroots coaches",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -23,5 +23,3 @@
     }
   ]
 }
-
-
