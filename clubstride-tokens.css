@@ -1,5 +1,6 @@
 /* Clubstride design tokens v1.0.0  - generated from tokens.json. Internal. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Fredoka:wght@500;600;700&display=swap');
+/* Web fonts are loaded from the single <link> in index.html so this sheet stays render-blocking free
+   and html2canvas never has to chase a remote @import while exporting a PDF. */
 :root {
   --cs-teal-50: #ECFAF8;
   --cs-teal-100: #CDF1EC;

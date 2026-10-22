@@ -69,11 +69,12 @@ Accessible via the **"Create PDF report"** button on the Stats screen and on eac
   - Highlights: Top Scorer, Top Assists, Most Mins.
   - File name: `Clubstride_<Team>_<From>_to_<To>.pdf`.
   - Friendly notification if no matches fall in the chosen date range.
+  - **Blank-page-proof export:** the report rasterises at a scale that keeps the canvas inside phone memory limits (phones hand back an empty canvas past them, which is what produced blank PDFs), the export clone drops the remote web-font stylesheet so an offline device never stalls or fails on it, table header bands are painted on the cells rather than the row, and if the PDF engine still fails the app prints the ledger alone (`@media print` hides the dark app shell) instead of printing blank paper.
 
 ### 7. 💾 100% Offline & Reliable Data Persistence
 - **Persistent Storage:** All data automatically persists in `localStorage` after every change.
 - **Interruption Resilience:** Survives app closing, refreshing, switching tabs, or phone reboots.
-- **Service Worker (`sw.js` v9):** Pre-caches `clubstride-tokens.css`, `tailwind.min.css`, `html2pdf.bundle.min.js`, the CI component scripts and all brand/icon assets for offline loading anywhere on the pitch.
+- **Service Worker (`sw.js` v10):** Pre-caches `clubstride-tokens.css`, `tailwind.min.css`, `html2pdf.bundle.min.js`, the CI component scripts and all brand/icon assets for offline loading anywhere on the pitch. Same-origin requests are stale-while-revalidate — the network copy is served and cached when reachable, the cache covers match-day blackouts — so an installed PWA actually picks up a new build instead of being frozen on the `index.html` cached at install.
 - **Backup & Restore:** Full JSON export and import in settings.
 
 ---
@@ -142,7 +143,7 @@ node test_app.js
    - [ ] Generate a Single Match PDF: verify file name `Clubstride_<Team>_<Opponent>_<Date>.pdf` and check player table (pitch minutes, bench minutes, goals, assists, subs).
    - [ ] Generate a Date Range PDF: test quick presets (Last 7d, This Month, Season, All Time), verify overall record (W/D/L), match list, and player totals sorted by minutes played with highlights for top scorer, top assists, and most minutes.
 4. **Offline & Nav:**
-   - [ ] Turn on Airplane Mode: verify app reloads and operates completely offline from service worker cache (`Clubstride Lite-v9`).
+   - [ ] Turn on Airplane Mode: verify app reloads and operates completely offline from service worker cache (`Clubstride Lite-v10`).
    - [ ] Verify the bottom navigation dock is always tappable with comfortable padding.
 
 

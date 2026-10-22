@@ -44,10 +44,10 @@ assert(html.includes('<link rel="stylesheet" href="./tailwind.min.css" />'), 'in
 assert(!html.includes('src="https://cdn.tailwindcss.com"'), 'Found unwanted Tailwind CDN script in index.html');
 
 const sw = fs.readFileSync('sw.js', 'utf-8');
-assert(sw.includes("CACHE_NAME = 'Clubstride Lite-v9'"), 'sw.js cache version is not Clubstride Lite-v9');
+assert(sw.includes("CACHE_NAME = 'Clubstride Lite-v10'"), 'sw.js cache version is not Clubstride Lite-v10');
 assert(sw.includes("'./tailwind.min.css'"), 'sw.js missing tailwind.min.css in cached assets');
 assert(sw.includes("'./clubstride-tokens.css'"), 'sw.js missing clubstride-tokens.css in cached assets');
-console.log('✓ Standalone offline Tailwind CSS & sw.js Clubstride Lite-v9 cache verified');
+console.log('✓ Standalone offline Tailwind CSS & sw.js Clubstride Lite-v10 cache verified');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
@@ -108,6 +108,13 @@ global.document = {
     appendChild: () => {},
     removeChild: () => {},
     classList: { add: ()=>{}, remove: ()=>{} }, click: () => {}
+  },
+  documentElement: {
+    className: '',
+    style: {},
+    setAttribute: () => {},
+    getAttribute: () => null,
+    classList: { add: ()=>{}, remove: ()=>{}, contains: ()=>false }
   },
   addEventListener: () => {}
 };
@@ -415,6 +422,34 @@ assert(pdfContainer.innerHTML.includes('Match Performance Report'), 'Single matc
 assert(pdfContainer.innerHTML.includes('Wolves FC'), 'Opponent Wolves FC should appear in PDF');
 assert(pdfContainer.innerHTML.includes('2-3-1'), 'Formation 2-3-1 should appear in PDF');
 console.log('✓ Dual-mode PDF reports (Single Match & Date Range) generation and data accuracy verified');
+
+// ==========================================
+// TEST 18b: PDF export failure modes
+// ==========================================
+// Export must stay rasterisable on phones: scale is clamped so the canvas cannot exceed phone limits.
+assert.strictEqual(App.pdfRenderScale({ scrollWidth: 600, scrollHeight: 1000 }), 2, 'Short report should render at scale 2');
+assert(App.pdfRenderScale({ scrollWidth: 600, scrollHeight: 20000 }) <= 1, 'Very tall report must drop to scale 1');
+assert(App.pdfRenderScale({ scrollWidth: 600, scrollHeight: 20000 }) >= 1, 'Render scale must never drop below 1');
+
+// Every report path must go through the shared exporter, and the naked window.print() fallback is gone.
+const exporterCalls = (html.match(/this\.exportLedgerPdf\(/g) || []).length;
+assert.strictEqual(exporterCalls, 3, 'All three report generators should use exportLedgerPdf');
+assert.strictEqual(jsCode.split('window.print()').length - 1, 1, 'Only printLedger may call window.print');
+assert(jsCode.includes("doc.querySelectorAll('link[href*=\"fonts.g\"]').forEach"), 'PDF clone must drop the remote web-font stylesheet');
+assert(!jsCode.includes("html2canvas: { scale: 2 }"), 'Reports must not hard-code html2canvas scale 2');
+
+// Printing must isolate the ledger, otherwise the dark app shell prints as blank paper.
+assert(html.includes('@media print'), 'Missing @media print rules for the ledger fallback');
+assert(html.includes('cs-printing-ledger'), 'Missing ledger print class');
+
+// Header bands must be painted on the cells: html2canvas skips <tr> backgrounds under border-collapse.
+const trOnlyHeaderBands = (html.match(/<tr style="background-color:[^"]*">\s*\n\s*<th style="padding: \d+px 10px;">/g) || []).length;
+assert.strictEqual(trOnlyHeaderBands, 0, 'Table header cells need their own background-color');
+
+// The Stats-tab builders replace the ledger template, so the per-fixture export must survive that.
+assert(jsCode.includes('PDF_LEDGER_TEMPLATE'), 'Static ledger template is not preserved');
+assert(jsCode.includes("ledger.innerHTML = PDF_LEDGER_TEMPLATE"), 'openExportModal should restore the ledger template');
+console.log('✓ PDF export hardened: bounded canvas, offline-safe clone, printable ledger, painted header bands');
 
 // ==========================================
 // TEST 19: Starting Lineups Sorting & Custom Formations

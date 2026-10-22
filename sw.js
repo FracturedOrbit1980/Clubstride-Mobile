@@ -1,4 +1,4 @@
-const CACHE_NAME = 'Clubstride Lite-v9';
+const CACHE_NAME = 'Clubstride Lite-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -85,9 +85,26 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  // Network-first with a cache fallback: a deployed fix has to actually reach installed PWAs, and
+  // cache-first pinned every device to whichever index.html was cached at install. Serving the cache
+  // copy of a *missing* asset used to hand back index.html, which broke the PDF engine outright.
+  if (req.url.startsWith(self.location.origin)) {
+    e.respondWith(
+      fetch(req).then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)));
+        }
+        return res;
+      }).catch(() => caches.match(req).then((cached) => cached || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
+    );
+    return;
+  }
+
   e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request).catch(() => caches.match('./index.html'));
-    })
+    caches.match(req).then((res) => res || fetch(req))
   );
 });

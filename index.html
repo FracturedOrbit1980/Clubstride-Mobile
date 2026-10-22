@@ -122,10 +122,18 @@
     .player-token:active {
       transform: scale(1.12);
     }
+    /* Ledger print fallback — only the report reaches the page, never the dark app shell */
+    @page { size: A4 portrait; margin: 8mm; }
+    @media print {
+      html.cs-printing-ledger body > *:not(#pdfExportContainer) { display: none !important; }
+      html.cs-printing-ledger #pdfExportContainer { display: block !important; padding: 0 !important; color: #0B1B33 !important; }
+      html.cs-printing-ledger body { background: #ffffff !important; padding: 0 !important; min-height: 0 !important; }
+      #pdfExportContainer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="bg-obsidian-950 text-slate-100 min-h-screen font-sans flex flex-col transition-colors duration-300 select-none pb-24">
   <!-- Clubstride CI icon sprite (assets/icons/*.svg, v1.0.0) -->
@@ -833,13 +841,13 @@
       <table class="w-full text-left text-xs border-collapse border border-slate-200 rounded-xl overflow-hidden">
         <thead class="bg-slate-800 text-white uppercase text-[10px]">
           <tr>
-            <th class="p-2.5">#</th>
-            <th class="p-2.5">Player Name</th>
-            <th class="p-2.5">Pos</th>
-            <th class="p-2.5">Status</th>
-            <th class="p-2.5 text-center">Minutes</th>
-            <th class="p-2.5 text-center">Goals</th>
-            <th class="p-2.5 text-center">Assists</th>
+            <th class="p-2.5" style="background-color: #1E293B;">#</th>
+            <th class="p-2.5" style="background-color: #1E293B;">Player Name</th>
+            <th class="p-2.5" style="background-color: #1E293B;">Pos</th>
+            <th class="p-2.5" style="background-color: #1E293B;">Status</th>
+            <th class="p-2.5 text-center" style="background-color: #1E293B;">Minutes</th>
+            <th class="p-2.5 text-center" style="background-color: #1E293B;">Goals</th>
+            <th class="p-2.5 text-center" style="background-color: #1E293B;">Assists</th>
           </tr>
         </thead>
         <tbody id="pdfPlayerTableBody" class="divide-y divide-slate-200"></tbody>
@@ -865,6 +873,12 @@
   <script>
     const EMBEDDED_ICON_B64 = "data:image/png;base64,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"; // Clubstride Lite app icon (CI v1.0.0)
     let deferredInstallPrompt = null;
+    // The Stats-tab report builders replace the ledger template's innerHTML, so keep a pristine copy
+    // for the per-fixture export, which fills that template's slots by id.
+    const PDF_LEDGER_TEMPLATE = (() => {
+      const el = document.getElementById('pdfExportContainer');
+      return el ? el.innerHTML : '';
+    })();
     const AppState = {
       theme: 'night',
       themeStyle: 'glass',
@@ -3144,6 +3158,59 @@
         const rem = s % 60;
         return `${String(mins).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
       },
+      // Keeps the rasterised page under the canvas size/memory limits phones actually honour.
+      // Past those limits html2canvas hands back an empty canvas, which is what made exports look blank.
+      pdfRenderScale(el) {
+        const w = Math.max(1, el.scrollWidth || 1);
+        const h = Math.max(1, el.scrollHeight || 1);
+        const scale = Math.min(2, Math.sqrt(8000000 / (w * h)), 8192 / Math.max(w, h));
+        return Math.max(1, Math.round(scale * 10) / 10);
+      },
+      printLedger(container) {
+        if (!container) return;
+        container.classList.remove('hidden');
+        document.documentElement.classList.add('cs-printing-ledger');
+        window.addEventListener('afterprint', () => {
+          document.documentElement.classList.remove('cs-printing-ledger');
+          container.classList.add('hidden');
+        }, { once: true });
+        window.print();
+      },
+      async exportLedgerPdf(container, fileName) {
+        if (!container) return;
+        if (typeof html2pdf === 'undefined') {
+          this.toast('PDF engine unavailable — opening the print view instead.', 'card-yellow');
+          this.printLedger(container);
+          return;
+        }
+        container.classList.remove('hidden');
+        const opt = {
+          margin: [8, 8, 8, 8],
+          filename: fileName,
+          image: { type: 'jpeg', quality: 0.95 },
+          pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] },
+          html2canvas: {
+            scale: this.pdfRenderScale(container),
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true,
+            onclone: (doc) => {
+              doc.querySelectorAll('link[href*="fonts.g"]').forEach(link => link.remove());
+              doc.querySelectorAll('#pdfExportContainer').forEach(el => el.classList.remove('hidden'));
+            }
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        try {
+          await html2pdf().set(opt).from(container).save();
+          container.classList.add('hidden');
+          this.toast('PDF Exported successfully!');
+        } catch (err) {
+          console.error('PDF export failed:', err);
+          this.toast('PDF export failed — showing the print view instead.', 'card-yellow');
+          this.printLedger(container);
+        }
+      },
       openPdfReportModal(defaultMatchId = null) {
         this.closeModals();
         const modal = document.getElementById('modalPdfReport');
@@ -3431,16 +3498,16 @@
               <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: #ffffff; border: 1px solid #D0D8E2; border-radius: 10px; overflow: hidden;">
                 <thead>
                   <tr style="background-color: #0B1B33; color: #ffffff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
-                    <th style="padding: 8px 10px;">#</th>
-                    <th style="padding: 8px 10px;">Player</th>
-                    <th style="padding: 8px 10px;">Pos</th>
-                    <th style="padding: 8px 10px;">Role</th>
-                    <th style="padding: 8px 10px; text-align: center;">Pitch Min</th>
-                    <th style="padding: 8px 10px; text-align: center;">Bench Min</th>
-                    <th style="padding: 8px 10px; text-align: center;">Goals</th>
-                    <th style="padding: 8px 10px; text-align: center;">Assists</th>
-                    <th style="padding: 8px 10px; text-align: center;">In</th>
-                    <th style="padding: 8px 10px; text-align: center;">Out</th>
+                    <th style="padding: 8px 10px; background-color: #0B1B33;">#</th>
+                    <th style="padding: 8px 10px; background-color: #0B1B33;">Player</th>
+                    <th style="padding: 8px 10px; background-color: #0B1B33;">Pos</th>
+                    <th style="padding: 8px 10px; background-color: #0B1B33;">Role</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Pitch Min</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Bench Min</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Goals</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Assists</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">In</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Out</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3463,31 +3530,10 @@
           </div>
         `;
         this.closeModals();
-        container.classList.remove('hidden');
         const safeTeam = String(teamName).replace(/[^a-zA-Z0-9_-]/g, '_');
         const safeOpp = String(opponent).replace(/[^a-zA-Z0-9_-]/g, '_');
         const fileName = `Clubstride_${safeTeam}_${safeOpp}_${date}.pdf`;
-        if (typeof html2pdf !== 'undefined') {
-          this.toast('Generating Single Match PDF...');
-          const opt = {
-            margin: [8, 8, 8, 8],
-            filename: fileName,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          };
-          html2pdf().set(opt).from(container).save().then(() => {
-            container.classList.add('hidden');
-            App.toast('PDF Exported successfully!');
-          }).catch(err => {
-            console.error('PDF error:', err);
-            container.classList.add('hidden');
-            window.print();
-          });
-        } else {
-          window.print();
-          container.classList.add('hidden');
-        }
+        this.exportLedgerPdf(container, fileName);
       },
       generateDateRangePdf(startDate = null, endDate = null, teamId = null) {
         if (!startDate) {
@@ -3667,11 +3713,11 @@
               <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: #ffffff; border: 1px solid #D0D8E2; border-radius: 10px; overflow: hidden;">
                 <thead>
                   <tr style="background-color: #303A4A; color: #ffffff; font-size: 10px; text-transform: uppercase;">
-                    <th style="padding: 7px 10px;">Date</th>
-                    <th style="padding: 7px 10px;">Opponent</th>
-                    <th style="padding: 7px 10px;">Format</th>
-                    <th style="padding: 7px 10px;">Score</th>
-                    <th style="padding: 7px 10px; text-align: center;">Result</th>
+                    <th style="padding: 7px 10px; background-color: #303A4A;">Date</th>
+                    <th style="padding: 7px 10px; background-color: #303A4A;">Opponent</th>
+                    <th style="padding: 7px 10px; background-color: #303A4A;">Format</th>
+                    <th style="padding: 7px 10px; background-color: #303A4A;">Score</th>
+                    <th style="padding: 7px 10px; text-align: center; background-color: #303A4A;">Result</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3685,17 +3731,17 @@
               <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: #ffffff; border: 1px solid #D0D8E2; border-radius: 10px; overflow: hidden;">
                 <thead>
                   <tr style="background-color: #0B1B33; color: #ffffff; font-size: 10px; text-transform: uppercase;">
-                    <th style="padding: 8px 10px;">#</th>
-                    <th style="padding: 8px 10px;">Player</th>
-                    <th style="padding: 8px 10px;">Pos</th>
-                    <th style="padding: 8px 10px; text-align: center;">Apps</th>
-                    <th style="padding: 8px 10px; text-align: center;">Starts</th>
-                    <th style="padding: 8px 10px; text-align: center;">Total Min</th>
-                    <th style="padding: 8px 10px; text-align: center;">Avg Min</th>
-                    <th style="padding: 8px 10px; text-align: center;">Goals</th>
-                    <th style="padding: 8px 10px; text-align: center;">Assists</th>
-                    <th style="padding: 8px 10px; text-align: center;">In</th>
-                    <th style="padding: 8px 10px; text-align: center;">Out</th>
+                    <th style="padding: 8px 10px; background-color: #0B1B33;">#</th>
+                    <th style="padding: 8px 10px; background-color: #0B1B33;">Player</th>
+                    <th style="padding: 8px 10px; background-color: #0B1B33;">Pos</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Apps</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Starts</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Total Min</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Avg Min</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Goals</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Assists</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">In</th>
+                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Out</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3723,32 +3769,15 @@
           </div>
         `;
         this.closeModals();
-        container.classList.remove('hidden');
         const safeTeam = String(activeTeamName).replace(/[^a-zA-Z0-9_-]/g, '_');
         const fileName = `Clubstride_${safeTeam}_${startDate}_to_${endDate}.pdf`;
-        if (typeof html2pdf !== 'undefined') {
-          this.toast('Generating Date Range PDF...');
-          const opt = {
-            margin: [8, 8, 8, 8],
-            filename: fileName,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          };
-          html2pdf().set(opt).from(container).save().then(() => {
-            container.classList.add('hidden');
-            App.toast('PDF Exported successfully!');
-          }).catch(err => {
-            console.error('PDF error:', err);
-            container.classList.add('hidden');
-            window.print();
-          });
-        } else {
-          window.print();
-          container.classList.add('hidden');
-        }
+        this.exportLedgerPdf(container, fileName);
       },
       openExportModal(matchId = null) {
+        const ledger = document.getElementById('pdfExportContainer');
+        if (ledger && PDF_LEDGER_TEMPLATE && !document.getElementById('pdfPlayerTableBody')) {
+          ledger.innerHTML = PDF_LEDGER_TEMPLATE;
+        }
         let targetMatch = AppState.match;
         let targetEvents = AppState.events;
         let targetTimers = AppState.playerTimers;
@@ -3844,29 +3873,8 @@
           });
         }
         const el = document.getElementById('pdfExportContainer');
-        el.classList.remove('hidden');
-        if (typeof html2pdf !== 'undefined') {
-          this.toast('Generating PDF document...');
-          const filenameSafe = (targetMatch.title || 'Match').replace(/\s+/g, '_');
-          const opt = {
-            margin: 10,
-            filename: `Clubstride_${filenameSafe}_${targetMatch.date || 'report'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          };
-          html2pdf().set(opt).from(el).save().then(() => {
-            el.classList.add('hidden');
-            App.toast('PDF Exported successfully!');
-          }).catch(err => {
-            console.error('PDF error:', err);
-            el.classList.add('hidden');
-            window.print();
-          });
-        } else {
-          window.print();
-          el.classList.add('hidden');
-        }
+        const filenameSafe = (targetMatch.title || 'Match').replace(/[^a-zA-Z0-9_-]/g, '_');
+        this.exportLedgerPdf(el, `Clubstride_${filenameSafe}_${targetMatch.date || 'report'}.pdf`);
       },
       openMatchSetupModal() {
         document.getElementById('inputMatchTeamName').value = AppState.match.teamName || AppState.currentTeamName || 'Clubstride FC';
