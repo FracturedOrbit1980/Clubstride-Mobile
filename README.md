@@ -1,8 +1,8 @@
-# Clubstride Mobile — Tactical Pitch & Live Rotations PWA
+# Clubstride Lite — Tactical Pitch & Live Rotations PWA
 
 [![Web App](https://img.shields.io/badge/Web%20App-Visit-blue)](https://FracturedOrbit1980.github.io/Clubstride-Mobile/)
 
-**Clubstride Mobile** is an offline-first Progressive Web App (PWA) designed specifically for grassroots soccer coaches. It runs completely locally in the browser on desktop, tablet, or mobile phone, requiring zero backend server, zero login, and no internet connection during match day.
+**Clubstride Lite** is an offline-first Progressive Web App (PWA) designed specifically for grassroots soccer coaches. It runs completely locally in the browser on desktop, tablet, or mobile phone, requiring zero backend server, zero login, and no internet connection during match day.
 
 Hosted live on GitHub Pages: [https://FracturedOrbit1980.github.io/Clubstride-Mobile/](https://FracturedOrbit1980.github.io/Clubstride-Mobile/)
 
@@ -12,10 +12,11 @@ Hosted live on GitHub Pages: [https://FracturedOrbit1980.github.io/Clubstride-Mo
 
 ## 🚀 Key Features
 
-### 1. 🎨 Modern Look & Feel
-- **Styled Buttons & States:** Subtle shaded gradients, soft drop shadows, fully rounded corners (`rounded-xl` for buttons, `rounded-full` for steppers & pills), gentle hover lift, tap press-down (`scale-95`), smooth transitions, and visible focus rings.
+### 1. 🎨 Clubstride CI (v1.0.0) Look & Feel
+- **Design Tokens:** Every colour, radius and font comes from `clubstride-tokens.css` (`[data-surface='lite']` navy shell with `#22D3EE` primary, `#3BE38A` go, `#C8F230` accent, `#FF8A80` danger; `[data-surface='match']` goal/assist/sub tints).
 - **Button Variants:** Primary (Start, Save, End match), Secondary (tinted slate), Danger (red gradient), and Ghost (transparent with subtle border).
-- **Cards & Bottom Sheets:** Rounded `rounded-2xl` panels with layered soft shadows, generous padding, and mobile bottom-sheet modals sliding up on phones.
+- **Cards & Bottom Sheets:** CI radius scale (`rounded-ci-*`, `rounded-lite`, `rounded-lite-xl`, `rounded-pill`) with layered soft shadows, generous padding, and mobile bottom-sheet modals sliding up on phones.
+- **Icons:** Inline 24×24 line-icon SVG sprite (`#ci-*`, stroke 2, round caps, `currentColor`) — no emoji in the UI. Sub in/out chips use the fixed-gradient `SubBadge` components; the Clubstride Lite (L1) lockup is used in the header, PDF letterhead and app icons.
 - **Pitch & Tokens:** Striped grass pitch pattern, rounded corners, crisp lines, circular player tokens with soft shadows, shirt numbers, and smooth token movement animations when changing formations.
 - **Tabular Numbers:** Timers, scores, and match statistics use tabular numerals (`tabular-nums`) to prevent text jumping.
 - **Offline Tailwind CSS:** Built and minified local CSS (`tailwind.min.css`) with zero runtime CDN script dependency for 100% offline reliability.
@@ -57,21 +58,21 @@ Accessible via the **"Create PDF report"** button on the Stats screen and on eac
   - Complete Player Table: Minutes on pitch, minutes on bench, goals, assists, subs in/out, starter/bench.
   - Match Timeline: Goals, assists, and substitutions with match times.
   - Clean A4 portrait format, rounded headers, brand emerald theme, footer with page numbers and generation date.
-  - File name: `Clubstride Mobile_<Team>_<Opponent>_<YYYY-MM-DD>.pdf`.
+  - File name: `Clubstride_<Team>_<Opponent>_<YYYY-MM-DD>.pdf`.
 - **Date Range PDF:**
   - Quick Date Presets: **Last 7 days**, **This month**, **This season**, **All time**, plus custom date inputs and team filter.
   - Record Summary: Total matches, Wins, Draws, Losses, Goals For (GF), Goals Against (GA), Goal Difference.
   - Matches List: Fixture dates, opponents, formats, scores, and W/D/L results.
   - Player Totals Table: Summed across all matches in the range. Includes all squad members (showing 0 if no appearances so coaches spot unfair playing time).
   - Sorted by minutes played (highest first) with a totals row at the bottom.
-  - Highlights: Top Scorer (⚽), Top Assist Maker (👟), and Most Minutes Played (⏱️).
-  - File name: `Clubstride Mobile_<Team>_<From>_to_<To>.pdf`.
+  - Highlights: Top Scorer, Top Assists, Most Mins.
+  - File name: `Clubstride_<Team>_<From>_to_<To>.pdf`.
   - Friendly notification if no matches fall in the chosen date range.
 
 ### 7. 💾 100% Offline & Reliable Data Persistence
 - **Persistent Storage:** All data automatically persists in `localStorage` after every change.
 - **Interruption Resilience:** Survives app closing, refreshing, switching tabs, or phone reboots.
-- **Service Worker (`sw.js` v7):** Pre-caches `tailwind.min.css`, `html2pdf.bundle.min.js`, and all assets for offline loading anywhere on the pitch.
+- **Service Worker (`sw.js` v8):** Pre-caches `clubstride-tokens.css`, `tailwind.min.css`, `html2pdf.bundle.min.js`, the CI component scripts and all brand/icon assets for offline loading anywhere on the pitch.
 - **Backup & Restore:** Full JSON export and import in settings.
 
 ---
@@ -106,7 +107,7 @@ To generate the 100% self-contained single-file HTML bundle:
 ```bash
 python bundle_offline.py
 ```
-This updates `Clubstride Mobile.html`, which can be opened directly from disk in any web browser without a local server.
+This updates `Clubstride Lite.html`, which can be opened directly from disk in any web browser without a local server.
 
 ---
 
@@ -137,10 +138,10 @@ node test_app.js
    - [ ] Tap **End match**: verify confirmation popup appears, finished match archives to history, and timers reset to 00:00 without losing squad or teams.
 3. **PDF Reports:**
    - [ ] Tap **Create PDF Report** on the Stats screen: verify the bottom sheet opens with **Single Match** and **Date Range** tabs.
-   - [ ] Generate a Single Match PDF: verify file name `Clubstride Mobile_<Team>_<Opponent>_<Date>.pdf` and check player table (pitch minutes, bench minutes, goals, assists, subs).
+   - [ ] Generate a Single Match PDF: verify file name `Clubstride_<Team>_<Opponent>_<Date>.pdf` and check player table (pitch minutes, bench minutes, goals, assists, subs).
    - [ ] Generate a Date Range PDF: test quick presets (Last 7d, This Month, Season, All Time), verify overall record (W/D/L), match list, and player totals sorted by minutes played with highlights for top scorer, top assists, and most minutes.
 4. **Offline & Nav:**
-   - [ ] Turn on Airplane Mode: verify app reloads and operates completely offline from service worker cache (`Clubstride Mobile-v7`).
+   - [ ] Turn on Airplane Mode: verify app reloads and operates completely offline from service worker cache (`Clubstride Lite-v8`).
    - [ ] Verify the bottom navigation dock is always tappable with comfortable padding.
 
 

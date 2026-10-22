@@ -44,9 +44,10 @@ assert(html.includes('<link rel="stylesheet" href="./tailwind.min.css" />'), 'in
 assert(!html.includes('src="https://cdn.tailwindcss.com"'), 'Found unwanted Tailwind CDN script in index.html');
 
 const sw = fs.readFileSync('sw.js', 'utf-8');
-assert(sw.includes("CACHE_NAME = 'Clubstride Mobile-v7'"), 'sw.js cache version is not Clubstride Mobile-v7');
+assert(sw.includes("CACHE_NAME = 'Clubstride Lite-v8'"), 'sw.js cache version is not Clubstride Lite-v8');
 assert(sw.includes("'./tailwind.min.css'"), 'sw.js missing tailwind.min.css in cached assets');
-console.log('✓ Standalone offline Tailwind CSS & sw.js Clubstride Mobile-v7 cache verified');
+assert(sw.includes("'./clubstride-tokens.css'"), 'sw.js missing clubstride-tokens.css in cached assets');
+console.log('✓ Standalone offline Tailwind CSS & sw.js Clubstride Lite-v8 cache verified');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
