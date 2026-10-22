@@ -140,14 +140,14 @@
     <!-- Header Actions (Teams, Day/Night, PDF) -->
     <div class="flex items-center space-x-1.5">
       <button onclick="App.openTeamsModal()" class="px-2.5 py-1.5 rounded-2xl bg-cyber-mint/15 hover:bg-cyber-mint/25 border border-cyber-mint/40 text-cyber-mint text-xs font-bold flex items-center space-x-1 transition active:scale-95" title="Manage & Switch Teams">
-        <span>ðŸ›¡️</span>
+        <span>🛡️</span>
         <span id="headerTeamNameBadge">Teams</span>
       </button>
       <button id="themeToggleBtn" onclick="App.toggleDayNight()" class="w-9 h-9 rounded-2xl bg-obsidian-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95" title="Toggle Day/Night Turf Mode">
-        <span id="themeIcon">ðŸŒ™</span>
+        <span id="themeIcon">🌙</span>
       </button>
       <button onclick="App.openExportModal()" class="px-2.5 py-1.5 rounded-2xl bg-cyber-cyan/10 hover:bg-cyber-cyan/20 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 transition active:scale-95">
-        <span>ðŸ"„</span>
+        <span>📄</span>
         <span>PDF</span>
       </button>
     </div>
@@ -159,7 +159,7 @@
     <div class="glass-card rounded-[24px] p-3.5 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyber-cyan/20 to-cyber-mint/20 border border-cyber-cyan/40 flex items-center justify-center text-lg">
-          âš½
+          ⚽
         </div>
         <div>
           <h2 id="activeMatchTitleDisplay" class="font-bold text-sm tracking-wide text-white">Match 1 — My Team vs Opponents</h2>
@@ -170,7 +170,7 @@
         </div>
       </div>
       <button onclick="App.openMatchSetupModal()" class="px-3 py-1.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-white/10 text-xs font-semibold text-cyber-cyan transition active:scale-95">
-        Setup âš™️
+        Setup ⚙️
       </button>
     </div>
     <!-- PRIMARY SEGMENT TABS -->
@@ -198,7 +198,7 @@
           <select id="formationSelect" onchange="App.onFormationChanged(this.value)" class="bg-obsidian-950 border border-white/15 text-white text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyber-cyan">
           </select>
           <button id="btnDeleteCustomFormation" type="button" onclick="App.deleteCurrentCustomFormation()" class="hidden w-7 h-7 rounded-xl bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs items-center justify-center transition active:scale-95" title="Delete this custom formation">
-            ðŸ—'️
+            🗑️
           </button>
         </div>
         <div class="flex items-center space-x-1.5">
@@ -242,7 +242,7 @@
         <div class="mt-2 px-1 flex items-center justify-between text-[11px] text-white/70">
           <span>Drag tokens to adjust tactical roles</span>
           <button onclick="App.openSaveFormationModal()" class="px-2.5 py-1 rounded-xl bg-obsidian-950/90 hover:bg-obsidian-900 border border-cyber-cyan/40 text-cyber-cyan text-[11px] font-semibold flex items-center space-x-1.5 shadow-sm active:scale-95 transition" title="Save current positions as a custom formation">
-            <span>ðŸ'¾ Save As Formation</span>
+            <span>💾 Save As Formation</span>
           </button>
         </div>
       </div>
@@ -254,11 +254,11 @@
             <p class="text-xs text-slate-400" id="starterQuotaText">Required starters: 7</p>
           </div>
           <div class="flex items-center space-x-1.5">
-            <button type="button" onclick="App.sortLineupByPosition(true)" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 active:scale-95 transition" title="Sort starters by designated pitch position (GK â†' DEF â†' MID â†' FWD)">
-              <span>âš¡ Sort by Position</span>
+            <button type="button" onclick="App.sortLineupByPosition(true)" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 active:scale-95 transition" title="Sort starters by designated pitch position (GK → DEF → MID → FWD)">
+              <span>⚡ Sort by Position</span>
             </button>
             <span id="starterStatusBadge" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30">
-              âœ" 7/7 Starters Ready
+              ✓ 7/7 Starters Ready
             </span>
           </div>
         </div>
@@ -290,14 +290,14 @@
             <!-- Our Team Stepper -->
             <div class="flex items-center space-x-1">
               <span class="text-white font-bold truncate max-w-[65px]" id="scoreboardTeam" title="Your Team">Clubstride</span>
-              <button type="button" onclick="App.adjustScore('our', -1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">âˆ'</button>
+              <button type="button" onclick="App.adjustScore('our', -1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">−</button>
               <span id="scoreboardGoals" class="w-7 py-0.5 rounded-lg bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40 font-mono text-base text-center inline-block">0</span>
               <button type="button" onclick="App.adjustScore('our', 1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-mint/40 text-cyber-mint hover:bg-cyber-mint/20 flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Goal">+</button>
             </div>
             <span class="text-slate-500 font-mono">:</span>
             <!-- Opponent Stepper -->
             <div class="flex items-center space-x-1">
-              <button type="button" onclick="App.adjustScore('opponent', -1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">âˆ'</button>
+              <button type="button" onclick="App.adjustScore('opponent', -1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">−</button>
               <span id="scoreboardOpponentGoals" class="w-7 py-0.5 rounded-lg bg-white/10 text-slate-300 font-mono text-base text-center inline-block">0</span>
               <button type="button" onclick="App.adjustScore('opponent', 1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Opponent Goal">+</button>
               <span class="text-slate-400 font-semibold truncate max-w-[65px]" id="scoreboardOpponent" title="Opponent">Echo</span>
@@ -314,23 +314,23 @@
         <!-- Clock Action Controls (Start/Pause, Reset, End Match) -->
         <div class="flex items-center justify-center space-x-2 mt-4">
           <button id="clockToggleBtn" onclick="App.toggleTimer()" class="flex-1 max-w-[125px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-xs tracking-wide shadow-lg active:scale-95 transition">
-            START â–¶
+            START ▶
           </button>
           <button onclick="App.resetTimer()" class="px-3.5 py-2.5 rounded-2xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/10 text-slate-300 font-bold text-xs active:scale-95 transition" title="Reset stopwatch only">
-            Reset â†º
+            Reset ↺
           </button>
           <button onclick="App.endMatch()" class="px-3.5 py-2.5 rounded-2xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 font-bold text-xs active:scale-95 transition flex items-center space-x-1" title="End match and archive to history">
-            <span>ðŸ End Match</span>
+            <span>🏁 End Match</span>
           </button>
         </div>
         <!-- DEDICATED GOAL & ASSIST ACTION BUTTONS -->
         <div class="grid grid-cols-2 gap-2.5 mt-4 pt-3 border-t border-white/10">
           <button onclick="App.openEventModal('Goal')" class="py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
-            <span class="text-base">âš½</span>
+            <span class="text-base">⚽</span>
             <span>+ Goal</span>
           </button>
           <button onclick="App.openEventModal('Assist')" class="py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
-            <span class="text-base">ðŸ'Ÿ</span>
+            <span class="text-base">👟</span>
             <span>+ Assist</span>
           </button>
         </div>
@@ -419,10 +419,10 @@
           <div class="flex items-center space-x-1.5 text-xs">
             <span class="text-[11px] text-slate-400 font-bold uppercase">Select:</span>
             <button type="button" onclick="App.selectAllGames()" class="px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-200 hover:text-white text-[11px] font-semibold active:scale-95 transition">
-              âœ" All
+              ✓ All
             </button>
             <button type="button" onclick="App.deselectAllGames()" class="px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-400 hover:text-white text-[11px] font-semibold active:scale-95 transition">
-              âœ— Clear
+              ✗ Clear
             </button>
             <button type="button" onclick="App.selectRecentGames(3)" class="px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-200 hover:text-white text-[11px] font-semibold active:scale-95 transition">
               Last 3
@@ -433,10 +433,10 @@
           </div>
           <div class="flex items-center space-x-2">
             <button id="btnCreatePdfReport" onclick="App.openPdfReportModal()" class="btn-primary px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md">
-              <span>ðŸ"„ Create PDF Report</span>
+              <span>📄 Create PDF Report</span>
             </button>
             <button onclick="App.openExportModal('selected')" class="btn-secondary px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md">
-              <span>ðŸ"¥ Export Selected</span>
+              <span>📥 Export Selected</span>
             </button>
           </div>
         </div>
@@ -447,7 +447,7 @@
   <!-- BOTTOM FLOATING PWA NAVIGATION DOCK -->
   <nav class="fixed bottom-0 left-0 right-0 z-50 bg-obsidian-950/95 backdrop-blur-xl border-t border-white/10 px-4 pt-2 flex items-center justify-around pb-safe pwa-dock" style="z-index: 1000;">
     <button onclick="App.switchTab('pitch')" class="dock-btn flex-1 py-1 flex flex-col items-center text-cyber-cyan transition active:scale-90" data-dock="pitch">
-      <span class="text-xl">ðŸ"‹</span>
+      <span class="text-xl">📋</span>
       <span class="text-[10px] font-bold mt-0.5">Tactics</span>
     </button>
     <button onclick="App.switchTab('live')" class="dock-btn flex-1 py-1 flex flex-col items-center text-slate-400 hover:text-white transition active:scale-90" data-dock="live">
@@ -455,11 +455,11 @@
       <span class="text-[10px] font-bold mt-0.5">Live</span>
     </button>
     <button onclick="App.switchTab('roster')" class="dock-btn flex-1 py-1 flex flex-col items-center text-slate-400 hover:text-white transition active:scale-90" data-dock="roster">
-      <span class="text-xl">ðŸ'¥</span>
+      <span class="text-xl">👥</span>
       <span class="text-[10px] font-bold mt-0.5">Squad</span>
     </button>
     <button onclick="App.switchTab('stats')" class="dock-btn flex-1 py-1 flex flex-col items-center text-slate-400 hover:text-white transition active:scale-90" data-dock="stats">
-      <span class="text-xl">ðŸ"Š</span>
+      <span class="text-xl">📊</span>
       <span class="text-[10px] font-bold mt-0.5">Stats</span>
     </button>
   </nav>
@@ -469,7 +469,7 @@
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-white">Match Configuration</h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">âœ•</button>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
@@ -510,7 +510,7 @@
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 id="modalAddPlayerTitle" class="text-base font-bold text-white">Add Squad Player</h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">âœ•</button>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
@@ -566,7 +566,7 @@
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-white">Save Custom Formation</h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">âœ•</button>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
@@ -592,9 +592,9 @@
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 id="eventModalTitle" class="text-base font-bold text-white flex items-center space-x-2">
-          <span>âš½ Register Goal</span>
+          <span>⚽ Register Goal</span>
         </h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">âœ•</button>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <p class="text-xs text-slate-300">Select the squad member who achieved this:</p>
       <div>
@@ -614,9 +614,9 @@
     <div class="glass-card max-w-sm w-full rounded-[28px] p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-white flex items-center space-x-2">
-          <span>ðŸ›¡️ Club & Teams Manager</span>
+          <span>🛡️ Club & Teams Manager</span>
         </h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">âœ•</button>
+        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <!-- Current Team Overview Card -->
       <div class="p-3.5 rounded-2xl bg-obsidian-950 border border-white/10 space-y-3">
@@ -624,12 +624,12 @@
         <div class="flex items-center space-x-3">
           <div class="relative cursor-pointer group" onclick="document.getElementById('teamModalLogoInput').click()" title="Tap to change logo for this team">
             <img id="teamModalLogoPreview" src="./icon-192.png" class="w-12 h-12 rounded-2xl ring-2 ring-cyber-mint/50 object-cover bg-obsidian-900 transition hover:opacity-80" />
-            <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-cyber-mint text-obsidian-950 flex items-center justify-center text-[10px] font-black">âœŽ</div>
+            <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-cyber-mint text-obsidian-950 flex items-center justify-center text-[10px] font-black">✎</div>
           </div>
           <input type="file" id="teamModalLogoInput" accept="image/*" class="hidden" onchange="App.handleTeamLogoUpload(event)" />
           <div class="flex-1">
             <input type="text" id="inputCurrentTeamName" class="w-full bg-obsidian-900 border border-white/15 rounded-xl px-2.5 py-1.5 text-white font-bold text-sm focus:outline-none focus:border-cyber-mint" placeholder="Team Name (e.g. Clubstride FC)" />
-            <div class="text-[10px] text-slate-400 mt-1" id="currentTeamSquadMeta">10 Players â€¢ Kit Colour Synced</div>
+            <div class="text-[10px] text-slate-400 mt-1" id="currentTeamSquadMeta">10 Players • Kit Colour Synced</div>
           </div>
         </div>
         <!-- Theme Color & Jersey Style Selection -->
@@ -649,16 +649,16 @@
           <div>
             <label class="text-[10px] font-bold uppercase text-slate-300 tracking-wider block mb-1.5">Pitch & App Style</label>
             <div class="grid grid-cols-4 gap-1.5" id="teamModalStyleButtons">
-              <button type="button" onclick="App.setTeamThemeStyle('glass')" data-style="glass" class="theme-style-btn py-1.5 rounded-xl bg-obsidian-900 border border-white/15 text-[10px] font-bold text-slate-300 transition hover:border-cyber-mint/50">ðŸ'Ž Glass</button>
-              <button type="button" onclick="App.setTeamThemeStyle('neon')" data-style="neon" class="theme-style-btn py-1.5 rounded-xl bg-obsidian-900 border border-white/15 text-[10px] font-bold text-slate-300 transition hover:border-cyber-mint/50">âš¡ Neon</button>
-              <button type="button" onclick="App.setTeamThemeStyle('stadium')" data-style="stadium" class="theme-style-btn py-1.5 rounded-xl bg-obsidian-900 border border-white/15 text-[10px] font-bold text-slate-300 transition hover:border-cyber-mint/50">ðŸŸ️ Stadium</button>
-              <button type="button" onclick="App.setTeamThemeStyle('vintage')" data-style="vintage" class="theme-style-btn py-1.5 rounded-xl bg-obsidian-900 border border-white/15 text-[10px] font-bold text-slate-300 transition hover:border-cyber-mint/50">ðŸ"œ Retro</button>
+              <button type="button" onclick="App.setTeamThemeStyle('glass')" data-style="glass" class="theme-style-btn py-1.5 rounded-xl bg-obsidian-900 border border-white/15 text-[10px] font-bold text-slate-300 transition hover:border-cyber-mint/50">💎 Glass</button>
+              <button type="button" onclick="App.setTeamThemeStyle('neon')" data-style="neon" class="theme-style-btn py-1.5 rounded-xl bg-obsidian-900 border border-white/15 text-[10px] font-bold text-slate-300 transition hover:border-cyber-mint/50">⚡ Neon</button>
+              <button type="button" onclick="App.setTeamThemeStyle('stadium')" data-style="stadium" class="theme-style-btn py-1.5 rounded-xl bg-obsidian-900 border border-white/15 text-[10px] font-bold text-slate-300 transition hover:border-cyber-mint/50">🏟️ Stadium</button>
+              <button type="button" onclick="App.setTeamThemeStyle('vintage')" data-style="vintage" class="theme-style-btn py-1.5 rounded-xl bg-obsidian-900 border border-white/15 text-[10px] font-bold text-slate-300 transition hover:border-cyber-mint/50">📜 Retro</button>
             </div>
           </div>
         </div>
         <div class="flex space-x-2 pt-1">
           <button type="button" onclick="App.saveActiveTeam()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyber-mint to-emerald-500 text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95 transition">
-            ðŸ'¾ Save Team
+            💾 Save Team
           </button>
           <button type="button" onclick="App.createNewTeamPrompt()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs active:scale-95 transition">
             + New
@@ -672,10 +672,10 @@
           </div>
           <div class="grid grid-cols-2 gap-2">
             <button type="button" onclick="App.exportBackup()" class="py-2 px-2 rounded-xl bg-obsidian-900 hover:bg-obsidian-800 border border-cyber-cyan/40 text-cyber-cyan font-bold text-xs flex items-center justify-center space-x-1 active:scale-95 transition">
-              <span>ðŸ"¤ Export</span>
+              <span>📤 Export</span>
             </button>
             <button type="button" onclick="document.getElementById('backupFileInput').click()" class="py-2 px-2 rounded-xl bg-obsidian-900 hover:bg-obsidian-800 border border-cyber-mint/40 text-cyber-mint font-bold text-xs flex items-center justify-center space-x-1 active:scale-95 transition">
-              <span>ðŸ"¥ Import</span>
+              <span>📥 Import</span>
             </button>
           </div>
           <input type="file" id="backupFileInput" accept=".json,application/json" class="hidden" onchange="App.importBackup(event)" />
@@ -699,12 +699,12 @@
       <div class="flex items-center justify-between border-b border-white/10 pb-3">
         <div>
           <h3 class="text-base font-bold text-white flex items-center space-x-2">
-            <span>ðŸ"„</span>
+            <span>📄</span>
             <span>Create PDF Report</span>
           </h3>
           <p class="text-xs text-slate-400">Export tactical intelligence for a single fixture or aggregated date range</p>
         </div>
-        <button onclick="App.closeModals()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition active:scale-95">âœ•</button>
+        <button onclick="App.closeModals()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition active:scale-95">✕</button>
       </div>
       <!-- Segmented Tab Switcher (Single Match vs Date Range) -->
       <div class="grid grid-cols-2 gap-1.5 p-1 bg-obsidian-950/80 rounded-xl border border-white/10 text-xs font-bold">
@@ -727,7 +727,7 @@
           <!-- Dynamically updated preview -->
         </div>
         <button onclick="App.generateSingleMatchPdf()" class="btn-primary w-full py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg">
-          <span>ðŸ"„</span>
+          <span>📄</span>
           <span>Generate Single Match PDF</span>
         </button>
       </div>
@@ -762,7 +762,7 @@
           <!-- Summary count of matches found -->
         </div>
         <button onclick="App.generateDateRangePdf()" class="btn-primary w-full py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg">
-          <span>ðŸ"Š</span>
+          <span>📊</span>
           <span>Generate Date Range PDF</span>
         </button>
       </div>
@@ -821,7 +821,7 @@
   <!-- FLOATING TOAST -->
   <div id="toastPod" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none max-w-xs w-full px-4">
     <div id="toastInner" class="bg-obsidian-900/95 backdrop-blur-md border border-cyber-cyan/50 text-white rounded-2xl p-3 shadow-2xl flex items-center space-x-2 text-xs font-semibold">
-      <span id="toastIcon">âœ¨</span>
+      <span id="toastIcon">✨</span>
       <span id="toastMessage">Notification</span>
     </div>
   </div>
@@ -1187,7 +1187,7 @@
         });
         window.addEventListener('appinstalled', () => {
           deferredInstallPrompt = null;
-          App.toast('Clubstride installed to home screen! ðŸš€');
+          App.toast('Clubstride installed to home screen! 🚀');
         });
       },
       triggerInstallPrompt() {
@@ -1203,9 +1203,9 @@
           // If iOS or already installed, show clear guide modal
           const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
           if (isIOS) {
-            this.toast('Tap Share [â†'] then "Add to Home Screen" ðŸ"²', 'ðŸ'¡');
+            this.toast('Tap Share [↑] then "Add to Home Screen" 📲', '💡');
           } else {
-            this.toast('Tap Chrome Menu (â‹®) then "Add to Home screen" ðŸ"²', 'ðŸ'¡');
+            this.toast('Tap Chrome Menu (⋮) then "Add to Home screen" 📲', '💡');
           }
         }
       },
@@ -1249,7 +1249,7 @@
               if (activeT) activeT.logo = b64;
             }
             App.saveStorage();
-            App.toast('Team logo updated & saved! âš½');
+            App.toast('Team logo updated & saved! ⚽');
           } catch (err) {
             App.toast('Image too large to store on device. Try smaller image.');
           }
@@ -1261,7 +1261,7 @@
       },
       openTeamsModal() {
         document.getElementById('inputCurrentTeamName').value = AppState.currentTeamName || 'Clubstride FC';
-        document.getElementById('currentTeamSquadMeta').innerText = `${AppState.squad.length} Players â€¢ Kit: ${AppState.kitColor}`;
+        document.getElementById('currentTeamSquadMeta').innerText = `${AppState.squad.length} Players • Kit: ${AppState.kitColor}`;
         const preview = document.getElementById('teamModalLogoPreview');
         if (preview) {
           const curLogo = localStorage.getItem('Clubstride Mobile_custom_logo') || EMBEDDED_ICON_B64 || './icon-192.png';
@@ -1308,7 +1308,7 @@
         if (picker) picker.value = color;
         const customKit = document.getElementById('customKitPicker');
         if (customKit) customKit.value = color;
-        document.getElementById('currentTeamSquadMeta').innerText = `${AppState.squad.length} Players â€¢ Kit: ${color}`;
+        document.getElementById('currentTeamSquadMeta').innerText = `${AppState.squad.length} Players • Kit: ${color}`;
         this.setupTeamModalThemeControls();
         this.renderPitchTokens();
         this.saveStorage();
@@ -1318,7 +1318,7 @@
         this.applyTheme();
         this.setupTeamModalThemeControls();
         this.saveStorage();
-        this.toast(`Team style set: ${style.toUpperCase()} ðŸŽ¨`);
+        this.toast(`Team style set: ${style.toUpperCase()} 🎨`);
       },
       renderSavedTeamsList() {
         const list = document.getElementById('savedTeamsList');
@@ -1326,7 +1326,7 @@
         const teams = AppState.teams || [];
         countBadge.innerText = teams.length;
         if (teams.length === 0) {
-          list.innerHTML = `<div class="text-slate-500 text-xs italic text-center py-4 bg-obsidian-950 rounded-2xl border border-white/5">No additional teams saved yet.<br>Click "ðŸ'¾ Save Team" above to store this squad!</div>`;
+          list.innerHTML = `<div class="text-slate-500 text-xs italic text-center py-4 bg-obsidian-950 rounded-2xl border border-white/5">No additional teams saved yet.<br>Click "💾 Save Team" above to store this squad!</div>`;
           return;
         }
         list.innerHTML = '';
@@ -1347,9 +1347,9 @@
                 </div>
                 <div class="text-[10px] text-slate-400 mt-0.5 flex items-center space-x-1.5">
                   <span>${(t.squad || []).length} Players</span>
-                  <span>â€¢</span>
+                  <span>•</span>
                   <span>Kit: <span class="inline-block w-2.5 h-2.5 rounded-full border border-white/20 align-middle ml-0.5" style="background:${t.kitColor || '#00f2fe'}"></span></span>
-                  <span>â€¢</span>
+                  <span>•</span>
                   <span class="capitalize text-slate-300 font-semibold">${t.themeStyle || 'glass'}</span>
                 </div>
               </div>
@@ -1358,10 +1358,10 @@
               <button type="button" onclick="App.loadTeam('${t.id}')" class="px-2.5 py-1.5 rounded-xl font-bold text-xs ${
                 isActive ? 'bg-cyber-mint text-obsidian-950' : 'bg-white/10 hover:bg-white/20 text-slate-200'
               } transition active:scale-95" title="Switch to this team">
-                ${isActive ? 'Loaded' : 'Load âž"'}
+                ${isActive ? 'Loaded' : 'Load ➔'}
               </button>
               <button type="button" onclick="App.deleteTeam('${t.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete Team">
-                ðŸ—'️
+                🗑️
               </button>
             </div>
           `;
@@ -1396,10 +1396,10 @@
           team.fieldPositions = JSON.parse(JSON.stringify(AppState.match.fieldPositions || {}));
         }
         AppState.currentTeamName = teamName;
-        document.getElementById('headerTeamNameBadge').innerText = teamName.length > 8 ? teamName.substring(0, 8) + 'â€¦' : teamName;
+        document.getElementById('headerTeamNameBadge').innerText = teamName.length > 8 ? teamName.substring(0, 8) + '…' : teamName;
         this.saveStorage();
         this.renderSavedTeamsList();
-        this.toast(`Team "${teamName}" saved with theme! ðŸ›¡️`);
+        this.toast(`Team "${teamName}" saved with theme! 🛡️`);
       },
       createNewTeamPrompt() {
         const defaultName = `Team ${ (AppState.teams ? AppState.teams.length : 0) + 1 }`;
@@ -1426,7 +1426,7 @@
         if (!AppState.teams) AppState.teams = [];
         AppState.teams.push(newTeam);
         this.loadTeam(newTeam.id);
-        this.toast(`Created new team "${newTeam.name}"! ðŸ›¡️`);
+        this.toast(`Created new team "${newTeam.name}"! 🛡️`);
       },
       loadTeam(teamId) {
         if (!AppState.teams) return;
@@ -1461,14 +1461,14 @@
         } else {
           localStorage.removeItem('Clubstride Mobile_custom_logo');
         }
-        document.getElementById('headerTeamNameBadge').innerText = team.name.length > 8 ? team.name.substring(0, 8) + 'â€¦' : team.name;
+        document.getElementById('headerTeamNameBadge').innerText = team.name.length > 8 ? team.name.substring(0, 8) + '…' : team.name;
         document.getElementById('inputCurrentTeamName').value = team.name;
         this.setupIcons();
         this.applyFormatDefaults();
         this.saveStorage();
         this.renderAll();
         this.renderSavedTeamsList();
-        this.toast(`Switched to team: ${team.name} âš½`);
+        this.toast(`Switched to team: ${team.name} ⚽`);
       },
       deleteTeam(teamId) {
         if (!confirm('Are you sure you want to delete this team?')) return;
@@ -1528,7 +1528,7 @@
           if (curName) {
             AppState.currentTeamName = curName;
             const badge = document.getElementById('headerTeamNameBadge');
-            if (badge) badge.innerText = curName.length > 8 ? curName.substring(0, 8) + 'â€¦' : curName;
+            if (badge) badge.innerText = curName.length > 8 ? curName.substring(0, 8) + '…' : curName;
           }
           this.applyTheme();
         } catch (e) {
@@ -1563,7 +1563,7 @@
         AppState.theme = AppState.theme === 'night' ? 'day' : 'night';
         this.applyTheme();
         this.saveStorage();
-        this.toast(AppState.theme === 'day' ? 'â˜€️ Day Mode (High Turf Contrast)' : 'ðŸŒ™ Night Mode (Cyber Glow)');
+        this.toast(AppState.theme === 'day' ? '☀️ Day Mode (High Turf Contrast)' : '🌙 Night Mode (Cyber Glow)');
       },
       applyTheme() {
         const isDay = AppState.theme === 'day';
@@ -1581,7 +1581,7 @@
           if (pitchCont) {
             pitchCont.className = 'relative w-full rounded-[28px] overflow-hidden p-2.5 transition-all duration-300 pitch-day';
           }
-          if (themeIcon) themeIcon.innerText = 'â˜€️';
+          if (themeIcon) themeIcon.innerText = '☀️';
         } else {
           body.classList.add('bg-obsidian-950', 'text-slate-100');
           body.classList.remove('bg-slate-100', 'text-slate-900');
@@ -1592,7 +1592,7 @@
             else if (style === 'stadium') pitchClass = 'pitch-stadium';
             pitchCont.className = `relative w-full rounded-[28px] overflow-hidden p-2.5 transition-all duration-300 ${pitchClass}`;
           }
-          if (themeIcon) themeIcon.innerText = 'ðŸŒ™';
+          if (themeIcon) themeIcon.innerText = '🌙';
         }
       },
       switchTab(tab) {
@@ -1744,7 +1744,7 @@
         this.renderPitchTokens();
         this.renderRoster();
         if (showToast) {
-          this.toast('Starting lineup sorted by positions (GK â†' DEF â†' MID â†' FWD) âš¡');
+          this.toast('Starting lineup sorted by positions (GK → DEF → MID → FWD) ⚡');
         }
       },
       getAllFormations(fmt) {
@@ -1857,7 +1857,7 @@
         }
         this.saveCustomFormation(name);
         this.closeModals();
-        this.toast(`Formation "${name}" saved! ðŸ'¾`);
+        this.toast(`Formation "${name}" saved! 💾`);
       },
       saveCustomFormation(name, customSlots = null) {
         const fmt = AppState.match.format;
@@ -1907,7 +1907,7 @@
               ${this.getShirtSvg(p.number, AppState.kitColor, 46)}
               ${!AppState.clock.running ? `
                 <button type="button" onclick="event.stopPropagation(); App.sendToBench('${pid}')" title="Move to Bench" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-obsidian-900 border border-white/30 text-amber-300 hover:text-white flex items-center justify-center text-[10px] font-bold shadow-md transition hover:scale-110 active:scale-95 z-20">
-                  â‡„
+                  ⇄
                 </button>
               ` : ''}
             </div>
@@ -1921,10 +1921,10 @@
         const count = starters.length;
         if (count === quota) {
           badge.className = 'px-2.5 py-1 rounded-xl text-xs font-bold bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30';
-          badge.innerText = `âœ" ${count}/${quota} Starters Ready`;
+          badge.innerText = `✓ ${count}/${quota} Starters Ready`;
         } else {
           badge.className = 'px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
-          badge.innerText = `âš  ${count}/${quota} Starters (Need ${quota})`;
+          badge.innerText = `⚠ ${count}/${quota} Starters (Need ${quota})`;
         }
         this.renderBenchReserves();
       },
@@ -1951,9 +1951,9 @@
             <div>
               <div class="text-white font-semibold text-xs leading-none flex items-center space-x-1.5">
                 <span>${p.name}</span>
-                <span class="text-[9px] text-cyber-mint font-bold px-1 rounded bg-cyber-mint/15">â‡„ Start</span>
+                <span class="text-[9px] text-cyber-mint font-bold px-1 rounded bg-cyber-mint/15">⇄ Start</span>
               </div>
-              <div class="text-[10px] text-slate-400 mt-0.5">${p.position} â€¢ Tap to Start</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">${p.position} • Tap to Start</div>
             </div>
           `;
           container.appendChild(chip);
@@ -1961,7 +1961,7 @@
       },
       sendToBench(pid) {
         if (AppState.clock.running) {
-          this.toast('Match is in progress. Use Live Sub Board ⏱️', 'âš ');
+          this.toast('Match is in progress. Use Live Sub Board ⏱️', '⚠');
           return;
         }
         AppState.match.starters = AppState.match.starters.filter(id => id !== pid);
@@ -1972,11 +1972,11 @@
         this.renderPitchTokens();
         this.renderRoster();
         const p = AppState.squad.find(item => item.id === pid);
-        this.toast(`${p ? p.name : 'Player'} moved to Bench ðŸ›‹️`);
+        this.toast(`${p ? p.name : 'Player'} moved to Bench 🛋️`);
       },
       promoteBenchToStarter(benchPid) {
         if (AppState.clock.running) {
-          this.toast('Match is in progress. Use Live Sub Board ⏱️', 'âš ');
+          this.toast('Match is in progress. Use Live Sub Board ⏱️', '⚠');
           return;
         }
         const quota = parseInt(AppState.match.format);
@@ -1995,11 +1995,11 @@
         this.renderPitchTokens();
         this.renderRoster();
         const p = AppState.squad.find(item => item.id === benchPid);
-        this.toast(`${p ? p.name : 'Player'} moved to Starting Field âš½`);
+        this.toast(`${p ? p.name : 'Player'} moved to Starting Field ⚽`);
       },
       toggleStarter(pid) {
         if (AppState.clock.running) {
-          this.toast('Match is running. Use Live Sub Board ⏱️', 'âš ');
+          this.toast('Match is running. Use Live Sub Board ⏱️', '⚠');
           return;
         }
         if (AppState.match.starters.includes(pid)) {
@@ -2089,20 +2089,20 @@
                 <button type="button" onclick="App.toggleStarter('${p.id}')" class="px-2.5 py-1.5 rounded-xl font-bold text-xs transition active:scale-95 flex items-center space-x-1 ${
                   isStarter ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/40 hover:bg-cyber-cyan/30' : 'bg-obsidian-950 text-slate-300 border border-white/15 hover:text-white'
                 }" title="Toggle between Starting Pitch and Bench">
-                  <span>${isStarter ? 'âš½ Pitch' : 'ðŸ›‹️ Bench'}</span>
-                  <span class="text-[9px] opacity-70">â‡„</span>
+                  <span>${isStarter ? '⚽ Pitch' : '🛋️ Bench'}</span>
+                  <span class="text-[9px] opacity-70">⇄</span>
                 </button>
               ` : ''}
               <button onclick="App.toggleAvailability('${p.id}')" class="px-2.5 py-1.5 rounded-xl font-bold text-xs transition active:scale-95 ${
                 isAvail ? 'bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
               }">
-                ${isAvail ? 'âœ" Avail' : 'âœ— Out'}
+                ${isAvail ? '✓ Avail' : '✗ Out'}
               </button>
               <button type="button" onclick="App.openEditPlayerModal('${p.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-cyber-cyan/20 text-slate-400 hover:text-cyber-cyan transition flex items-center justify-center text-xs" title="Edit player name, number or position">
-                âœ️
+                ✏️
               </button>
               <button onclick="App.deletePlayer('${p.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete player from squad">
-                ðŸ—'️
+                🗑️
               </button>
             </div>
           `;
@@ -2161,7 +2161,7 @@
         if (AppState.clock.running) {
           clearInterval(AppState.clock.intervalId);
           AppState.clock.running = false;
-          document.getElementById('clockToggleBtn').innerText = 'RESUME â–¶';
+          document.getElementById('clockToggleBtn').innerText = 'RESUME ▶';
           document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
           document.getElementById('clockStatusSubtext').innerText = 'Clock Paused';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-amber-400 font-medium mt-1';
@@ -2178,7 +2178,7 @@
           }, 1000);
           document.getElementById('clockToggleBtn').innerText = 'PAUSE ⏸';
           document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-amber-500 text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
-          document.getElementById('clockStatusSubtext').innerText = 'â— Live Match In Progress — Accumulating Playing Seconds';
+          document.getElementById('clockStatusSubtext').innerText = '● Live Match In Progress — Accumulating Playing Seconds';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-cyber-mint font-medium mt-1 glow-pulse';
         }
       },
@@ -2187,7 +2187,7 @@
         AppState.clock.running = false;
         AppState.clock.seconds = 0;
         this.updateClockDisplay();
-        document.getElementById('clockToggleBtn').innerText = 'START â–¶';
+        document.getElementById('clockToggleBtn').innerText = 'START ▶';
         document.getElementById('clockStatusSubtext').innerText = 'Clock Reset — Ready to Kickoff';
         document.getElementById('clockStatusSubtext').className = 'text-xs text-cyber-cyan font-medium mt-1';
         this.toast('Stopwatch reset to 00:00');
@@ -2330,7 +2330,7 @@
         this.saveStorage();
         this.renderLiveBoard();
         this.renderPitchTokens();
-        this.toast(`Sub: #${inPlayer.number} ${inPlayer.name} IN â‡„ #${outPlayer.number} ${outPlayer.name} OUT`);
+        this.toast(`Sub: #${inPlayer.number} ${inPlayer.name} IN ⇄ #${outPlayer.number} ${outPlayer.name} OUT`);
       },
       cancelSubSelection() {
         AppState.subOutPlayerId = null;
@@ -2343,7 +2343,7 @@
         const modal = document.getElementById('modalEvent');
         const title = document.getElementById('eventModalTitle');
         const selector = document.getElementById('eventPlayerSelector');
-        title.innerHTML = type === 'Goal' ? '<span>âš½ Register Goal</span>' : '<span>ðŸ'Ÿ Register Assist</span>';
+        title.innerHTML = type === 'Goal' ? '<span>⚽ Register Goal</span>' : '<span>👟 Register Assist</span>';
         selector.innerHTML = '';
         // Requirement 3: Don't preselect a scorer; make the coach pick one before saving
         const placeholder = document.createElement('option');
@@ -2374,7 +2374,7 @@
         const pid = selector.value;
         // Requirement 3: Enforce scorer selection
         if (!pid) {
-          this.toast(type === 'Goal' ? 'Please choose the goal scorer!' : 'Please choose the assisting player!', 'âš ️');
+          this.toast(type === 'Goal' ? 'Please choose the goal scorer!' : 'Please choose the assisting player!', '⚠️');
           return;
         }
         const player = AppState.squad.find(i => i.id === pid);
@@ -2400,7 +2400,7 @@
         this.closeModals();
         this.renderTimeline();
         this.renderStats();
-        this.toast(`${type} logged for #${player.number} ${player.name}! âš½`);
+        this.toast(`${type} logged for #${player.number} ${player.name}! ⚽`);
       },
       // Requirement 2: Manual Score Steppers (+/-)
       adjustScore(team, delta) {
@@ -2494,7 +2494,7 @@
         // Reset clock UI
         const toggleBtn = document.getElementById('clockToggleBtn');
         if (toggleBtn) {
-          toggleBtn.innerText = 'START â–¶';
+          toggleBtn.innerText = 'START ▶';
           toggleBtn.className = 'flex-1 max-w-[125px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-xs tracking-wide shadow-lg active:scale-95 transition';
         }
         const clockStatus = document.getElementById('clockStatusSubtext');
@@ -2507,7 +2507,7 @@
         this.setPeriod('1st Half');
         this.saveStorage();
         this.renderAll();
-        this.toast('Match archived to history! Ready for next game ðŸ†');
+        this.toast('Match archived to history! Ready for next game 🏆');
       },
       deleteMatchHistory(matchId) {
         if (!confirm('Are you sure you want to remove this match from history?')) return;
@@ -2551,7 +2551,7 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        this.toast('Backup exported! ðŸ"¤');
+        this.toast('Backup exported! 📤');
       },
       // Requirement 5: Import full backup from JSON file
       importBackup(event) {
@@ -2592,7 +2592,7 @@
             this.applyFormatDefaults();
             this.renderAll();
             this.closeModals();
-            this.toast('Backup restored successfully! ðŸ"¥', 'ðŸŽ‰');
+            this.toast('Backup restored successfully! 📥', '🎉');
           } catch (err) {
             alert('Error importing backup: ' + err.message);
           }
@@ -2612,13 +2612,13 @@
         AppState.events.forEach(ev => {
           const item = document.createElement('div');
           item.className = 'p-2.5 rounded-xl bg-obsidian-950 border border-white/5 flex items-center justify-between';
-          let icon = 'âš½';
+          let icon = '⚽';
           let text = '';
           if (ev.type === 'Goal') {
-            icon = 'âš½';
+            icon = '⚽';
             text = `<span class="font-bold text-cyber-mint">GOAL</span> by #${ev.playerNumber} ${ev.playerName}`;
           } else if (ev.type === 'Assist') {
-            icon = 'ðŸ'Ÿ';
+            icon = '👟';
             text = `<span class="font-bold text-sky-400">ASSIST</span> by #${ev.playerNumber} ${ev.playerName}`;
           } else if (ev.type === 'Sub') {
             // Use SubBadge components for sub-in / sub-out icons in timeline
@@ -2636,7 +2636,7 @@
                 <div class="text-[9px] text-slate-400">${ev.period}</div>
               </div>
               <button type="button" onclick="App.deleteEvent('${ev.id}')" class="px-2 py-0.5 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-[10px] font-bold active:scale-95 transition" title="Undo / Delete event">
-                âœ• Undo
+                ✕ Undo
               </button>
             </div>
           `;
@@ -2676,7 +2676,7 @@
         AppState.selectedGameIds = all;
         this.saveStorage();
         this.renderStats();
-        this.toast(`Selected all ${all.length} game(s) to pull totals ðŸ"Š`);
+        this.toast(`Selected all ${all.length} game(s) to pull totals 📊`);
       },
       deselectAllGames() {
         AppState.selectedGameIds = [];
@@ -2690,7 +2690,7 @@
         AppState.selectedGameIds = recent;
         this.saveStorage();
         this.renderStats();
-        this.toast(`Selected last ${recent.length} match(es) ðŸ"Š`);
+        this.toast(`Selected last ${recent.length} match(es) 📊`);
       },
       toggleGameDetail(gameId) {
         if (!AppState.expandedGameIds) AppState.expandedGameIds = {};
@@ -2783,7 +2783,7 @@
         summaryCard.innerHTML = `
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
-              <span class="text-base">ðŸ"Š</span>
+              <span class="text-base">📊</span>
               <span class="font-bold text-xs uppercase tracking-wider text-cyber-cyan">Pulled Totals Summary</span>
             </div>
             <span class="px-2 py-0.5 rounded-lg bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30 font-bold text-[11px]">
@@ -2797,11 +2797,11 @@
             </div>
             <div class="p-2 rounded-xl bg-obsidian-950 border border-white/5">
               <div class="text-[10px] text-slate-400 uppercase font-medium">Squad Goals</div>
-              <div class="font-mono font-black text-sm text-emerald-400 mt-0.5">âš½ ${combinedGoals}</div>
+              <div class="font-mono font-black text-sm text-emerald-400 mt-0.5">⚽ ${combinedGoals}</div>
             </div>
             <div class="p-2 rounded-xl bg-obsidian-950 border border-white/5">
               <div class="text-[10px] text-slate-400 uppercase font-medium">Squad Assists</div>
-              <div class="font-mono font-black text-sm text-sky-400 mt-0.5">ðŸ'Ÿ ${combinedAssists}</div>
+              <div class="font-mono font-black text-sm text-sky-400 mt-0.5">👟 ${combinedAssists}</div>
             </div>
           </div>
         `;
@@ -2817,7 +2817,7 @@
         if (totalSelectedCount === 0) {
           const emptySelCard = document.createElement('div');
           emptySelCard.className = 'text-slate-400 text-xs italic text-center py-4 bg-obsidian-950/60 rounded-2xl border border-white/5';
-          emptySelCard.innerHTML = `No games selected. Tap <span class="text-cyber-cyan font-bold">"âœ" All"</span> or check games in Match History below to pull playing time totals.`;
+          emptySelCard.innerHTML = `No games selected. Tap <span class="text-cyber-cyan font-bold">"✓ All"</span> or check games in Match History below to pull playing time totals.`;
           container.appendChild(emptySelCard);
         } else {
           AppState.squad.forEach(p => {
@@ -2837,7 +2837,7 @@
                     <span>${p.name}</span>
                     ${stats.appearances > 0 ? `<span class="px-1.5 py-0.2 rounded bg-white/10 text-slate-300 text-[10px] font-normal">${stats.appearances}/${totalSelectedCount} Apps</span>` : ''}
                   </div>
-                  <div class="text-[11px] text-slate-400 mt-0.5">${p.position} â€¢ #${p.number} â€¢ Avg: <span class="text-white font-mono">${this.formatTime(avgSec)}</span>/gm</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">${p.position} • #${p.number} • Avg: <span class="text-white font-mono">${this.formatTime(avgSec)}</span>/gm</div>
                 </div>
               </div>
               <div class="flex items-center space-x-3 text-right flex-shrink-0">
@@ -2846,8 +2846,8 @@
                   <div class="text-[9px] uppercase tracking-wider text-slate-400">Total Min</div>
                 </div>
                 <div class="flex items-center space-x-1.5 text-xs font-bold">
-                  <span class="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="Goals">âš½ ${stats.goals}</span>
-                  <span class="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30" title="Assists">ðŸ'Ÿ ${stats.assists}</span>
+                  <span class="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="Goals">⚽ ${stats.goals}</span>
+                  <span class="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30" title="Assists">👟 ${stats.assists}</span>
                 </div>
               </div>
             `;
@@ -2881,7 +2881,7 @@
                   <div class="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
                     <span class="px-1.5 py-0.2 rounded bg-white/10 text-white font-medium">${AppState.match.format || '7'}v${AppState.match.format || '7'}</span>
                     <span>Clock: ${this.formatTime(AppState.clock.seconds)}</span>
-                    <span>â€¢ vs ${AppState.match.opponent || 'Opponent'}</span>
+                    <span>• vs ${AppState.match.opponent || 'Opponent'}</span>
                   </div>
                 </div>
               </div>
@@ -2894,7 +2894,7 @@
             <div class="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
               <div class="flex items-center space-x-1.5">
                 <button type="button" onclick="App.toggleGameDetail('live')" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition">
-                  <span>${isLiveExpanded ? 'â–² Hide Detail' : 'ðŸ" Game Detail'}</span>
+                  <span>${isLiveExpanded ? '▲ Hide Detail' : '🔍 Game Detail'}</span>
                 </button>
               </div>
               <span class="text-[11px] text-slate-400 font-mono">${(AppState.events || []).length} events</span>
@@ -2907,7 +2907,7 @@
         if (history.length === 0 && !hasLiveActive) {
           const emptyCard = document.createElement('div');
           emptyCard.className = 'text-slate-500 text-xs italic text-center py-5 bg-obsidian-950/60 rounded-2xl border border-white/5';
-          emptyCard.innerHTML = `No completed matches archived yet.<br>Use <span class="text-cyber-cyan font-bold">"ðŸ End Match"</span> on the Live screen after a game to save results here!`;
+          emptyCard.innerHTML = `No completed matches archived yet.<br>Use <span class="text-cyber-cyan font-bold">"🏁 End Match"</span> on the Live screen after a game to save results here!`;
           container.appendChild(emptyCard);
         } else {
           history.forEach(m => {
@@ -2924,7 +2924,7 @@
                     <div class="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
                       <span class="px-1.5 py-0.2 rounded bg-white/10 text-white font-medium">${m.format || '7'}v${m.format || '7'}</span>
                       <span>${m.date || ''}</span>
-                      <span>â€¢ Duration: ${this.formatTime(m.durationSeconds || 0)}</span>
+                      <span>• Duration: ${this.formatTime(m.durationSeconds || 0)}</span>
                     </div>
                   </div>
                 </div>
@@ -2935,15 +2935,15 @@
               <div class="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
                 <div class="flex items-center space-x-1.5">
                   <button type="button" onclick="App.toggleGameDetail('${m.id}')" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition" title="View breakdown of player minutes & timeline">
-                    <span>${isExpanded ? 'â–² Hide Detail' : 'ðŸ" Game Detail'}</span>
+                    <span>${isExpanded ? '▲ Hide Detail' : '🔍 Game Detail'}</span>
                   </button>
                 </div>
                 <div class="flex items-center space-x-2">
                   <button type="button" onclick="App.openExportModal('${m.id}')" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/15 border border-white/15 text-slate-200 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition" title="Export Match PDF">
-                    <span>ðŸ"„ PDF</span>
+                    <span>📄 PDF</span>
                   </button>
                   <button type="button" onclick="App.deleteMatchHistory('${m.id}')" class="w-7 h-7 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 flex items-center justify-center text-xs active:scale-95 transition" title="Delete this match record">
-                    ðŸ—'️
+                    🗑️
                   </button>
                 </div>
               </div>
@@ -2978,8 +2978,8 @@
                 </div>
               </div>
               <div class="flex items-center space-x-2 flex-shrink-0">
-                ${goals > 0 ? `<span class="text-[10px] text-emerald-400 font-bold">âš½ ${goals}</span>` : ''}
-                ${assists > 0 ? `<span class="text-[10px] text-sky-400 font-bold">ðŸ'Ÿ ${assists}</span>` : ''}
+                ${goals > 0 ? `<span class="text-[10px] text-emerald-400 font-bold">⚽ ${goals}</span>` : ''}
+                ${assists > 0 ? `<span class="text-[10px] text-sky-400 font-bold">👟 ${assists}</span>` : ''}
                 <span class="px-2.5 py-1 rounded-lg font-mono font-bold text-cyber-mint text-xs bg-obsidian-900/90 border border-cyber-mint/30" title="Official Tracked Playing Time">
                   ${this.formatTime(sec)}
                 </span>
@@ -2993,9 +2993,9 @@
         } else {
           eventsHtml = pEvents.map(ev => {
             let label = '';
-            if (ev.type === 'Goal') label = `âš½ GOAL by #${ev.playerNumber} ${ev.playerName}`;
-            else if (ev.type === 'Assist') label = `ðŸ'Ÿ ASSIST by #${ev.playerNumber} ${ev.playerName}`;
-            else if (ev.type === 'Sub') label = `â‡„ SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
+            if (ev.type === 'Goal') label = `⚽ GOAL by #${ev.playerNumber} ${ev.playerName}`;
+            else if (ev.type === 'Assist') label = `👟 ASSIST by #${ev.playerNumber} ${ev.playerName}`;
+            else if (ev.type === 'Sub') label = `⇄ SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
             return `<div class="text-[11px] text-slate-300 flex items-center space-x-1.5 py-0.5"><span class="font-mono text-cyber-cyan text-[10px] font-bold">[${this.formatTime(ev.matchTimeSeconds || 0)}]</span><span>${label}</span></div>`;
           }).join('');
         }
@@ -3186,7 +3186,7 @@
           return true;
         });
         if (matched.length === 0) {
-          summary.innerHTML = `<span class="text-amber-400 font-medium">âš ️ No matches found in this range. Try adjusting dates.</span>`;
+          summary.innerHTML = `<span class="text-amber-400 font-medium">⚠️ No matches found in this range. Try adjusting dates.</span>`;
         } else {
           let w = 0, d = 0, l = 0, gf = 0, ga = 0;
           matched.forEach(m => {
@@ -3222,7 +3222,7 @@
           target = AppState.matchHistory.find(m => m.id === matchId);
         }
         if (!target) {
-          this.toast('Please select a valid match fixture.', 'âš ️');
+          this.toast('Please select a valid match fixture.', '⚠️');
           return;
         }
         const teamName = target.teamName || AppState.currentTeamName || 'Clubstride';
@@ -3266,11 +3266,11 @@
           timelineHtml = '<div style="color: #94a3b8; font-style: italic; padding: 6px 0;">No match events recorded for this fixture.</div>';
         } else {
           events.forEach(ev => {
-            let icon = 'â€¢';
+            let icon = '•';
             let label = '';
-            if (ev.type === 'Goal') { icon = 'âš½'; label = `GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
-            else if (ev.type === 'Assist') { icon = 'ðŸ'Ÿ'; label = `ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
-            else if (ev.type === 'Sub') { icon = 'â‡„'; label = `SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`; }
+            if (ev.type === 'Goal') { icon = '⚽'; label = `GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
+            else if (ev.type === 'Assist') { icon = '👟'; label = `ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
+            else if (ev.type === 'Sub') { icon = '⇄'; label = `SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`; }
             else { label = `${ev.type} - ${ev.playerName || ''}`; }
             timelineHtml += `
               <div style="padding: 4px 0; display: flex; align-items: center; color: #334155; font-size: 11px;">
@@ -3353,7 +3353,7 @@
         const safeOpp = String(opponent).replace(/[^a-zA-Z0-9_-]/g, '_');
         const fileName = `Clubstride_${safeTeam}_${safeOpp}_${date}.pdf`;
         if (typeof html2pdf !== 'undefined') {
-          this.toast('Generating Single Match PDF... ðŸ"„');
+          this.toast('Generating Single Match PDF... 📄');
           const opt = {
             margin: [8, 8, 8, 8],
             filename: fileName,
@@ -3363,7 +3363,7 @@
           };
           html2pdf().set(opt).from(container).save().then(() => {
             container.classList.add('hidden');
-            App.toast('PDF Exported successfully! ðŸ"„');
+            App.toast('PDF Exported successfully! 📄');
           }).catch(err => {
             console.error('PDF error:', err);
             container.classList.add('hidden');
@@ -3399,7 +3399,7 @@
           return true;
         });
         if (matchedMatches.length === 0) {
-          this.toast('No matches found in the selected date range. Try expanding your range.', 'âš ️');
+          this.toast('No matches found in the selected date range. Try expanding your range.', '⚠️');
           return;
         }
         let wins = 0, draws = 0, losses = 0, gf = 0, ga = 0;
@@ -3467,8 +3467,8 @@
           const avgSec = st.matchesPlayed > 0 ? Math.round(st.totalSeconds / st.matchesPlayed) : 0;
           
           let highlights = [];
-          if (maxGoals > 0 && st.goals === maxGoals) highlights.push('âš½ Top Scorer');
-          if (maxAssists > 0 && st.assists === maxAssists) highlights.push('ðŸ'Ÿ Top Assists');
+          if (maxGoals > 0 && st.goals === maxGoals) highlights.push('⚽ Top Scorer');
+          if (maxAssists > 0 && st.assists === maxAssists) highlights.push('👟 Top Assists');
           if (maxSeconds > 0 && st.totalSeconds === maxSeconds) highlights.push('⏱️ Most Mins');
           const highlightBadge = highlights.length > 0 
             ? `<div style="font-size: 9px; color: #047857; font-weight: bold; margin-top: 2px;">${highlights.join(' &bull; ')}</div>` 
@@ -3612,7 +3612,7 @@
         const safeTeam = String(activeTeamName).replace(/[^a-zA-Z0-9_-]/g, '_');
         const fileName = `Clubstride_${safeTeam}_${startDate}_to_${endDate}.pdf`;
         if (typeof html2pdf !== 'undefined') {
-          this.toast('Generating Date Range PDF... ðŸ"Š');
+          this.toast('Generating Date Range PDF... 📊');
           const opt = {
             margin: [8, 8, 8, 8],
             filename: fileName,
@@ -3622,7 +3622,7 @@
           };
           html2pdf().set(opt).from(container).save().then(() => {
             container.classList.add('hidden');
-            App.toast('PDF Exported successfully! ðŸ"„');
+            App.toast('PDF Exported successfully! 📄');
           }).catch(err => {
             console.error('PDF error:', err);
             container.classList.add('hidden');
@@ -3721,9 +3721,9 @@
           targetEvents.forEach(ev => {
             const item = document.createElement('div');
             let txt = '';
-            if (ev.type === 'Goal') txt = `[${this.formatTime(ev.matchTimeSeconds)}] âš½ GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period || ''})`;
-            else if (ev.type === 'Assist') txt = `[${this.formatTime(ev.matchTimeSeconds)}] ðŸ'Ÿ ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period || ''})`;
-            else if (ev.type === 'Sub') txt = `[${this.formatTime(ev.matchTimeSeconds)}] â‡„ SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
+            if (ev.type === 'Goal') txt = `[${this.formatTime(ev.matchTimeSeconds)}] ⚽ GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period || ''})`;
+            else if (ev.type === 'Assist') txt = `[${this.formatTime(ev.matchTimeSeconds)}] 👟 ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period || ''})`;
+            else if (ev.type === 'Sub') txt = `[${this.formatTime(ev.matchTimeSeconds)}] ⇄ SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
             item.innerText = txt;
             log.appendChild(item);
           });
@@ -3742,7 +3742,7 @@
           };
           html2pdf().set(opt).from(el).save().then(() => {
             el.classList.add('hidden');
-            App.toast('PDF Exported successfully! ðŸ"„');
+            App.toast('PDF Exported successfully! 📄');
           }).catch(err => {
             console.error('PDF error:', err);
             el.classList.add('hidden');
@@ -3835,7 +3835,7 @@
             p.name = name;
             p.number = num;
             p.position = pos;
-            this.toast(`Player #${num} ${name} updated! âœ️`);
+            this.toast(`Player #${num} ${name} updated! ✏️`);
           }
           AppState.editingPlayerId = null;
         } else {
@@ -3863,7 +3863,7 @@
           m.classList.remove('flex');
         });
       },
-      toast(msg, icon = 'âœ¨') {
+      toast(msg, icon = '✨') {
         const pod = document.getElementById('toastPod');
         const msgEl = document.getElementById('toastMessage');
         const iconEl = document.getElementById('toastIcon');

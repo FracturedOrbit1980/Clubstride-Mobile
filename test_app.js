@@ -22,21 +22,21 @@ const expectedIds = [
 for (const id of expectedIds) {
   assert(html.includes(`id="${id}"`), `Missing element id: ${id}`);
 }
-console.log('âœ“ All expected DOM element IDs present in index.html');
+console.log('✓ All expected DOM element IDs present in index.html');
 
 // 2. Verify meta tags
 assert(html.includes('<meta name="mobile-web-app-capable" content="yes" />'), 'Missing mobile-web-app-capable');
 assert(html.includes('<meta name="apple-mobile-web-app-capable" content="yes" />'), 'Missing apple-mobile-web-app-capable');
-console.log('âœ“ Mobile web app meta tags verified');
+console.log('✓ Mobile web app meta tags verified');
 
 // 3. Verify format wording is 7v7 (not 7-a-side)
 assert(!html.includes('7-a-side'), 'Found deprecated "7-a-side" in HTML');
-console.log('âœ“ Consistent format wording (e.g. 7v7) verified');
+console.log('✓ Consistent format wording (e.g. 7v7) verified');
 
 // 4. Verify "Add to Squad" button label
 assert(html.includes('Add to Squad'), 'Missing "Add to Squad" button');
 assert(!html.includes('Add to Squad Pods'), 'Found old "Add to Squad Pods" button');
-console.log('âœ“ "Add to Squad" button text verified');
+console.log('✓ "Add to Squad" button text verified');
 
 // 5. Verify local minified Tailwind CSS & service worker cache
 assert(fs.existsSync('tailwind.min.css'), 'Missing tailwind.min.css');
@@ -46,7 +46,7 @@ assert(!html.includes('src="https://cdn.tailwindcss.com"'), 'Found unwanted Tail
 const sw = fs.readFileSync('sw.js', 'utf-8');
 assert(sw.includes("CACHE_NAME = 'Clubstride Mobile-v7'"), 'sw.js cache version is not Clubstride Mobile-v7');
 assert(sw.includes("'./tailwind.min.css'"), 'sw.js missing tailwind.min.css in cached assets');
-console.log('âœ“ Standalone offline Tailwind CSS & sw.js Clubstride Mobile-v7 cache verified');
+console.log('✓ Standalone offline Tailwind CSS & sw.js Clubstride Mobile-v7 cache verified');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
@@ -125,7 +125,7 @@ eval(jsCode);
 
 // Run App.init()
 App.init();
-console.log('âœ“ App.init() executed successfully');
+console.log('✓ App.init() executed successfully');
 
 // ==========================================
 // TEST 7: Tab navigation
@@ -136,7 +136,7 @@ App.switchTab('stats');
 assert.strictEqual(AppState.activeTab, 'stats', 'Active tab should be stats');
 App.switchTab('pitch');
 assert.strictEqual(AppState.activeTab, 'pitch', 'Active tab should be pitch');
-console.log('âœ“ Tab navigation functions properly');
+console.log('✓ Tab navigation functions properly');
 
 // ==========================================
 // TEST 8: Score steppers (+/-)
@@ -154,7 +154,7 @@ App.adjustScore('opp', 1);
 assert.strictEqual(AppState.match.opponentGoals, 1, 'Opponent goals should increase to 1');
 App.adjustScore('opp', -1);
 assert.strictEqual(AppState.match.opponentGoals, 0, 'Opponent goals should decrease to 0');
-console.log('âœ“ Manual score steppers (+/-) working properly');
+console.log('✓ Manual score steppers (+/-) working properly');
 
 // ==========================================
 // TEST 9: Goal recording & Enforced player selection
@@ -172,8 +172,8 @@ App.saveEvent();
 assert.strictEqual(AppState.match.ourGoals, 2, 'Goal should be registered');
 let goalEvent = AppState.events.find(e => e.type === 'Goal' && e.playerId === p1.id);
 assert(goalEvent, 'Goal event should exist in timeline');
-console.log('âœ“ Enforced selecting a player in Goal popup before recording');
-console.log('âœ“ Recording goal updates score, player stats, and timeline');
+console.log('✓ Enforced selecting a player in Goal popup before recording');
+console.log('✓ Recording goal updates score, player stats, and timeline');
 
 // ==========================================
 // TEST 10: Undo/Delete goal from timeline
@@ -182,7 +182,7 @@ const prevGoals = AppState.match.ourGoals;
 App.deleteTimelineEvent(goalEvent.id);
 assert.strictEqual(AppState.match.ourGoals, prevGoals - 1, 'Our goals should decrease when goal deleted');
 assert(!AppState.events.some(e => e.id === goalEvent.id), 'Deleted event should no longer exist in events');
-console.log('âœ“ Undoing goal from timeline updates score and player stats');
+console.log('✓ Undoing goal from timeline updates score and player stats');
 
 // ==========================================
 // TEST 11: Setup - Your Team Name
@@ -194,7 +194,7 @@ dom['inputMatchDate'].value = '2026-10-18';
 App.saveMatchSetup();
 assert.strictEqual(AppState.match.teamName, 'Lightning Stars', 'Team name in setup should update AppState.match.teamName');
 assert.strictEqual(dom['scoreboardTeam'].innerText, 'Lightning Stars', 'Scoreboard team name should match your team name');
-console.log('âœ“ "Your team name" in Setup works and saves correctly');
+console.log('✓ "Your team name" in Setup works and saves correctly');
 
 // ==========================================
 // TEST 12: End Match Flow
@@ -224,7 +224,7 @@ assert.strictEqual(AppState.match.opponentGoals, 0, 'Opponent goals should reset
 assert.strictEqual(Object.keys(AppState.playerTimers).length, 0, 'Player timers should be reset to empty');
 assert.strictEqual(AppState.events.length, 0, 'Match events should be cleared');
 assert(AppState.squad.length > 0, 'Squad should never be deleted on match end');
-console.log('âœ“ End match archives match to history with formation and resets state for next match');
+console.log('✓ End match archives match to history with formation and resets state for next match');
 
 // ==========================================
 // TEST 13: Export backup
@@ -239,7 +239,7 @@ dom['downloadAnchor'] = {
 };
 App.exportBackup();
 assert(storage['Clubstride Mobile_squad'], 'localStorage squad should exist');
-console.log('âœ“ Export backup generates downloadable JSON');
+console.log('✓ Export backup generates downloadable JSON');
 
 // ==========================================
 // TEST 14: Data persistence
@@ -247,7 +247,7 @@ console.log('âœ“ Export backup generates downloadable JSON');
 const testStorageKey = 'Clubstride Mobile_test_persist';
 localStorage.setItem(testStorageKey, 'persisted_value');
 assert.strictEqual(localStorage.getItem(testStorageKey), 'persisted_value', 'Data in localStorage should persist');
-console.log('âœ“ localStorage data persistence survives refresh / restart');
+console.log('✓ localStorage data persistence survives refresh / restart');
 
 // ==========================================
 // TEST 15: Formations Presets Completeness & GK positioning
@@ -268,7 +268,7 @@ for (const [fmt, list] of Object.entries(reqFormations)) {
     assert(slots[0].y >= 88, `GK in ${fName} (${fmt}v${fmt}) must be in goal area (y >= 88)`);
   }
 }
-console.log('âœ“ All prescribed formations verified across 5v5, 7v7, 9v9, and 11v11 with GK always in goal');
+console.log('✓ All prescribed formations verified across 5v5, 7v7, 9v9, and 11v11 with GK always in goal');
 
 // Test formation saving per team
 App.onFormationChanged('2-1-2-1');
@@ -279,7 +279,7 @@ if (AppState.teams && AppState.currentTeamId) {
     assert.strictEqual(currentTeam.formation, '2-1-2-1', 'Current team object must persist chosen formation');
   }
 }
-console.log('âœ“ Formation saving per team and match history verified');
+console.log('✓ Formation saving per team and match history verified');
 
 // ==========================================
 // TEST 16: PDF Duration Formatting
@@ -290,7 +290,7 @@ assert.strictEqual(App.formatPdfDuration(900), '15:00');
 assert.strictEqual(App.formatPdfDuration(3540), '59:00');
 assert.strictEqual(App.formatPdfDuration(3600), '1h 0m', 'Duration >= 60 mins must format as Xh Ym');
 assert.strictEqual(App.formatPdfDuration(4500), '1h 15m', 'Duration >= 60 mins must format as Xh Ym');
-console.log('âœ“ PDF duration formatting verified (mm:ss and Xh Ym when >= 60 mins)');
+console.log('✓ PDF duration formatting verified (mm:ss and Xh Ym when >= 60 mins)');
 
 // ==========================================
 // TEST 17: PDF Report Modal & Date Presets
@@ -309,7 +309,7 @@ App.switchPdfReportMode('range');
 assert(!dom['pdfPane_range'].classList.contains('hidden'), 'Range pane should be visible');
 App.switchPdfReportMode('single');
 assert(!dom['pdfPane_single'].classList.contains('hidden'), 'Single pane should be visible');
-console.log('âœ“ PDF Report bottom-sheet modal, mode switching, and date presets verified');
+console.log('✓ PDF Report bottom-sheet modal, mode switching, and date presets verified');
 
 // ==========================================
 // TEST 18: Date Range PDF Data Calculation & Validation
@@ -365,7 +365,7 @@ assert(toastMsg.includes('No matches found'), 'Empty date range must show friend
 App.generateDateRangePdf('2026-10-01', '2026-10-20');
 const pdfContainer = dom['pdfExportContainer'];
 assert(pdfContainer.innerHTML.includes('Squad Performance Ledger'), 'PDF ledger title missing');
-assert(pdfContainer.innerHTML.includes('1W â€¢ 1D â€¢ 0L') || pdfContainer.innerHTML.includes('1W &bull; 1D &bull; 0L'), 'Record summary should reflect 1W - 1D - 0L');
+assert(pdfContainer.innerHTML.includes('1W • 1D • 0L') || pdfContainer.innerHTML.includes('1W &bull; 1D &bull; 0L'), 'Record summary should reflect 1W - 1D - 0L');
 assert(pdfContainer.innerHTML.includes('Top Scorer'), 'Top scorer highlight badge missing');
 assert(pdfContainer.innerHTML.includes('Most Mins'), 'Most minutes highlight badge missing');
 
@@ -374,7 +374,7 @@ App.generateSingleMatchPdf('m_range_1');
 assert(pdfContainer.innerHTML.includes('Match Performance Report'), 'Single match PDF title missing');
 assert(pdfContainer.innerHTML.includes('Wolves FC'), 'Opponent Wolves FC should appear in PDF');
 assert(pdfContainer.innerHTML.includes('2-3-1'), 'Formation 2-3-1 should appear in PDF');
-console.log('âœ“ Dual-mode PDF reports (Single Match & Date Range) generation and data accuracy verified');
+console.log('✓ Dual-mode PDF reports (Single Match & Date Range) generation and data accuracy verified');
 
 // ==========================================
 // TEST 19: Starting Lineups Sorting & Custom Formations
@@ -382,7 +382,7 @@ console.log('âœ“ Dual-mode PDF reports (Single Match & Date Range) generatio
 App.sortLineupByPosition(false);
 const starter0 = AppState.squad.find(p => p.id === AppState.match.starters[0]);
 assert(starter0, 'Starter 0 should exist');
-console.log('âœ“ Starting lineups sorted by pitch position (GK â†’ DEF â†’ MID â†’ FWD)');
+console.log('✓ Starting lineups sorted by pitch position (GK → DEF → MID → FWD)');
 
 // ==========================================
 // TEST 20: Tamper-Proof Read-Only Minutes Reporting
@@ -390,7 +390,7 @@ console.log('âœ“ Starting lineups sorted by pitch position (GK â†’ DEF 
 assert.strictEqual(typeof App.adjustPlayerGameMinutes, 'undefined', 'adjustPlayerGameMinutes must not be defined');
 assert.strictEqual(typeof App.openEditGameMinutesModal, 'undefined', 'openEditGameMinutesModal must not be defined');
 assert.strictEqual(typeof App.saveGameMinutes, 'undefined', 'saveGameMinutes must not be defined');
-console.log('âœ“ Tamper-proof read-only playing time reporting & game detail breakdown verified');
+console.log('✓ Tamper-proof read-only playing time reporting & game detail breakdown verified');
 
 console.log('\n=========================================');
 console.log('ALL 20 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');

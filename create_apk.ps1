@@ -1,20 +1,20 @@
 ﻿# create_apk.ps1
-# Reâ€‘bundle the PWA and generate a fresh APK via PWABuilder, saving it to the Desktop.
+# Re‑bundle the PWA and generate a fresh APK via PWABuilder, saving it to the Desktop.
 
 $projectRoot = "C:\Users\Robert.Delport\.gemini\antigravity\scratch\Clubstride Mobile-app"
 Set-Location $projectRoot
 
 # ---------------------------------------------------------------
-# 1ï¸âƒ£ Bundle HTML (produces Clubstride Mobile.html)
+# 1️⃣ Bundle HTML (produces Clubstride Mobile.html)
 # ---------------------------------------------------------------
 python .\bundle_offline.py
 if (-not (Test-Path "$projectRoot\Clubstride Mobile.html")) {
-    Write-Error "âŒ  bundle_offline.py failed â€“ Clubstride Mobile.html not found."
+    Write-Error "❌  bundle_offline.py failed – Clubstride Mobile.html not found."
     exit 1
 }
 
 # ---------------------------------------------------------------
-# 2ï¸âƒ£ Prepare payload for PWABuilder CloudAPK API
+# 2️⃣ Prepare payload for PWABuilder CloudAPK API
 # ---------------------------------------------------------------
 $payload = @{ 
     host                = "file:///$projectRoot/Clubstride Mobile.html"
@@ -33,28 +33,28 @@ $payload = @{
 } | ConvertTo-Json -Depth 5
 
 # ---------------------------------------------------------------
-# 3ï¸âƒ£ Call PWABuilder CloudAPK API (Invokeâ€‘RestMethod parses JSON automatically)
+# 3️⃣ Call PWABuilder CloudAPK API (Invoke‑RestMethod parses JSON automatically)
 # ---------------------------------------------------------------
 $apiUrl = "https://pwabuilder-cloudapk.appspot.com/api/generateAppPackage"
 try {
     $json = Invoke-RestMethod -Method Post -Uri $apiUrl -ContentType "application/json" -Body $payload -ErrorAction Stop
 } catch {
-    Write-Error "âŒ  PWABuilder request failed: $_"
+    Write-Error "❌  PWABuilder request failed: $_"
     exit 1
 }
 
 if ($null -ne $json.downloadUrl) {
     $outPath = "$env:USERPROFILE\Desktop\Clubstride Mobile Tactical Pitch.apk"
-    Write-Host "Downloading APK to $outPath â€¦"
+    Write-Host "Downloading APK to $outPath …"
     Invoke-WebRequest -Uri $json.downloadUrl -OutFile $outPath -UseBasicParsing
     if (Test-Path $outPath) {
-        Write-Host "âœ…  APK saved successfully!"
+        Write-Host "✅  APK saved successfully!"
     } else {
-        Write-Error "âŒ  Download failed â€“ file not found at $outPath"
+        Write-Error "❌  Download failed – file not found at $outPath"
     }
 }
 else {
-    Write-Error 'âŒ  PWABuilder API error â€“ no downloadUrl.'
+    Write-Error '❌  PWABuilder API error – no downloadUrl.'
 }
 
 
