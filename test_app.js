@@ -14,7 +14,7 @@ const expectedIds = [
   'section_pitch', 'section_live', 'section_roster', 'section_stats',
   'scoreboardTeam', 'scoreboardOpponent', 'scoreboardGoals', 'scoreboardOpponentGoals',
   'clockToggleBtn', 'matchClockDisplay', 'clockStatusSubtext',
-  'eventModalTitle', 'eventPlayerSelector',
+  'eventModalTitle', 'eventPlayerSelector', 'eventAssistSelector',
   'inputMatchTeamName', 'inputMatchTitle', 'inputMatchOpponent', 'inputMatchDate',
   'backupFileInput'
 ];
@@ -165,16 +165,28 @@ let p2 = AppState.squad[1];
 
 App.openEventModal('Goal');
 dom['eventPlayerSelector'].value = '';
+dom['eventAssistSelector'].value = '';
 App.saveEvent();
 assert.strictEqual(AppState.match.ourGoals, 1, 'Score should not change when no player selected');
 
 dom['eventPlayerSelector'].value = p1.id;
+dom['eventAssistSelector'].value = p2.id;
 App.saveEvent();
 assert.strictEqual(AppState.match.ourGoals, 2, 'Goal should be registered');
 let goalEvent = AppState.events.find(e => e.type === 'Goal' && e.playerId === p1.id);
 assert(goalEvent, 'Goal event should exist in timeline');
+const linkedAssist = AppState.events.find(e => e.type === 'Assist' && e.playerId === p2.id);
+assert(linkedAssist, 'Assist should be logged with the goal');
+assert.strictEqual(linkedAssist.goalId, goalEvent.id, 'Assist must be linked to the goal it belongs to');
+assert.strictEqual(AppState.events.indexOf(linkedAssist), AppState.events.indexOf(goalEvent) + 1, 'Assist should sit under its goal in the timeline');
+
+dom['eventPlayerSelector'].value = p1.id;
+dom['eventAssistSelector'].value = p1.id;
+App.saveEvent();
+assert.strictEqual(AppState.match.ourGoals, 2, 'A scorer cannot assist their own goal');
+assert(!AppState.events.some(e => e.type === 'Assist' && e.playerId === p1.id), 'Self-assist must be rejected');
 console.log('✓ Enforced selecting a player in Goal popup before recording');
-console.log('✓ Recording goal updates score, player stats, and timeline');
+console.log('✓ Goal popup credits a fielded scorer plus optional linked assist');
 
 // ==========================================
 // TEST 10: Undo/Delete goal from timeline
@@ -183,6 +195,7 @@ const prevGoals = AppState.match.ourGoals;
 App.deleteTimelineEvent(goalEvent.id);
 assert.strictEqual(AppState.match.ourGoals, prevGoals - 1, 'Our goals should decrease when goal deleted');
 assert(!AppState.events.some(e => e.id === goalEvent.id), 'Deleted event should no longer exist in events');
+assert(!AppState.events.some(e => e.id === linkedAssist.id), 'Undoing a goal must also remove its linked assist');
 console.log('✓ Undoing goal from timeline updates score and player stats');
 
 // ==========================================

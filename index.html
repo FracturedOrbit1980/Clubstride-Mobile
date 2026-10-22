@@ -355,15 +355,11 @@
             <span><svg class="ci ci-16" aria-hidden="true"><use href="#ci-end-match"></use></svg> End Match</span>
           </button>
         </div>
-        <!-- DEDICATED GOAL & ASSIST ACTION BUTTONS -->
-        <div class="grid grid-cols-2 gap-2.5 mt-4 pt-3 border-t border-white/10">
-          <button onclick="App.openEventModal('Goal')" class="py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
+        <!-- GOAL ACTION: SCORER + OPTIONAL ASSIST IN ONE ENTRY -->
+        <div class="mt-4 pt-3 border-t border-white/10">
+          <button onclick="App.openEventModal('Goal')" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
             <span class="text-base ci-goal"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-goal"></use></svg></span>
-            <span>+ Goal</span>
-          </button>
-          <button onclick="App.openEventModal('Assist')" class="py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
-            <span class="text-base ci-assist"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-assist"></use></svg></span>
-            <span>+ Assist</span>
+            <span>+ Goal (Scorer &amp; Assist)</span>
           </button>
         </div>
       </div>
@@ -619,7 +615,7 @@
       </div>
     </div>
   </div>
-  <!-- 3. DEDICATED GOAL / ASSIST MODAL -->
+  <!-- 3. GOAL LOGGER — SCORER PLUS OPTIONAL ASSIST, ALWAYS TIED TO A GOAL -->
   <div id="modalEvent" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
@@ -628,15 +624,22 @@
         </h3>
         <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
-      <p class="text-xs text-slate-300">Select the squad member who achieved this:</p>
+      <p class="text-xs text-slate-300">Only players on the pitch can score or assist. The assist is optional.</p>
       <div>
-        <select id="eventPlayerSelector" class="w-full bg-obsidian-950 border border-white/15 rounded-xl p-3 text-white text-sm font-semibold focus:outline-none focus:border-cyber-cyan">
+        <label for="eventPlayerSelector" class="text-[10px] font-bold uppercase tracking-wider text-cyber-mint">Goal Scorer</label>
+        <select id="eventPlayerSelector" onchange="App.populateAssistOptions()" class="w-full mt-1 bg-obsidian-950 border border-white/15 rounded-xl p-3 text-white text-sm font-semibold focus:outline-none focus:border-cyber-cyan">
           <option value="" disabled selected>-- Select player --</option>
+        </select>
+      </div>
+      <div>
+        <label for="eventAssistSelector" class="text-[10px] font-bold uppercase tracking-wider text-sky-400">Assist (Optional)</label>
+        <select id="eventAssistSelector" class="w-full mt-1 bg-obsidian-950 border border-white/15 rounded-xl p-3 text-white text-sm font-semibold focus:outline-none focus:border-cyber-cyan">
+          <option value="">-- No Assist --</option>
         </select>
       </div>
       <div class="flex space-x-2 pt-2">
         <button onclick="App.confirmEvent()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95">
-          Record Event
+          Record Goal
         </button>
       </div>
     </div>
@@ -2403,69 +2406,109 @@
         document.getElementById('subInstructionText').innerText = 'Step 1: Tap a player on field to sub OUT';
         this.renderLiveBoard();
       },
-      openEventModal(type) {
-        AppState.currentEventType = type;
+      openEventModal() {
         const modal = document.getElementById('modalEvent');
-        const title = document.getElementById('eventModalTitle');
         const selector = document.getElementById('eventPlayerSelector');
-        title.innerHTML = type === 'Goal' ? '<span><svg class="ci ci-16 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> Register Goal</span>' : '<span><svg class="ci ci-16 ci-assist" aria-hidden="true"><use href="#ci-assist"></use></svg> Register Assist</span>';
         selector.innerHTML = '';
         // Requirement 3: Don't preselect a scorer; make the coach pick one before saving
         const placeholder = document.createElement('option');
         placeholder.value = '';
         placeholder.disabled = true;
         placeholder.selected = true;
-        placeholder.innerText = type === 'Goal' ? '-- Select Goal Scorer --' : '-- Select Assisting Player --';
+        placeholder.innerText = '-- Select Goal Scorer --';
         selector.appendChild(placeholder);
-        const activeIds = [...AppState.match.starters, ...AppState.match.bench];
-        activeIds.forEach(pid => {
-          const p = AppState.squad.find(i => i.id === pid);
-          if (p) {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.innerText = `#${p.number} — ${p.name} (${p.position})`;
-            selector.appendChild(opt);
-          }
+        this.getFieldedPlayers().forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.innerText = `#${p.number} — ${p.name} (${p.position})`;
+          selector.appendChild(opt);
         });
+        this.populateAssistOptions();
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+      },
+      getFieldedPlayers() {
+        return AppState.match.starters
+          .map(pid => AppState.squad.find(i => i.id === pid))
+          .filter(Boolean);
+      },
+      populateAssistOptions() {
+        const assistSel = document.getElementById('eventAssistSelector');
+        if (!assistSel) return;
+        const scorerId = document.getElementById('eventPlayerSelector').value;
+        assistSel.innerHTML = '';
+        const none = document.createElement('option');
+        none.value = '';
+        none.innerText = '-- No Assist --';
+        none.selected = true;
+        assistSel.appendChild(none);
+        this.getFieldedPlayers().forEach(p => {
+          if (p.id === scorerId) return;
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.innerText = `#${p.number} — ${p.name} (${p.position})`;
+          assistSel.appendChild(opt);
+        });
       },
       saveEvent() {
         return this.confirmEvent();
       },
       confirmEvent() {
-        const type = AppState.currentEventType;
         const selector = document.getElementById('eventPlayerSelector');
+        const assistSelector = document.getElementById('eventAssistSelector');
         const pid = selector.value;
         // Requirement 3: Enforce scorer selection
         if (!pid) {
-          this.toast(type === 'Goal' ? 'Please choose the goal scorer!' : 'Please choose the assisting player!', 'card-yellow');
+          this.toast('Please choose the goal scorer!', 'card-yellow');
           return;
         }
         const player = AppState.squad.find(i => i.id === pid);
         if (!player) return;
-        if (type === 'Goal') {
-          AppState.match.ourGoals = (AppState.match.ourGoals || 0) + 1;
-          const scoreEl = document.getElementById('scoreboardGoals');
-          if (scoreEl) scoreEl.innerText = AppState.match.ourGoals;
+        const assistPid = assistSelector ? assistSelector.value : '';
+        if (assistPid === pid) {
+          this.toast('The scorer cannot assist their own goal!', 'card-yellow');
+          return;
         }
-        const ev = {
-          id: 'ev_' + Date.now(),
+        const assister = assistPid ? AppState.squad.find(i => i.id === assistPid) : null;
+        if (assistPid && !assister) return;
+        AppState.match.ourGoals = (AppState.match.ourGoals || 0) + 1;
+        const scoreEl = document.getElementById('scoreboardGoals');
+        if (scoreEl) scoreEl.innerText = AppState.match.ourGoals;
+        const stamp = Date.now();
+        const goalEvent = {
+          id: 'ev_' + stamp,
           matchId: AppState.match.id,
-          type: type,
+          type: 'Goal',
           playerId: pid,
           playerName: player.name,
           playerNumber: player.number,
           matchTimeSeconds: AppState.clock.seconds,
           period: AppState.clock.period,
-          timestamp: Date.now()
+          timestamp: stamp
         };
-        AppState.events.unshift(ev);
+        AppState.events.unshift(goalEvent);
+        if (assister) {
+          const assistEvent = {
+            id: 'ev_' + stamp + '_assist',
+            matchId: AppState.match.id,
+            type: 'Assist',
+            playerId: assister.id,
+            playerName: assister.name,
+            playerNumber: assister.number,
+            goalId: goalEvent.id,
+            matchTimeSeconds: goalEvent.matchTimeSeconds,
+            period: goalEvent.period,
+            timestamp: stamp
+          };
+          AppState.events.splice(AppState.events.indexOf(goalEvent) + 1, 0, assistEvent);
+        }
         this.saveStorage();
         this.closeModals();
         this.renderTimeline();
         this.renderStats();
-        this.toast(`${type} logged for #${player.number} ${player.name}! `);
+        this.toast(assister
+          ? `Goal: #${player.number} ${player.name} • Assist: #${assister.number} ${assister.name}`
+          : `Goal: #${player.number} ${player.name}!`);
       },
       // Requirement 2: Manual Score Steppers (+/-)
       adjustScore(team, delta) {
@@ -2489,8 +2532,9 @@
         const evIndex = AppState.events.findIndex(e => e.id === evId);
         if (evIndex === -1) return;
         const ev = AppState.events[evIndex];
+        const linkedAssists = ev.type === 'Goal' ? AppState.events.filter(e => e.goalId === ev.id) : [];
         const confirmMsg = ev.type === 'Goal'
-          ? `Undo this Goal by #${ev.playerNumber} ${ev.playerName}? Score will decrement by 1.`
+          ? `Undo this Goal by #${ev.playerNumber} ${ev.playerName}? Score will decrement by 1.${linkedAssists.length ? `\n\nIts ${linkedAssists.length} linked assist will be removed too.` : ''}`
           : `Delete this ${ev.type} event (${ev.playerName || ''})?`;
         if (!confirm(confirmMsg)) return;
         if (ev.type === 'Goal') {
@@ -2498,12 +2542,13 @@
           const el = document.getElementById('scoreboardGoals');
           if (el) el.innerText = AppState.match.ourGoals;
         }
-        AppState.events.splice(evIndex, 1);
+        const removedIds = [ev.id, ...linkedAssists.map(a => a.id)];
+        AppState.events = AppState.events.filter(e => !removedIds.includes(e.id));
         this.saveStorage();
         this.renderTimeline();
         this.renderStats();
         this.renderLiveBoard();
-        this.toast(`${ev.type} undone & stats updated!`);
+        this.toast(linkedAssists.length ? `${ev.type} + linked assist undone & stats updated!` : `${ev.type} undone & stats updated!`);
       },
       // Requirement 1: End Match flow and archival
       endMatch() {

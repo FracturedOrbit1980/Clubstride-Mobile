@@ -38,8 +38,8 @@ Hosted live on GitHub Pages: [https://FracturedOrbit1980.github.io/Clubstride-Mo
 - **Live Playing Timers:** Only players on the field accumulate time, and minutes are credited from real elapsed wall-clock time—so a backgrounded or sleeping phone still awards the missing seconds when it wakes (substitutions move the accrual to the incoming player from the next second).
 - **Live Stats Sync:** Starting the clock adds the live match to the pulled totals, and the Stats screen refreshes every 5 seconds while the match runs. **End match** carries that selection onto the archived fixture so totals keep covering the game that was just played.
 - **Scoreboard with Touch Steppers:** Rounded `+` and `−` score adjustment buttons for both teams.
-- **Goal & Assist Logger:** Fast modal recording goals and assists; requires selecting the achieving squad member before saving.
-- **Timeline & Instant Undo:** Event log showing goals, assists, and substitutions with one-tap `✕ Undo` to revert mistaken goals and update player statistics.
+- **Goal & Assist Logger:** One **"+ Goal"** popup records the goal and its setup together: pick the scorer, then an optional assister. Both lists show only players currently on the pitch, the scorer is removed from the assist list, a goal is never logged without choosing the scorer, and an assist can never exist without a goal.
+- **Timeline & Instant Undo:** Event log showing goals, their linked assists, and substitutions with one-tap `✕ Undo`. Undoing a goal removes the assist attached to it.
 - **🏁 End Match Workflow:** Confirmation popup before saving completed matches (date, score, formation, player minutes, goals, assists, substitutions, timeline) into **Match History** and resetting stopwatch, score, and live timers ready for the next game.
 
 ### 4. 👥 Squad Registry & Team Management
