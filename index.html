@@ -887,7 +887,9 @@
         period: '1st Half',
         seconds: 0,
         running: false,
-        intervalId: null
+        intervalId: null,
+        startedAt: 0,
+        sinceSync: 0
       },
       playerTimers: {},
       subOutPlayerId: null,
@@ -1204,6 +1206,10 @@
         window.addEventListener('beforeunload', () => App.saveStorage());
         document.addEventListener('visibilitychange', () => {
           if (document.visibilityState === 'hidden') App.saveStorage();
+          else if (AppState.clock.running) {
+            App.tickClock();
+            if (AppState.activeTab === 'stats') App.renderStats();
+          }
         });
       },
       registerServiceWorker() {
@@ -2197,30 +2203,53 @@
         if (AppState.clock.running) {
           clearInterval(AppState.clock.intervalId);
           AppState.clock.running = false;
+          AppState.clock.intervalId = null;
+          AppState.clock.startedAt = 0;
+          this.saveStorage();
           document.getElementById('clockToggleBtn').innerText = 'RESUME';
           document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
           document.getElementById('clockStatusSubtext').innerText = 'Clock Paused';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-amber-400 font-medium mt-1';
         } else {
           AppState.clock.running = true;
-          AppState.clock.intervalId = setInterval(() => {
-            AppState.clock.seconds++;
-            
-            AppState.match.starters.forEach(pid => {
-              AppState.playerTimers[pid] = (AppState.playerTimers[pid] || 0) + 1;
-            });
-            App.updateClockDisplay();
-            if (AppState.clock.seconds % 5 === 0) App.saveStorage();
-          }, 1000);
+          AppState.clock.startedAt = Date.now();
+          AppState.clock.sinceSync = 0;
+          this.syncLiveGameSelection();
+          AppState.clock.intervalId = setInterval(() => App.tickClock(), 1000);
           document.getElementById('clockToggleBtn').innerText = 'PAUSE';
           document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-amber-500 text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
           document.getElementById('clockStatusSubtext').innerText = '● Live Match In Progress — Accumulating Playing Seconds';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-cyber-mint font-medium mt-1 glow-pulse';
         }
       },
+      tickClock() {
+        if (!AppState.clock.running || !AppState.clock.startedAt) return;
+        const elapsed = Math.floor((Date.now() - AppState.clock.startedAt) / 1000);
+        if (elapsed < 1) return;
+        AppState.clock.startedAt += elapsed * 1000;
+        AppState.clock.seconds += elapsed;
+        AppState.match.starters.forEach(pid => {
+          AppState.playerTimers[pid] = (AppState.playerTimers[pid] || 0) + elapsed;
+        });
+        this.updateClockDisplay();
+        AppState.clock.sinceSync += elapsed;
+        if (AppState.clock.sinceSync >= 5) {
+          AppState.clock.sinceSync = 0;
+          this.saveStorage();
+          if (AppState.activeTab === 'stats') this.renderStats();
+        }
+      },
+      syncLiveGameSelection() {
+        const ids = AppState.selectedGameIds;
+        if (!Array.isArray(ids) || ids.includes('live')) return;
+        AppState.selectedGameIds = [...ids, 'live'];
+        this.saveStorage();
+      },
       resetTimer() {
         clearInterval(AppState.clock.intervalId);
         AppState.clock.running = false;
+        AppState.clock.intervalId = null;
+        AppState.clock.startedAt = 0;
         AppState.clock.seconds = 0;
         this.updateClockDisplay();
         document.getElementById('clockToggleBtn').innerText = 'START';
@@ -2488,6 +2517,8 @@
         if (AppState.clock.running) {
           clearInterval(AppState.clock.intervalId);
           AppState.clock.running = false;
+          AppState.clock.intervalId = null;
+          AppState.clock.startedAt = 0;
         }
         // Create completed match archive
         const currentFormation = AppState.match.formation || (document.getElementById('formationSelect') ? document.getElementById('formationSelect').value : '') || '2-3-1';
@@ -2511,6 +2542,9 @@
         };
         if (!AppState.matchHistory) AppState.matchHistory = [];
         AppState.matchHistory.unshift(matchRecord);
+        if (Array.isArray(AppState.selectedGameIds) && AppState.selectedGameIds.includes('live')) {
+          AppState.selectedGameIds = AppState.selectedGameIds.map(id => id === 'live' ? matchRecord.id : id);
+        }
         // Calculate next match title e.g. "Match 2"
         let nextTitle = 'Match 2';
         const mMatch = (AppState.match.title || '').match(/(\d+)/);

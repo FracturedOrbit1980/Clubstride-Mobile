@@ -44,10 +44,10 @@ assert(html.includes('<link rel="stylesheet" href="./tailwind.min.css" />'), 'in
 assert(!html.includes('src="https://cdn.tailwindcss.com"'), 'Found unwanted Tailwind CDN script in index.html');
 
 const sw = fs.readFileSync('sw.js', 'utf-8');
-assert(sw.includes("CACHE_NAME = 'Clubstride Lite-v8'"), 'sw.js cache version is not Clubstride Lite-v8');
+assert(sw.includes("CACHE_NAME = 'Clubstride Lite-v9'"), 'sw.js cache version is not Clubstride Lite-v9');
 assert(sw.includes("'./tailwind.min.css'"), 'sw.js missing tailwind.min.css in cached assets');
 assert(sw.includes("'./clubstride-tokens.css'"), 'sw.js missing clubstride-tokens.css in cached assets');
-console.log('✓ Standalone offline Tailwind CSS & sw.js Clubstride Lite-v8 cache verified');
+console.log('✓ Standalone offline Tailwind CSS & sw.js Clubstride Lite-v9 cache verified');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
@@ -198,8 +198,33 @@ assert.strictEqual(dom['scoreboardTeam'].innerText, 'Lightning Stars', 'Scoreboa
 console.log('✓ "Your team name" in Setup works and saves correctly');
 
 // ==========================================
+// TEST 12a: Live playing-time accrual & stats sync
+// ==========================================
+AppState.clock.seconds = 0;
+AppState.playerTimers = {};
+AppState.clock.running = true;
+AppState.clock.startedAt = Date.now() - 95000;
+App.tickClock();
+assert.strictEqual(AppState.clock.seconds, 95, 'Stopwatch must credit real elapsed seconds, not only fired intervals');
+AppState.match.starters.forEach(pid => {
+  assert.strictEqual(AppState.playerTimers[pid], 95, 'Players on the field must accrue playing time');
+});
+AppState.match.bench.forEach(pid => {
+  assert.strictEqual(AppState.playerTimers[pid] || 0, 0, 'Bench players must not accrue playing time');
+});
+AppState.selectedGameIds = [];
+App.toggleTimer(); // pause
+App.toggleTimer(); // (re)start
+assert(AppState.selectedGameIds.includes('live'), 'Starting the clock must pull the live match into the stats totals');
+App.toggleTimer(); // pause again
+AppState.clock.seconds = 0;
+AppState.playerTimers = {};
+console.log('✓ Player timers count up on wall-clock time for on-field players and sync the live match into stats');
+
+// ==========================================
 // TEST 12: End Match Flow
 // ==========================================
+AppState.selectedGameIds = ['live'];
 AppState.clock.seconds = 3600;
 AppState.match.ourGoals = 3;
 AppState.match.opponentGoals = 1;
@@ -218,6 +243,7 @@ assert.strictEqual(archived.opponentGoals, 1);
 assert.strictEqual(archived.formation, '2-3-1', 'Archived match should store formation');
 assert.strictEqual(archived.durationSeconds, 3600);
 assert.strictEqual(archived.playerTimers[p1.id], 1800);
+assert(AppState.selectedGameIds.includes(archived.id) && !AppState.selectedGameIds.includes('live'), 'Stats selection must follow the match from live into history');
 
 assert.strictEqual(AppState.clock.seconds, 0, 'Clock seconds should reset to 0');
 assert.strictEqual(AppState.match.ourGoals, 0, 'Our goals should reset to 0');

@@ -35,7 +35,8 @@ Hosted live on GitHub Pages: [https://FracturedOrbit1980.github.io/Clubstride-Mo
 ### 3. ⏱️ Live Match Console & Rotations Engine
 - **Digital Stopwatch:** Play/pause, reset, and half management (1st Half / 2nd Half).
 - **One-Tap Tactical Sub Board:** Tap a player on the field to sub out, then tap a bench reserve to swap in.
-- **Live Playing Timers:** Automatically accumulates playing minutes for active field players while pausing bench players.
+- **Live Playing Timers:** Only players on the field accumulate time, and minutes are credited from real elapsed wall-clock time—so a backgrounded or sleeping phone still awards the missing seconds when it wakes (substitutions move the accrual to the incoming player from the next second).
+- **Live Stats Sync:** Starting the clock adds the live match to the pulled totals, and the Stats screen refreshes every 5 seconds while the match runs. **End match** carries that selection onto the archived fixture so totals keep covering the game that was just played.
 - **Scoreboard with Touch Steppers:** Rounded `+` and `−` score adjustment buttons for both teams.
 - **Goal & Assist Logger:** Fast modal recording goals and assists; requires selecting the achieving squad member before saving.
 - **Timeline & Instant Undo:** Event log showing goals, assists, and substitutions with one-tap `✕ Undo` to revert mistaken goals and update player statistics.
@@ -72,7 +73,7 @@ Accessible via the **"Create PDF report"** button on the Stats screen and on eac
 ### 7. 💾 100% Offline & Reliable Data Persistence
 - **Persistent Storage:** All data automatically persists in `localStorage` after every change.
 - **Interruption Resilience:** Survives app closing, refreshing, switching tabs, or phone reboots.
-- **Service Worker (`sw.js` v8):** Pre-caches `clubstride-tokens.css`, `tailwind.min.css`, `html2pdf.bundle.min.js`, the CI component scripts and all brand/icon assets for offline loading anywhere on the pitch.
+- **Service Worker (`sw.js` v9):** Pre-caches `clubstride-tokens.css`, `tailwind.min.css`, `html2pdf.bundle.min.js`, the CI component scripts and all brand/icon assets for offline loading anywhere on the pitch.
 - **Backup & Restore:** Full JSON export and import in settings.
 
 ---
@@ -141,7 +142,7 @@ node test_app.js
    - [ ] Generate a Single Match PDF: verify file name `Clubstride_<Team>_<Opponent>_<Date>.pdf` and check player table (pitch minutes, bench minutes, goals, assists, subs).
    - [ ] Generate a Date Range PDF: test quick presets (Last 7d, This Month, Season, All Time), verify overall record (W/D/L), match list, and player totals sorted by minutes played with highlights for top scorer, top assists, and most minutes.
 4. **Offline & Nav:**
-   - [ ] Turn on Airplane Mode: verify app reloads and operates completely offline from service worker cache (`Clubstride Lite-v8`).
+   - [ ] Turn on Airplane Mode: verify app reloads and operates completely offline from service worker cache (`Clubstride Lite-v9`).
    - [ ] Verify the bottom navigation dock is always tappable with comfortable padding.
 
 
