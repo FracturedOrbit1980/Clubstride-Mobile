@@ -722,6 +722,7 @@
             </button>
           </div>
           <input type="file" id="backupFileInput" accept=".json,application/json" class="hidden" onchange="App.importBackup(event)" />
+          <p id="offlineStatusLine" class="text-[10px] text-slate-400 font-medium">Checking offline readiness…</p>
         </div>
       </div>
       <!-- Saved Teams List -->
@@ -1230,9 +1231,55 @@
         });
       },
       registerServiceWorker() {
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        if (!('serviceWorker' in navigator)) {
+          this.reportOfflineState(false);
+          return;
         }
+        // updateViaCache 'none' keeps sw.js out of the HTTP cache, so an installed copy re-reads it on
+        // every launch and a deployed fix actually lands, instead of pinning the build from install day.
+        const opts = { updateViaCache: 'none' };
+        navigator.serviceWorker.register('./sw.js', opts)
+          .then(() => this.reportOfflineState(true))
+          .catch(() => {
+            navigator.serviceWorker.register('./sw.js', opts)
+              .then(() => this.reportOfflineState(true))
+              .catch(err => {
+                console.warn('service worker registration failed:', err);
+                this.reportOfflineState(true, err);
+              });
+          });
+      },
+      async reportOfflineState(workerSupported, registerError) {
+        const warn = 'Offline mode did not switch on — re-open Clubstride once while online.';
+        if (!workerSupported) {
+          this.setOfflineStatus('This browser cannot store matches for offline use.', true);
+          this.toast(warn, 'card-yellow');
+          return;
+        }
+        try {
+          // A registration can resolve and still cache nothing: cache.addAll rejects if any asset
+          // fails, which leaves the device looking installed with an empty offline cache.
+          await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('activation timed out')), 8000)),
+          ]);
+          let stored = 0;
+          for (const key of await caches.keys()) {
+            stored += (await (await caches.open(key)).keys()).length;
+          }
+          if (stored === 0) throw new Error('offline cache is empty');
+          this.setOfflineStatus(`Offline ready • ${stored} files stored`);
+        } catch (err) {
+          console.warn('offline storage incomplete:', err || registerError);
+          this.setOfflineStatus(warn, true);
+          this.toast(warn, 'card-yellow');
+        }
+      },
+      setOfflineStatus(text, isProblem = false) {
+        const el = document.getElementById('offlineStatusLine');
+        if (!el) return;
+        el.innerText = text;
+        el.className = `text-[10px] font-medium ${isProblem ? 'text-amber-400' : 'text-cyber-mint'}`;
       },
       setupInstallPrompt() {
         window.addEventListener('beforeinstallprompt', (e) => {

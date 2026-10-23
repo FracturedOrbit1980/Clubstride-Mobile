@@ -44,10 +44,13 @@ assert(html.includes('<link rel="stylesheet" href="./tailwind.min.css" />'), 'in
 assert(!html.includes('src="https://cdn.tailwindcss.com"'), 'Found unwanted Tailwind CDN script in index.html');
 
 const sw = fs.readFileSync('sw.js', 'utf-8');
-assert(sw.includes("CACHE_NAME = 'Clubstride Lite-v10'"), 'sw.js cache version is not Clubstride Lite-v10');
+const cacheVersion = sw.match(/CACHE_NAME = '(Clubstride Lite-v\d+)'/);
+assert(cacheVersion, 'sw.js does not declare a Clubstride Lite cache version');
 assert(sw.includes("'./tailwind.min.css'"), 'sw.js missing tailwind.min.css in cached assets');
 assert(sw.includes("'./clubstride-tokens.css'"), 'sw.js missing clubstride-tokens.css in cached assets');
-console.log('✓ Standalone offline Tailwind CSS & sw.js Clubstride Lite-v10 cache verified');
+assert(html.includes("updateViaCache: 'none'"), 'service worker may be served from the HTTP cache, pinning devices to the install-day build');
+assert(html.includes('offlineStatusLine'), 'no offline-readiness readout shown to the coach');
+console.log(`✓ Standalone offline Tailwind CSS & sw.js ${cacheVersion[1]} cache verified`);
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
