@@ -51,19 +51,13 @@
     });
   }
 
-  // ── PRO pill overlay ───────────────────────────────────────────────────────
-  const PRO_ICON_NAMES = ['training', 'attendance', 'drill-editor', 'camera'];
-
+  // A marker element gets the pill once the tier is Lite, so the app's own ci-sprite
+  // icons can be gated without giving them a second icon system.
   function applyProPills(root) {
     if (typeof ProPill !== 'function') return;
     const isPro = getIsPro();
 
-    root.querySelectorAll('.cs-icon').forEach(function (el) {
-      // Detect pro icons by class name
-      const isPro_icon = PRO_ICON_NAMES.some(function (n) {
-        return el.classList.contains('cs-icon--' + n);
-      });
-      if (!isPro_icon) return;
+    root.querySelectorAll('[data-pro]').forEach(function (el) {
       if (el.querySelector('.cs-pro-pill')) return; // already applied
 
       const pill = ProPill(isPro);

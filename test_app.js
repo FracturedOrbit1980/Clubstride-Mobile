@@ -6,6 +6,7 @@ const html = fs.readFileSync('index.html', 'utf-8');
 // 1. Verify HTML elements exist
 const expectedIds = [
   'modalMatchSetup', 'modalAddPlayer', 'modalSaveFormation', 'modalEvent', 'modalTeams',
+  'modalEndMatch', 'endMatchConfirmBtn',
   'modalPdfReport', 'btnCreatePdfReport',
   'pdfTabBtn_single', 'pdfTabBtn_range', 'pdfSelectMatch', 'pdfRangeStartDate', 'pdfRangeEndDate', 'pdfRangeTeamFilter',
   'selectedGamesBadge',
@@ -52,6 +53,18 @@ assert(html.includes("updateViaCache: 'none'"), 'service worker may be served fr
 assert(html.includes('offlineStatusLine'), 'no offline-readiness readout shown to the coach');
 console.log(`✓ Standalone offline Tailwind CSS & sw.js ${cacheVersion[1]} cache verified`);
 
+// 5b. PRO pill component must be wired to real markup, not left dormant
+const csInit = fs.readFileSync('src/components/cs-init.js', 'utf-8');
+assert(csInit.includes("querySelectorAll('[data-pro]')"), 'cs-init.js no longer applies PRO pills to [data-pro] markers');
+assert(sw.includes("'./assets/icons/pro-pill.svg'"), 'sw.js does not pre-cache the PRO pill icon');
+const proTiles = [...html.matchAll(/<div data-pro="([a-z-]+)"[\s\S]{0,320}?<use href="#ci-([a-z-]+)">/g)];
+assert(proTiles.length === 4, `expected 4 data-pro tiles in the Squad tab, found ${proTiles.length}`);
+assert(csInit.includes('ProPill(isPro)'), 'cs-init.js does not render the ProPill component');
+for (const [, marker, symbol] of proTiles) {
+  assert(html.includes(`<symbol id="ci-${symbol}"`), `data-pro="${marker}" points at #ci-${symbol}, which has no sprite symbol`);
+}
+console.log(`✓ PRO pill wired to ${proTiles.length} Squad-tab tier markers`);
+
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
 const mainScriptTag = scripts[scripts.length - 1];
@@ -96,7 +109,10 @@ const dom = new Proxy({}, {
 
 global.document = {
   getElementById: (id) => dom[id],
-  querySelectorAll: () => [], addEventListener: () => {},
+  querySelectorAll: (selector) => String(selector).split(',')
+    .map(s => s.trim()).filter(s => s.startsWith('#'))
+    .map(s => dom[s.slice(1)]),
+  addEventListener: () => {},
   querySelector: () => null,
   createElement: (tag) => ({
     tagName: tag,
@@ -255,7 +271,21 @@ AppState.match.formation = '2-3-1';
 AppState.playerTimers[p1.id] = 1800;
 AppState.playerTimers[p2.id] = 1800;
 
+const historyBeforeEndMatch = AppState.matchHistory.length;
+let endMatchUsedNativeDialog = false;
+global.confirm = () => { endMatchUsedNativeDialog = true; return true; };
+
 App.endMatch();
+assert.strictEqual(endMatchUsedNativeDialog, false, 'End match must use the in-app sheet, not window.confirm');
+assert.strictEqual(AppState.matchHistory.length, historyBeforeEndMatch, 'Opening the end-match sheet must not archive anything yet');
+assert(!dom['modalEndMatch'].classList.contains('hidden'), 'End Match must open the in-app confirmation sheet');
+assert.strictEqual(dom['endMatchScore'].innerText, '3 - 1', 'Sheet must preview the current final score');
+assert.strictEqual(dom['endMatchTeam'].innerText, 'Lightning Stars', 'Sheet must name your team');
+assert.strictEqual(dom['endMatchOpponent'].innerText, 'Thunderbolts', 'Sheet must name the opponent');
+global.confirm = () => true;
+
+App.confirmEndMatch();
+assert(dom['modalEndMatch'].classList.contains('hidden'), 'Confirming must close the end-match sheet');
 
 assert(AppState.matchHistory.length > 0, 'Match should be archived into matchHistory');
 const archived = AppState.matchHistory[0];
