@@ -9,7 +9,7 @@ const expectedIds = [
   'modalEndMatch', 'endMatchConfirmBtn',
   'modalPdfReport', 'btnCreatePdfReport',
   'pdfTabBtn_single', 'pdfTabBtn_range', 'pdfSelectMatch', 'pdfRangeStartDate', 'pdfRangeEndDate', 'pdfRangeTeamFilter',
-  'selectedGamesBadge',
+  'selectedGamesBadge', 'proUpgradeCard', 'upgradeProCta', 'upgradeProOffline',
   'activeMatchTitleDisplay', 'activeMatchFormatBadge', 'activeMatchDateBadge',
   'tabBtn_pitch', 'tabBtn_live', 'tabBtn_roster', 'tabBtn_stats',
   'section_pitch', 'section_live', 'section_roster', 'section_stats',
@@ -64,6 +64,25 @@ for (const [, marker, symbol] of proTiles) {
   assert(html.includes(`<symbol id="ci-${symbol}"`), `data-pro="${marker}" points at #ci-${symbol}, which has no sprite symbol`);
 }
 console.log(`✓ PRO pill wired to ${proTiles.length} Squad-tab tier markers`);
+
+// 5c. THE PRO TILES ARE A COACH UPGRADE PATH, NOT A DEAD LABEL
+const rosterStart = html.indexOf('<section id="section_roster"');
+const rosterEnd = html.indexOf('</section>', rosterStart);
+const upgradeAt = html.indexOf('id="proUpgradeCard"');
+assert(rosterStart !== -1 && upgradeAt > rosterStart && upgradeAt < rosterEnd, 'Upgrade card must live inside the Squad tab');
+
+const upgradeCtaTag = (html.match(/<a id="upgradeProCta"[^>]+>/) || [])[0] || '';
+assert(upgradeCtaTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Upgrade CTA must open the Pro web app');
+assert(upgradeCtaTag.includes('target="_blank"'), 'Upgrade CTA must open Pro without leaving the matchday app');
+assert(upgradeCtaTag.includes('rel="noopener noreferrer"'), 'Upgrade CTA needs noopener noreferrer');
+assert(upgradeCtaTag.includes('onclick="return App.openProUpgrade(event)"'), 'Upgrade CTA must run the offline guard');
+assert(html.includes('>Upgrade to Pro</a>'), 'Upgrade CTA label missing');
+for (const label of ['Training Days', 'Attendance', 'Squad Registry', 'Register PDF']) {
+  assert(html.includes(`>${label}</span>`), `Upgrade tile "${label}" missing - only promise tools Pro actually ships`);
+}
+assert(html.includes('id="upgradeProOffline" role="status" aria-live="polite" class="hidden'), 'Offline note must start hidden but be announced when shown');
+assert(!html.includes('Matchday tools not included in this Lite build'), 'Upgrade card still carries the old dead-end copy');
+console.log('✓ Coach Pro upgrade card links to the Pro app and guards offline taps');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
@@ -533,8 +552,34 @@ assert.strictEqual(typeof App.openEditGameMinutesModal, 'undefined', 'openEditGa
 assert.strictEqual(typeof App.saveGameMinutes, 'undefined', 'saveGameMinutes must not be defined');
 console.log('✓ Tamper-proof read-only playing time reporting & game detail breakdown verified');
 
+// ==========================================
+// TEST 21: Pro upgrade offline guard
+// ==========================================
+const offlineNote = dom['upgradeProOffline'];
+offlineNote.className = 'hidden';
+Object.defineProperty(globalThis, 'navigator', { value: { onLine: false }, configurable: true, writable: true });
+let prevented = false;
+assert.strictEqual(
+  App.openProUpgrade({ preventDefault: () => { prevented = true; } }),
+  false,
+  'Offline upgrade tap must not navigate'
+);
+assert(prevented, 'Offline upgrade tap must cancel the anchor navigation');
+assert(!offlineNote.classList.contains('hidden'), 'Offline upgrade tap must show the offline note');
+
+navigator.onLine = true;
+prevented = false;
+assert.strictEqual(
+  App.openProUpgrade({ preventDefault: () => { prevented = true; } }),
+  true,
+  'Online upgrade tap must allow the anchor to open Pro'
+);
+assert(!prevented, 'Online upgrade tap must not cancel navigation');
+assert(offlineNote.classList.contains('hidden'), 'Online retry must clear the offline note');
+console.log('✓ Pro upgrade CTA blocks offline navigation and clears the notice online');
+
 console.log('\n=========================================');
-console.log('ALL 20 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
+console.log('ALL 21 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 

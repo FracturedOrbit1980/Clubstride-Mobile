@@ -426,30 +426,34 @@
       </div>
       <!-- Squad Cards Pod Container -->
       <div id="squadPodsList" class="space-y-2.5"></div>
-      <!-- CLUBSTRIDE PRO TIER — tiles marked data-pro receive the CI PRO pill from cs-init.js -->
-      <div class="glass-card rounded-lite p-4 space-y-3">
-        <div>
-          <h3 class="text-sm font-bold text-white">Clubstride Pro</h3>
-          <p class="text-xs text-slate-400">Matchday tools not included in this Lite build</p>
+      <!-- CLUBSTRIDE PRO TIER — coach upgrade path; tiles keep the CI PRO pill from cs-init.js -->
+      <div id="proUpgradeCard" class="glass-card rounded-lite p-4 space-y-3">
+        <div class="space-y-1">
+          <p class="text-[10px] font-black uppercase tracking-wider" style="color: var(--cs-amber-300);">For coaches</p>
+          <h3 class="text-sm font-bold text-white">Upgrade to Clubstride Pro</h3>
+          <p class="text-xs text-slate-400">Set training days, take the register and keep the squad in one coach app.</p>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div data-pro="training" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
             <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-training"></use></svg></span>
-            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Training Planner</span>
+            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Training Days</span>
           </div>
           <div data-pro="attendance" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
             <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-attendance"></use></svg></span>
-            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Attendance Register</span>
+            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Attendance</span>
           </div>
-          <div data-pro="drill-editor" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
-            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-drill-editor"></use></svg></span>
-            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Drill Editor</span>
+          <div data-pro="squad" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
+            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-squad"></use></svg></span>
+            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Squad Registry</span>
           </div>
-          <div data-pro="camera" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
-            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-camera"></use></svg></span>
-            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Session Photos</span>
+          <div data-pro="register-pdf" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
+            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-pdf-export"></use></svg></span>
+            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Register PDF</span>
           </div>
         </div>
+        <a id="upgradeProCta" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" target="_blank" rel="noopener noreferrer" onclick="return App.openProUpgrade(event)" class="w-full py-3 rounded-2xl font-black text-xs uppercase tracking-wider text-center flex items-center justify-center active:scale-95 transition" style="background: linear-gradient(90deg, var(--cs-amber-300), var(--cs-amber-500)); color: #0b0f17; box-shadow: 0 0 22px rgba(251, 191, 36, 0.22);">Upgrade to Pro</a>
+        <p class="text-[10px] text-slate-400 leading-relaxed">Opens Clubstride Pro in a new tab. Sign in or create your coach account - the yearly plan keeps Pro active.</p>
+        <p id="upgradeProOffline" role="status" aria-live="polite" class="hidden text-[11px] leading-relaxed" style="color: var(--cs-amber-300);">You're offline. Open Clubstride Pro once you're back online - Lite keeps working offline.</p>
       </div>
     </section>
     <!-- TAB 4: STATS SUBTOTALS & AGGREGATIONS -->
@@ -4098,6 +4102,19 @@
         this.renderRoster();
         this.renderPitchTokens();
         this.renderBenchReserves();
+      },
+      openProUpgrade(event) {
+        // The Pro app is a separate online product; the anchor is the fallback if this handler
+        // cannot run, so only a confirmed offline state cancels the navigation.
+        const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        const note = document.getElementById('upgradeProOffline');
+        if (offline) {
+          if (event) event.preventDefault();
+          if (note) note.classList.remove('hidden');
+          return false;
+        }
+        if (note) note.classList.add('hidden');
+        return true;
       },
       closeModals() {
         AppState.editingPlayerId = null;
