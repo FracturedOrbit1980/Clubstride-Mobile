@@ -261,6 +261,39 @@ AppState.playerTimers = {};
 console.log('✓ Player timers count up on wall-clock time for on-field players and sync the live match into stats');
 
 // ==========================================
+// TEST 12b: Phone lock / long gap while the clock keeps running
+// ==========================================
+AppState.clock.seconds = 0;
+AppState.playerTimers = {};
+AppState.clock.running = true;
+AppState.clock.startedAt = Date.now() - 754000; // 12m34s elapse while the screen is locked
+App.tickClock();
+assert.strictEqual(AppState.clock.seconds, 754, 'A locked phone must not lose elapsed match time');
+AppState.match.starters.forEach(pid => {
+  assert.strictEqual(AppState.playerTimers[pid], 754, 'Locked-time minutes must credit every player left on the field');
+});
+assert.strictEqual(dom['matchClockDisplay'].innerText, '12:34', 'Clock display must catch up after the lock');
+
+const creditedAt = AppState.clock.startedAt;
+App.tickClock();
+assert.strictEqual(AppState.clock.seconds, 754, 'Catching up must not double-credit the locked gap');
+assert.strictEqual(AppState.clock.startedAt, creditedAt, 'The wall-clock anchor must advance past credited time');
+
+AppState.clock.running = false;
+AppState.clock.startedAt = Date.now() - 60000;
+App.tickClock();
+assert.strictEqual(AppState.clock.seconds, 754, 'A paused clock must never accrue time');
+
+AppState.clock.running = true;
+AppState.clock.startedAt = 0;
+App.tickClock();
+assert.strictEqual(AppState.clock.seconds, 754, 'Missing clock anchor must not invent elapsed time');
+AppState.clock.running = false;
+AppState.clock.seconds = 0;
+AppState.playerTimers = {};
+console.log('✓ Locked-phone catch-up credits 12m34s once, pauses still, and never double-counts');
+
+// ==========================================
 // TEST 12: End Match Flow
 // ==========================================
 AppState.selectedGameIds = ['live'];
