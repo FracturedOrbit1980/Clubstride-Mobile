@@ -1,4 +1,4 @@
-const CACHE_NAME = 'Clubstride Lite-v15';
+const CACHE_NAME = 'Clubstride Lite-v16';
 const ASSETS = [
   './',
   './index.html',

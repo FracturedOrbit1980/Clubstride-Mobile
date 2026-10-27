@@ -73,17 +73,19 @@ const upgradeAt = html.indexOf('id="proUpgradeCard"');
 assert(rosterStart !== -1 && upgradeAt > rosterStart && upgradeAt < rosterEnd, 'Upgrade card must live inside the Squad tab');
 
 const upgradeCtaTag = (html.match(/<a id="upgradeProCta"[^>]+>/) || [])[0] || '';
-assert(upgradeCtaTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Upgrade CTA must open the Pro web app');
-assert(upgradeCtaTag.includes('target="_blank"'), 'Upgrade CTA must open Pro without leaving the matchday app');
-assert(upgradeCtaTag.includes('rel="noopener noreferrer"'), 'Upgrade CTA needs noopener noreferrer');
-assert(upgradeCtaTag.includes('onclick="return App.openProUpgrade(event)"'), 'Upgrade CTA must run the offline guard');
+assert(upgradeCtaTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Upgrade CTA must fall back to the Pro web app');
+assert(!upgradeCtaTag.includes('target="_blank"'), 'Upgrade CTA must open Pro in-app, not in a new tab');
+assert(!upgradeCtaTag.includes('rel="noopener noreferrer"'), 'Upgrade CTA no longer opens a tab, so the noopener rel should be gone');
+assert(upgradeCtaTag.includes('onclick="return App.openProUpgrade(event)"'), 'Upgrade CTA must run the in-app Pro shell');
 assert(html.includes('>Upgrade to Pro</a>'), 'Upgrade CTA label missing');
 for (const label of ['Training Days', 'Attendance', 'Squad Registry', 'Register PDF']) {
   assert(html.includes(`>${label}</span>`), `Upgrade tile "${label}" missing - only promise tools Pro actually ships`);
 }
 assert(html.includes('id="upgradeProOffline" role="status" aria-live="polite" class="hidden'), 'Offline note must start hidden but be announced when shown');
+assert(!html.includes('new tab'), 'Upgrade copy still tells the coach a new tab opens');
+assert(html.includes('Back to Lite control'), 'Upgrade copy must say Pro opens inside the app with a way back');
 assert(!html.includes('Matchday tools not included in this Lite build'), 'Upgrade card still carries the old dead-end copy');
-console.log('✓ Coach Pro upgrade card links to the Pro app and guards offline taps');
+console.log('✓ Coach Pro upgrade card opens Pro in-app and guards offline taps');
 
 // 5d. THE VIEW SWITCH REACHES PRO FROM EVERY TAB
 const viewSwitchAt = html.indexOf('id="proViewBtn"');
@@ -91,21 +93,35 @@ const firstTabAt = html.indexOf('id="section_pitch"');
 assert(viewSwitchAt > html.indexOf('<main'), 'View switch must sit in the main viewport');
 assert(viewSwitchAt < firstTabAt, 'View switch must come before the tab sections so every tab shows it');
 const proViewTag = (html.match(/<a id="proViewBtn"[^>]+>/) || [])[0] || '';
-assert(proViewTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'View switch must open the Pro web app');
-assert(proViewTag.includes('target="_blank"'), 'View switch must keep Lite open while Pro loads');
-assert(proViewTag.includes('rel="noopener noreferrer"'), 'View switch needs noopener noreferrer');
-assert(proViewTag.includes('onclick="return App.openProUpgrade(event)"'), 'View switch must run the offline guard');
+assert(proViewTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'View switch must fall back to the Pro web app');
+assert(!proViewTag.includes('target="_blank"'), 'View switch must open Pro in-app, not in a new tab');
+assert(proViewTag.includes('onclick="return App.openProUpgrade(event)"'), 'View switch must run the in-app Pro shell');
 assert(html.includes('id="liteViewBtn" aria-pressed="true"'), 'Lite must read as the selected view');
 assert(html.includes('id="proToggleNote" role="status" aria-live="polite" class="hidden'), 'View-switch offline note must start hidden but be announced when shown');
 assert(/openProUpgrade\(event\) \{[\s\S]*proToggleNote/.test(html), 'Offline guard must reveal the view-switch note too');
-console.log('✓ View switch offers Pro from every tab and guards offline taps');
+console.log('✓ View switch opens Pro in-app from every tab and guards offline taps');
+
+// 5d-1. THE PRO SHELL KEEPS THE PANE ON THE LITE ADDRESS
+const shellTag = (html.match(/<div id="proShell"[^>]+>/) || [])[0] || '';
+assert(shellTag.includes('z-index: 2000 !important'), 'Pro shell must sit above the bottom dock, which wins with z-index 1000 !important');
+assert(shellTag.includes('display: none'), 'Pro shell must start hidden');
+const frameTag = (html.match(/<iframe id="proFrame"[^>]+>/) || [])[0] || '';
+assert(frameTag.includes('title="Clubstride Pro"'), 'Pro iframe needs a title for assistive tech');
+assert(!frameTag.includes('src='), 'Pro iframe must stay lazy until the coach asks for Pro');
+assert(html.includes('id="proBackBtn"'), 'Pro shell needs a Back to Lite control');
+assert(html.includes('aria-label="Back to Clubstride Lite"'), 'Back control needs an accessible label');
+assert(html.includes('href="#ci-back"'), 'Back control must use the sprite back icon');
+assert(html.includes('PRO_URL: \'https://fracturedorbit1980.github.io/Clubstride-Pro-Web/\''), 'Pro URL must live in one constant for the shell');
+assert(html.includes('history.pushState({ csProShell: true }'), 'Opening Pro must push a history entry so hardware back closes it');
+assert(html.includes("addEventListener('popstate'"), 'Hardware back must close the shell instead of leaving Lite');
+assert(html.includes("event.key === 'Escape'"), 'Escape must close the shell');
+console.log('✓ Pro renders in an in-app shell with history-aware Back to Lite');
 
 // 5e. THE BRAND LOCKUP IS THE LITE/PRO SWITCH
 const brandTag = (html.match(/<a id="brandSwitch"[^>]+>/) || [])[0] || '';
-assert(brandTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Header logo must open the Pro app');
-assert(brandTag.includes('target="_blank"'), 'Header logo must keep Lite open while Pro loads');
-assert(brandTag.includes('rel="noopener noreferrer"'), 'Header logo needs noopener noreferrer');
-assert(brandTag.includes('onclick="return App.openProUpgrade(event)"'), 'Header logo must run the offline guard');
+assert(brandTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Header logo must fall back to the Pro web app');
+assert(!brandTag.includes('target="_blank"'), 'Header logo must open Pro in-app, not in a new tab');
+assert(brandTag.includes('onclick="return App.openProUpgrade(event)"'), 'Header logo must run the in-app Pro shell');
 assert(brandTag.includes('aria-label="Switch to Clubstride Pro"'), 'Header logo needs a switch label for screen readers');
 assert(!html.includes('id="logoFileInput"'), 'Header logo no longer uploads a logo - the Teams modal owns that');
 assert(html.includes('id="teamModalLogoInput"'), 'Teams modal must keep the custom logo upload');
@@ -143,6 +159,11 @@ const dom = new Proxy({}, {
           contains: (c) => (target[prop].className || '').split(' ').includes(c)
         },
         style: {},
+        _attrs: {},
+        setAttribute: function (key, value) { this._attrs[key] = String(value); },
+        getAttribute: function (key) { return Object.prototype.hasOwnProperty.call(this._attrs, key) ? this._attrs[key] : null; },
+        removeAttribute: function (key) { delete this._attrs[key]; },
+        focus: function () { this.focused = true; },
         options: [],
         children: [],
         appendChild: function(c) { if (this.options) this.options.push(c); if (this.children) this.children.push(c); },
@@ -172,6 +193,7 @@ global.document = {
   body: {
     appendChild: () => {},
     removeChild: () => {},
+    style: {},
     classList: { add: ()=>{}, remove: ()=>{} }, click: () => {}
   },
   documentElement: {
@@ -187,7 +209,16 @@ global.document = {
 global.window = {
   addEventListener: () => {},
   location: { reload: () => {} },
-  print: () => {}
+  print: () => {},
+  scrollY: 0,
+  scrollTo: () => {}
+};
+global.history = {
+  _pushed: 0,
+  _backed: 0,
+  state: null,
+  pushState(state) { this._pushed += 1; this.state = state; },
+  back() { this._backed += 1; this.state = null; }
 };
 global.confirm = () => true;
 global.prompt = (msg, def) => def;
@@ -580,10 +611,13 @@ assert.strictEqual(typeof App.saveGameMinutes, 'undefined', 'saveGameMinutes mus
 console.log('✓ Tamper-proof read-only playing time reporting & game detail breakdown verified');
 
 // ==========================================
-// TEST 21: Pro upgrade offline guard
+// TEST 21: Pro opens inside the app, never in a second tab
 // ==========================================
 const offlineNote = dom['upgradeProOffline'];
 offlineNote.className = 'hidden';
+const proShell = dom['proShell'];
+proShell.style.display = 'none';
+const proFrame = dom['proFrame'];
 Object.defineProperty(globalThis, 'navigator', { value: { onLine: false }, configurable: true, writable: true });
 let prevented = false;
 assert.strictEqual(
@@ -593,17 +627,27 @@ assert.strictEqual(
 );
 assert(prevented, 'Offline upgrade tap must cancel the anchor navigation');
 assert(!offlineNote.classList.contains('hidden'), 'Offline upgrade tap must show the offline note');
+assert.notStrictEqual(proShell.style.display, 'flex', 'Offline upgrade tap must not open the Pro shell');
 
 navigator.onLine = true;
 prevented = false;
 assert.strictEqual(
   App.openProUpgrade({ preventDefault: () => { prevented = true; } }),
-  true,
-  'Online upgrade tap must allow the anchor to open Pro'
+  false,
+  'Online Pro tap must open in-app instead of navigating the pane'
 );
-assert(!prevented, 'Online upgrade tap must not cancel navigation');
+assert(prevented, 'Online Pro tap must cancel the raw anchor navigation');
 assert(offlineNote.classList.contains('hidden'), 'Online retry must clear the offline note');
-console.log('✓ Pro upgrade CTA blocks offline navigation and clears the notice online');
+assert.strictEqual(proShell.style.display, 'flex', 'Online Pro tap must reveal the in-app Pro shell');
+assert.strictEqual(proFrame.getAttribute('src'), App.PRO_URL, 'Pro iframe must load the Pro app when asked');
+assert.strictEqual(history._pushed, 1, 'Opening Pro must push exactly one history entry');
+assert(document.body.style.overflow === 'hidden', 'Pro shell must lock the page scroll behind it');
+
+App.closeProShell(false);
+assert.strictEqual(proShell.style.display, 'none', 'Back to Lite must hide the Pro shell');
+assert(document.body.style.overflow === '', 'Back to Lite must release the page scroll');
+assert.strictEqual(history._backed, 1, 'Back to Lite must consume the pushed history entry');
+console.log('✓ Pro upgrade opens in-app with Back to Lite, and offline taps stay blocked');
 
 console.log('\n=========================================');
 console.log('ALL 21 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
