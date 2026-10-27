@@ -10,6 +10,7 @@ const expectedIds = [
   'modalPdfReport', 'btnCreatePdfReport',
   'pdfTabBtn_single', 'pdfTabBtn_range', 'pdfSelectMatch', 'pdfRangeStartDate', 'pdfRangeEndDate', 'pdfRangeTeamFilter',
   'selectedGamesBadge', 'proUpgradeCard', 'upgradeProCta', 'upgradeProOffline',
+  'liteViewBtn', 'proViewBtn', 'proToggleNote',
   'activeMatchTitleDisplay', 'activeMatchFormatBadge', 'activeMatchDateBadge',
   'tabBtn_pitch', 'tabBtn_live', 'tabBtn_roster', 'tabBtn_stats',
   'section_pitch', 'section_live', 'section_roster', 'section_stats',
@@ -83,6 +84,21 @@ for (const label of ['Training Days', 'Attendance', 'Squad Registry', 'Register 
 assert(html.includes('id="upgradeProOffline" role="status" aria-live="polite" class="hidden'), 'Offline note must start hidden but be announced when shown');
 assert(!html.includes('Matchday tools not included in this Lite build'), 'Upgrade card still carries the old dead-end copy');
 console.log('✓ Coach Pro upgrade card links to the Pro app and guards offline taps');
+
+// 5d. THE VIEW SWITCH REACHES PRO FROM EVERY TAB
+const viewSwitchAt = html.indexOf('id="proViewBtn"');
+const firstTabAt = html.indexOf('id="section_pitch"');
+assert(viewSwitchAt > html.indexOf('<main'), 'View switch must sit in the main viewport');
+assert(viewSwitchAt < firstTabAt, 'View switch must come before the tab sections so every tab shows it');
+const proViewTag = (html.match(/<a id="proViewBtn"[^>]+>/) || [])[0] || '';
+assert(proViewTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'View switch must open the Pro web app');
+assert(proViewTag.includes('target="_blank"'), 'View switch must keep Lite open while Pro loads');
+assert(proViewTag.includes('rel="noopener noreferrer"'), 'View switch needs noopener noreferrer');
+assert(proViewTag.includes('onclick="return App.openProUpgrade(event)"'), 'View switch must run the offline guard');
+assert(html.includes('id="liteViewBtn" aria-pressed="true"'), 'Lite must read as the selected view');
+assert(html.includes('id="proToggleNote" role="status" aria-live="polite" class="hidden'), 'View-switch offline note must start hidden but be announced when shown');
+assert(/openProUpgrade\(event\) \{[\s\S]*proToggleNote/.test(html), 'Offline guard must reveal the view-switch note too');
+console.log('✓ View switch offers Pro from every tab and guards offline taps');
 
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
