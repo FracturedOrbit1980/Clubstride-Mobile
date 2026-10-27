@@ -172,10 +172,9 @@
   <!-- HEADER -->
   <header class="sticky top-0 z-40 bg-obsidian-950/85 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between">
     <div class="flex items-center space-x-3 min-w-0">
-      <div class="cursor-pointer flex-shrink-0" onclick="document.getElementById('logoFileInput').click()" title="Click to upload custom logo">
+      <a id="brandSwitch" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" target="_blank" rel="noopener noreferrer" onclick="return App.openProUpgrade(event)" class="flex-shrink-0 inline-flex items-center" title="Switch to Clubstride Pro" aria-label="Switch to Clubstride Pro">
         <img id="appHeaderIcon" src="./assets/brand/L1_lockup_dark.svg" alt="Clubstride Lite" class="h-9 w-auto max-w-[190px] object-contain transition hover:opacity-80 active:scale-95" />
-      </div>
-      <input type="file" id="logoFileInput" accept="image/*" class="hidden" onchange="App.handleLogoUpload(event)" />
+      </a>
     </div>
     <!-- Header Actions (Teams, Day/Night, PDF) -->
     <div class="flex items-center space-x-1.5">

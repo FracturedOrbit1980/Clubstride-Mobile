@@ -100,6 +100,17 @@ assert(html.includes('id="proToggleNote" role="status" aria-live="polite" class=
 assert(/openProUpgrade\(event\) \{[\s\S]*proToggleNote/.test(html), 'Offline guard must reveal the view-switch note too');
 console.log('✓ View switch offers Pro from every tab and guards offline taps');
 
+// 5e. THE BRAND LOCKUP IS THE LITE/PRO SWITCH
+const brandTag = (html.match(/<a id="brandSwitch"[^>]+>/) || [])[0] || '';
+assert(brandTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Header logo must open the Pro app');
+assert(brandTag.includes('target="_blank"'), 'Header logo must keep Lite open while Pro loads');
+assert(brandTag.includes('rel="noopener noreferrer"'), 'Header logo needs noopener noreferrer');
+assert(brandTag.includes('onclick="return App.openProUpgrade(event)"'), 'Header logo must run the offline guard');
+assert(brandTag.includes('aria-label="Switch to Clubstride Pro"'), 'Header logo needs a switch label for screen readers');
+assert(!html.includes('id="logoFileInput"'), 'Header logo no longer uploads a logo - the Teams modal owns that');
+assert(html.includes('id="teamModalLogoInput"'), 'Teams modal must keep the custom logo upload');
+console.log('✓ Header logo switches to Pro and the Teams modal keeps logo upload');
+
 // 6. Test JS logic execution
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g);
 const mainScriptTag = scripts[scripts.length - 1];
