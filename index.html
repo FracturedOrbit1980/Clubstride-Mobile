@@ -49,8 +49,10 @@
       z-index: 1000 !important;
       padding-bottom: max(env(safe-area-inset-bottom, 14px), 20px);
     }
-    /* The header actions are fixed-width, so cap the lockup to the space left of them */
-    #appHeaderIcon { max-width: min(190px, calc(100vw - 222px)); }
+    /* The header actions keep their own width, so the lockup scales to whatever the flex line leaves it */
+    #appHeaderIcon { max-width: min(190px, 100%); }
+    /* A sub-board cell needs room for shirt, name and clock, so two columns only appear once they fit */
+    #liveOnPitchGrid, #liveBenchGrid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
     iframe[src*="ship.page"], div[class*="ship-page"], a[href*="ship.page"], [id*="ship-page"], [id*="ship-badge"] {
       pointer-events: none !important;
       opacity: 0.1 !important;
@@ -174,7 +176,7 @@
   <!-- HEADER -->
   <header class="sticky top-0 z-40 bg-obsidian-950/85 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between">
     <div class="flex items-center space-x-3 min-w-0">
-      <a id="brandSwitch" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="flex-shrink-0 inline-flex items-center" title="Switch to Clubstride Pro" aria-label="Switch to Clubstride Pro">
+      <a id="brandSwitch" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="inline-flex items-center min-w-0" title="Switch to Clubstride Pro" aria-label="Switch to Clubstride Pro">
         <img id="appHeaderIcon" src="./assets/brand/L1_lockup_dark.svg" alt="Clubstride Lite" class="h-9 w-auto max-w-[190px] object-contain transition hover:opacity-80 active:scale-95" />
       </a>
     </div>
@@ -334,28 +336,30 @@
       <div class="glass-card rounded-lite p-4 text-center relative overflow-hidden">
         <div class="absolute -top-12 -left-12 w-32 h-32 bg-cyber-cyan/15 rounded-full blur-2xl pointer-events-none"></div>
         <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-cyber-mint/15 rounded-full blur-2xl pointer-events-none"></div>
-        <div class="flex items-center justify-between mb-2">
+        <!-- The goal steppers are fixed-size tap targets, so this row folds instead of letting
+             them hang outside the card on a 320px phone. -->
+        <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 mb-2">
           <!-- Period Selector -->
-          <div class="flex rounded-xl bg-obsidian-950 p-0.5 border border-white/10 text-xs">
+          <div class="flex rounded-xl bg-obsidian-950 p-0.5 border border-white/10 text-xs flex-shrink-0">
             <button id="periodBtn_1" onclick="App.setPeriod('1st Half')" class="px-2.5 py-1 rounded-lg font-bold bg-cyber-cyan text-obsidian-950">1st Half</button>
             <button id="periodBtn_2" onclick="App.setPeriod('2nd Half')" class="px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white">2nd Half</button>
           </div>
           <!-- Scoreboard Summary with Touch Adjusters -->
-          <div class="flex items-center space-x-1.5 text-xs font-bold">
+          <div class="flex items-center space-x-1.5 text-xs font-bold flex-wrap justify-end gap-y-1">
             <!-- Our Team Stepper -->
-            <div class="flex items-center space-x-1">
-              <span class="text-white font-bold truncate max-w-[65px]" id="scoreboardTeam" title="Your Team">Clubstride</span>
-              <button type="button" onclick="App.adjustScore('our', -1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">−</button>
-              <span id="scoreboardGoals" class="w-7 py-0.5 rounded-lg bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40 font-mono text-base text-center inline-block">0</span>
-              <button type="button" onclick="App.adjustScore('our', 1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-mint/40 text-cyber-mint hover:bg-cyber-mint/20 flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Goal">+</button>
+            <div class="flex items-center space-x-1 min-w-0">
+              <span class="text-white font-bold truncate min-w-0 max-w-[65px]" id="scoreboardTeam" title="Your Team">Clubstride</span>
+              <button type="button" onclick="App.adjustScore('our', -1)" class="w-6 h-6 flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">−</button>
+              <span id="scoreboardGoals" class="w-7 flex-shrink-0 py-0.5 rounded-lg bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40 font-mono text-base text-center inline-block">0</span>
+              <button type="button" onclick="App.adjustScore('our', 1)" class="w-6 h-6 flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-mint/40 text-cyber-mint hover:bg-cyber-mint/20 flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Goal">+</button>
             </div>
-            <span class="text-slate-500 font-mono">:</span>
+            <span class="text-slate-500 font-mono flex-shrink-0">:</span>
             <!-- Opponent Stepper -->
-            <div class="flex items-center space-x-1">
-              <button type="button" onclick="App.adjustScore('opponent', -1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">−</button>
-              <span id="scoreboardOpponentGoals" class="w-7 py-0.5 rounded-lg bg-white/10 text-slate-300 font-mono text-base text-center inline-block">0</span>
-              <button type="button" onclick="App.adjustScore('opponent', 1)" class="w-6 h-6 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Opponent Goal">+</button>
-              <span class="text-slate-400 font-semibold truncate max-w-[65px]" id="scoreboardOpponent" title="Opponent">Echo</span>
+            <div class="flex items-center space-x-1 min-w-0">
+              <button type="button" onclick="App.adjustScore('opponent', -1)" class="w-6 h-6 flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">−</button>
+              <span id="scoreboardOpponentGoals" class="w-7 flex-shrink-0 py-0.5 rounded-lg bg-white/10 text-slate-300 font-mono text-base text-center inline-block">0</span>
+              <button type="button" onclick="App.adjustScore('opponent', 1)" class="w-6 h-6 flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Opponent Goal">+</button>
+              <span class="text-slate-400 font-semibold truncate min-w-0 max-w-[65px]" id="scoreboardOpponent" title="Opponent">Echo</span>
             </div>
           </div>
         </div>
@@ -3017,16 +3021,16 @@
           const isStarter = AppState.match.starters.includes(p.id);
           const shirtColor = isStarter ? AppState.kitColor : '#303A4A';
           const card = document.createElement('div');
-          card.className = 'glass-card rounded-lite p-3 flex items-center justify-between transition hover:border-white/20';
+          card.className = 'glass-card rounded-lite p-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-2 transition hover:border-white/20';
           card.innerHTML = `
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 min-w-0">
               <div class="flex-shrink-0 flex items-center justify-center">
                 ${this.getShirtSvg(p.number, shirtColor, 40, isStarter ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)')}
               </div>
-              <div>
-                <div class="font-bold text-sm text-white flex items-center space-x-2">
-                  <span>${p.name}</span>
-                  ${isStarter ? '<span class="px-1.5 py-0.2 rounded bg-cyber-cyan/20 text-cyber-cyan text-[10px] font-bold">Starter</span>' : ''}
+              <div class="min-w-0">
+                <div class="font-bold text-sm text-white flex items-center space-x-2 min-w-0">
+                  <span class="truncate" title="${p.name}">${p.name}</span>
+                  ${isStarter ? '<span class="flex-shrink-0 px-1.5 py-0.2 rounded bg-cyber-cyan/20 text-cyber-cyan text-[10px] font-bold">Starter</span>' : ''}
                 </div>
                 <div class="flex items-center space-x-2 mt-1">
                   <select onchange="App.updatePlayerPosition('${p.id}', this.value)" class="bg-obsidian-950/80 border border-white/15 text-[10px] font-bold text-cyber-cyan rounded-lg px-2 py-0.5 focus:outline-none">
@@ -3049,7 +3053,7 @@
                 </div>
               </div>
             </div>
-            <div class="flex items-center space-x-1.5">
+            <div class="flex items-center space-x-1.5 flex-shrink-0 ml-auto">
               ${isAvail ? `
                 <button type="button" onclick="App.toggleStarter('${p.id}')" class="px-2.5 py-1.5 rounded-xl font-bold text-xs transition active:scale-95 flex items-center space-x-1 ${
                   isStarter ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/40 hover:bg-cyber-cyan/30' : 'bg-obsidian-950 text-slate-300 border border-white/15 hover:text-white'
@@ -3247,16 +3251,16 @@
               : 'bg-obsidian-950/80 border-white/10 hover:border-cyber-cyan/40'
           }`;
           card.innerHTML = `
-            <div class="flex items-center space-x-2.5">
+            <div class="flex items-center space-x-2.5 min-w-0">
               <div class="flex-shrink-0">
                 ${this.getShirtSvg(p.number, AppState.kitColor, 34)}
               </div>
-              <div>
-                <div class="text-xs font-bold text-white truncate max-w-[85px]">${p.name}</div>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-white truncate" title="${p.name}">${p.name}</div>
                 <div class="text-[10px] text-cyber-cyan">${p.position}</div>
               </div>
             </div>
-            <div class="text-right">
+            <div class="text-right flex-shrink-0">
               <div id="liveTimer_${pid}" class="font-mono font-bold text-xs text-cyber-mint">
                 ${this.formatTime(AppState.playerTimers[pid] || 0)}
               </div>
@@ -3266,7 +3270,7 @@
           pitchGrid.appendChild(card);
         });
         if (AppState.match.bench.length === 0) {
-          benchGrid.innerHTML = `<div class="col-span-2 text-slate-500 italic text-xs py-2 text-center">No reserve players on bench</div>`;
+          benchGrid.innerHTML = `<div class="col-span-full text-slate-500 italic text-xs py-2 text-center">No reserve players on bench</div>`;
         } else {
           AppState.match.bench.forEach(pid => {
             const p = AppState.squad.find(i => i.id === pid);
@@ -3281,16 +3285,16 @@
                 : 'bg-obsidian-950/60 border-white/5 opacity-80'
             }`;
             card.innerHTML = `
-              <div class="flex items-center space-x-2.5">
+              <div class="flex items-center space-x-2.5 min-w-0">
                 <div class="flex-shrink-0">
                   ${this.getShirtSvg(p.number, '#303A4A', 34, 'rgba(255,255,255,0.2)')}
                 </div>
-                <div>
-                  <div class="text-xs font-bold text-white truncate max-w-[85px]">${p.name}</div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-white truncate" title="${p.name}">${p.name}</div>
                   <div class="text-[10px] text-slate-400">${p.position}</div>
                 </div>
               </div>
-              <div class="text-right">
+              <div class="text-right flex-shrink-0">
                 <div class="font-mono font-bold text-xs text-slate-300">
                   ${this.formatTime(AppState.playerTimers[pid] || 0)}
                 </div>

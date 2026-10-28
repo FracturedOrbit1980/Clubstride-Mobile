@@ -1158,7 +1158,7 @@ App.saveNewPlayer();
 assert.strictEqual(readRoster().players[0].name, 'Writable Again');
 assert.strictEqual(readRoster().players[0].proId, uuidA);
 assert.strictEqual(readRoster().readOnly, false);
-assert.strictEqual(cacheVersion[1], 'Clubstride Lite-v18', 'Do not bump the pending publication version');
+assert.strictEqual(cacheVersion[1], 'Clubstride Lite-v19', 'Do not bump the pending publication version');
 console.log('✓ Read-only controls/mutators block edits without writes, auth or credentials, and restore editing when permission changes');
 
 // ==========================================
@@ -1452,8 +1452,48 @@ assert(!dom['installPwaBtn'].className.includes('hidden'), 'A browser tab gets t
 Object.defineProperty(globalThis, 'navigator', { value: realNavigator, configurable: true, writable: true });
 console.log('✓ Install path shows on Safari, names Share on iPhone and iPad, keeps Chrome dialog, and stays quiet once installed');
 
+// ==========================================
+// TEST 36: No row is wider than a 320px phone
+// ==========================================
+const podRegion = jsCode.slice(jsCode.indexOf('renderRoster() {'), jsCode.indexOf('updatePlayerPosition(pid, pos)'));
+assert(podRegion.length > 500, 'Squad pod template must be readable by the harness');
+const podRow = (podRegion.match(/card\.className = '([^']*)'/) || [])[1] || '';
+assert(podRow.includes('flex-wrap') && podRow.includes('gap-y-2'), 'Pod actions fold onto their own line instead of hanging off the right edge');
+assert(/<div class="flex items-center space-x-3 min-w-0">/.test(podRegion), 'The shirt-and-name half of a pod gives way instead of forcing width');
+assert(/<span class="truncate" title="\$\{p\.name\}">\$\{p\.name\}<\/span>/.test(podRegion), 'A long player name ellipsizes and keeps the whole name in the title');
+const podActions = (podRegion.match(/<div class="flex items-center space-x-1\.5([^"]*)">/) || [])[1] || '';
+assert(podActions.includes('flex-shrink-0'), 'Pitch, Avail, Edit and Delete keep their tap size when the pod wraps');
+assert(podActions.includes('ml-auto'), 'Actions that folded to their own line still sit on the right edge');
+assert(/<span class="flex-shrink-0 px-1\.5[^>]*>Starter<\/span>/.test(podRegion), 'The Starter badge is never squashed by a long name');
+
+const boardRegion = html.slice(html.indexOf('STOPWATCH & ROTATION CLOCK HERO POD'), html.indexOf('Master Digital Stopwatch'));
+assert(/<div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 mb-2">/.test(boardRegion), 'The scoreboard row folds so the goal steppers stay inside the card');
+const steppers = boardRegion.match(/<button[^>]*adjustScore[^>]*>/g) || [];
+assert.strictEqual(steppers.length, 4, 'All four goal steppers must be present to check');
+steppers.forEach(b => assert(b.includes('flex-shrink-0'), 'A goal stepper is a tap target and must not shrink'));
+['scoreboardGoals', 'scoreboardOpponentGoals'].forEach(id => {
+  const box = (boardRegion.match(new RegExp('<span id="' + id + '"[^>]*>')) || [])[0] || '';
+  assert(box.includes('flex-shrink-0'), id + ' must keep its width so the score stays readable');
+});
+['scoreboardTeam', 'scoreboardOpponent'].forEach(id => {
+  const tag = (boardRegion.match(new RegExp('<span[^>]*id="' + id + '"[^>]*>')) || [])[0] || '';
+  assert(tag.includes('min-w-0') && tag.includes('truncate'), id + ' must truncate rather than push the steppers out of view');
+});
+
+const brandLink = (html.match(/<a id="brandSwitch"[^>]*>/) || [])[0] || '';
+assert(!brandLink.includes('flex-shrink-0') && brandLink.includes('min-w-0'), 'The lockup must shrink to the space the header actions leave');
+const lockupRule = (html.match(/#appHeaderIcon\s*\{([^}]*)\}/) || [])[1] || '';
+assert(lockupRule.includes('100%') && !lockupRule.includes('100vw'), 'Cap the lockup to its own flex line, not a guessed viewport constant');
+
+assert(/#liveOnPitchGrid, #liveBenchGrid \{ grid-template-columns: repeat\(auto-fit, minmax\(1[6-9]\dpx, 1fr\)\); \}/.test(html), 'Sub-board cells keep room for shirt, name and clock before a second column appears');
+const liveRegion = jsCode.slice(jsCode.indexOf('renderLiveBoard() {'), jsCode.indexOf('selectSubOut(pid) {'));
+assert((liveRegion.match(/<div class="flex items-center space-x-2\.5 min-w-0">/g) || []).length === 2, 'Both sub-board card halves must be able to give way');
+assert((liveRegion.match(/<div class="text-right flex-shrink-0">/g) || []).length === 2, 'The running clock on each sub-board card never shrinks');
+assert(liveRegion.includes('col-span-full') && !liveRegion.includes('col-span-2'), 'The empty-bench note spans whatever columns exist instead of forcing a second track');
+console.log('✓ Squad pods, scoreboard steppers, header lockup and sub-board cells stay inside a 320px phone');
+
 console.log('\n=========================================');
-console.log('ALL 35 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 36 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 
