@@ -45,10 +45,43 @@
       padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 90px) !important;
     }
     .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 16px), 24px); }
+    /* The dock shares the content column's width, and sits under the modal overlays so a
+       sheet in front of it cannot be dismissed by an accidental tab tap. */
     .pwa-dock {
-      z-index: 1000 !important;
+      z-index: 45 !important;
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 32rem;
       padding-bottom: max(env(safe-area-inset-bottom, 14px), 20px);
     }
+    /* Touchline use means gloved thumbs, so every control the coach taps clears 44px.
+       The bundled Tailwind build predates these utilities, so they live here. */
+    .score-step { width: 44px; height: 44px; font-size: 18px; line-height: 1; }
+    .roster-icon-btn { width: 44px; height: 44px; }
+    .roster-chip-btn { min-height: 44px; }
+    .position-select { min-height: 44px; }
+    .timeline-undo { min-height: 44px; padding-left: 12px; padding-right: 12px; font-size: 12px; }
+    .sheet-close { width: 44px; height: 44px; }
+    .chip-btn { min-height: 44px; }
+    .touch-input { min-height: 44px; }
+    .header-icon-btn { width: 44px; height: 44px; }
+    /* The tab strip is rewritten by switchTab, so the size lives with the id, not the class. */
+    [id^="tabBtn_"] { min-height: 44px; }
+    /* Every match decision is signed off in a sheet, so those controls clear 44px as well.
+       The kit swatches (.w-5) stay small — nine of them cannot reach 44px across a phone. */
+    .fixed .glass-card button:not(.w-5),
+    .fixed .glass-card select,
+    .fixed .glass-card input:not([type="checkbox"]):not([type="color"]) { min-height: 44px; }
+    .token-bench-btn { width: 28px; height: 28px; }
+    /* The badge stays small on the shirt; only its touch box grows. Kept square — a rounded
+       touch box loses exactly the corners a thumb aims for. The 1px border eats 2px. */
+    .token-bench-btn::after { content: ''; position: absolute; inset: -10px; }
+    /* Toasts land above the dock instead of covering the Lite/Pro row and the match card. */
+    #toastPod { top: auto; bottom: calc(env(safe-area-inset-bottom, 16px) + 96px); }
+    #lineupPanel { scroll-margin-top: 84px; }
+    .short-name-input { width: 84px; flex-shrink: 0; }
     /* The header actions keep their own width, so the lockup scales to whatever the flex line leaves it */
     #appHeaderIcon { max-width: min(190px, 100%); }
     /* A sub-board cell needs room for shirt, name and clock, so two columns only appear once they fit */
@@ -199,20 +232,20 @@
   <!-- HEADER -->
   <header class="sticky top-0 z-40 bg-obsidian-950/85 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between">
     <div class="flex items-center space-x-3 min-w-0">
-      <a id="brandSwitch" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="inline-flex items-center min-w-0" title="Switch to Clubstride Pro" aria-label="Switch to Clubstride Pro">
+      <a id="brandSwitch" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="chip-btn inline-flex items-center min-w-0" title="Switch to Clubstride Pro" aria-label="Switch to Clubstride Pro">
         <img id="appHeaderIcon" src="./assets/brand/L1_lockup_dark.svg" alt="Clubstride Lite" class="h-9 w-auto max-w-[190px] object-contain transition hover:opacity-80 active:scale-95" />
       </a>
     </div>
     <!-- Header Actions (Teams, Day/Night, PDF) -->
     <div class="flex items-center space-x-1.5">
-      <button onclick="App.openTeamsModal()" class="px-2.5 py-1.5 rounded-2xl bg-cyber-mint/15 hover:bg-cyber-mint/25 border border-cyber-mint/40 text-cyber-mint text-xs font-bold flex items-center space-x-1 transition active:scale-95" title="Manage & Switch Teams">
+      <button onclick="App.openTeamsModal()" class="chip-btn px-2.5 py-1.5 rounded-2xl bg-cyber-mint/15 hover:bg-cyber-mint/25 border border-cyber-mint/40 text-cyber-mint text-xs font-bold flex items-center space-x-1 transition active:scale-95" title="Manage & Switch Teams">
         <span class="inline-flex items-center"><svg class="ci ci-16" aria-hidden="true"><use href="#ci-teams"></use></svg></span>
         <span id="headerTeamNameBadge">Teams</span>
       </button>
-      <button id="themeToggleBtn" onclick="App.toggleDayNight()" class="w-9 h-9 rounded-2xl bg-obsidian-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95" title="Toggle Day/Night Turf Mode">
+      <button id="themeToggleBtn" onclick="App.toggleDayNight()" class="header-icon-btn rounded-2xl bg-obsidian-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95" title="Toggle Day/Night Turf Mode">
         <span id="themeIcon" class="text-[10px] font-bold tracking-wider">Night</span>
       </button>
-      <button onclick="App.openExportModal()" class="px-2.5 py-1.5 rounded-2xl bg-cyber-cyan/10 hover:bg-cyber-cyan/20 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 transition active:scale-95">
+      <button onclick="App.openExportModal()" class="chip-btn px-2.5 py-1.5 rounded-2xl bg-cyber-cyan/10 hover:bg-cyber-cyan/20 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 transition active:scale-95">
         <span class="inline-flex items-center"><svg class="ci ci-16" aria-hidden="true"><use href="#ci-pdf-export"></use></svg></span>
         <span>PDF</span>
       </button>
@@ -229,8 +262,8 @@
     <div class="glass-card rounded-lite px-3 py-2 flex items-center justify-between">
       <span class="text-[9px] font-black uppercase tracking-wider text-slate-400">View</span>
       <div class="flex items-center space-x-1" role="group" aria-label="Clubstride view">
-        <button type="button" id="liteViewBtn" aria-pressed="true" class="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-cyber-mint/20 border border-cyber-mint/40 text-cyber-mint cursor-default">Lite</button>
-        <a id="proViewBtn" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" aria-label="Switch to Clubstride Pro" class="px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-obsidian-900 border border-white/10 text-slate-300 hover:text-white active:scale-95 transition">Pro</a>
+        <button type="button" id="liteViewBtn" aria-pressed="true" class="chip-btn px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-cyber-mint/20 border border-cyber-mint/40 text-cyber-mint cursor-default">Lite</button>
+        <a id="proViewBtn" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" aria-label="Switch to Clubstride Pro" class="chip-btn px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-obsidian-900 border border-white/10 text-slate-300 hover:text-white active:scale-95 transition">Pro</a>
       </div>
     </div>
     <p id="proToggleNote" role="status" aria-live="polite" class="hidden text-[11px] leading-relaxed px-1" style="color: var(--cs-amber-300);">You're offline. Pro needs a connection - Lite keeps working offline.</p>
@@ -275,9 +308,9 @@
       <div class="glass-card rounded-lite p-3 flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center space-x-1.5">
           <span class="text-[11px] text-slate-400 uppercase font-bold">Preset:</span>
-          <select id="formationSelect" onchange="App.onFormationChanged(this.value)" class="bg-obsidian-950 border border-white/15 text-white text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyber-cyan">
+          <select id="formationSelect" onchange="App.onFormationChanged(this.value)" class="chip-btn bg-obsidian-950 border border-white/15 text-white text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyber-cyan">
           </select>
-          <button id="btnDeleteCustomFormation" type="button" onclick="App.deleteCurrentCustomFormation()" class="hidden w-7 h-7 rounded-xl bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs items-center justify-center transition active:scale-95" title="Delete this custom formation">
+          <button id="btnDeleteCustomFormation" type="button" onclick="App.deleteCurrentCustomFormation()" class="hidden roster-icon-btn rounded-xl bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs items-center justify-center transition active:scale-95" title="Delete this custom formation">
             <svg class="ci ci-16 ci-danger" aria-hidden="true"><use href="#ci-delete"></use></svg>
           </button>
         </div>
@@ -286,6 +319,13 @@
           <div id="kitColorSwatches" class="flex items-center space-x-1"></div>
           <input type="color" id="customKitPicker" onchange="App.setKitColor(this.value)" class="w-6 h-6 rounded-lg cursor-pointer border border-white/20 bg-transparent p-0" title="Custom Spectrum Kit" />
         </div>
+      </div>
+      <!-- The pitch keeps its full 3:4.2 shape, so the bench gets a route rather than a squashed board. -->
+      <div class="flex justify-center">
+        <button id="tacticsScrollHint" type="button" onclick="App.jumpToLineupPanel()" class="chip-btn inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-pill bg-obsidian-950/80 border border-cyber-cyan/30 text-cyber-cyan text-[11px] font-bold active:scale-95 transition">
+          <svg class="ci ci-16" aria-hidden="true"><use href="#ci-tactics"></use></svg>
+          <span>Lineup &amp; bench under the pitch</span>
+        </button>
       </div>
       <!-- INTERACTIVE SOCCER PITCH -->
       <div class="relative w-full rounded-lite-xl overflow-hidden p-2.5 transition-all duration-300 pitch-night" id="pitchCanvasContainer">
@@ -321,20 +361,20 @@
         </div>
         <div class="mt-2 px-1 flex items-center justify-between text-[11px] text-white/70">
           <span>Drag tokens to adjust tactical roles</span>
-          <button onclick="App.openSaveFormationModal()" class="px-2.5 py-1 rounded-xl bg-obsidian-950/90 hover:bg-obsidian-900 border border-cyber-cyan/40 text-cyber-cyan text-[11px] font-semibold flex items-center space-x-1.5 shadow-sm active:scale-95 transition" title="Save current positions as a custom formation">
+          <button onclick="App.openSaveFormationModal()" class="chip-btn px-2.5 py-1 rounded-xl bg-obsidian-950/90 hover:bg-obsidian-900 border border-cyber-cyan/40 text-cyber-cyan text-[11px] font-semibold flex items-center space-x-1.5 shadow-sm active:scale-95 transition" title="Save current positions as a custom formation">
             <span><svg class="ci ci-16" aria-hidden="true"><use href="#ci-add"></use></svg> Save As Formation</span>
           </button>
         </div>
       </div>
       <!-- LINEUP SELECTION & STARTER VALIDATOR -->
-      <div class="glass-card rounded-lite p-4 space-y-3">
+      <div id="lineupPanel" class="glass-card rounded-lite p-4 space-y-3">
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-sm font-bold text-white">Starting Lineup vs Reserves</h3>
             <p class="text-xs text-slate-400" id="starterQuotaText">Required starters: 7</p>
           </div>
           <div class="flex items-center space-x-1.5">
-            <button type="button" onclick="App.sortLineupByPosition(true)" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 active:scale-95 transition" title="Sort starters by designated pitch position (GK → DEF → MID → FWD)">
+            <button type="button" onclick="App.sortLineupByPosition(true)" class="chip-btn px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-cyan/30 text-cyber-cyan text-xs font-semibold flex items-center space-x-1 active:scale-95 transition" title="Sort starters by designated pitch position (GK → DEF → MID → FWD)">
               <span><svg class="ci ci-16" aria-hidden="true"><use href="#ci-tactics"></use></svg> Sort by Position</span>
             </button>
             <span id="starterStatusBadge" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30">
@@ -364,24 +404,24 @@
         <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 mb-2">
           <!-- Period Selector -->
           <div class="flex rounded-xl bg-obsidian-950 p-0.5 border border-white/10 text-xs flex-shrink-0">
-            <button id="periodBtn_1" onclick="App.setPeriod('1st Half')" class="px-2.5 py-1 rounded-lg font-bold bg-cyber-cyan text-obsidian-950">1st Half</button>
-            <button id="periodBtn_2" onclick="App.setPeriod('2nd Half')" class="px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white">2nd Half</button>
+            <button id="periodBtn_1" onclick="App.setPeriod('1st Half')" class="chip-btn px-2.5 py-1 rounded-lg font-bold bg-cyber-cyan text-obsidian-950">1st Half</button>
+            <button id="periodBtn_2" onclick="App.setPeriod('2nd Half')" class="chip-btn px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white">2nd Half</button>
           </div>
           <!-- Scoreboard Summary with Touch Adjusters -->
           <div class="flex items-center space-x-1.5 text-xs font-bold flex-wrap justify-end gap-y-1">
             <!-- Our Team Stepper -->
             <div class="flex items-center space-x-1 min-w-0">
               <span class="text-white font-bold truncate min-w-0 max-w-[65px]" id="scoreboardTeam" title="Your Team">Clubstride</span>
-              <button type="button" onclick="App.adjustScore('our', -1)" class="w-6 h-6 flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">−</button>
+              <button type="button" onclick="App.adjustScore('our', -1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">−</button>
               <span id="scoreboardGoals" class="w-7 flex-shrink-0 py-0.5 rounded-lg bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40 font-mono text-base text-center inline-block">0</span>
-              <button type="button" onclick="App.adjustScore('our', 1)" class="w-6 h-6 flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-mint/40 text-cyber-mint hover:bg-cyber-mint/20 flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Goal">+</button>
+              <button type="button" onclick="App.adjustScore('our', 1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-mint/40 text-cyber-mint hover:bg-cyber-mint/20 flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Goal">+</button>
             </div>
             <span class="text-slate-500 font-mono flex-shrink-0">:</span>
             <!-- Opponent Stepper -->
             <div class="flex items-center space-x-1 min-w-0">
-              <button type="button" onclick="App.adjustScore('opponent', -1)" class="w-6 h-6 flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">−</button>
+              <button type="button" onclick="App.adjustScore('opponent', -1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">−</button>
               <span id="scoreboardOpponentGoals" class="w-7 flex-shrink-0 py-0.5 rounded-lg bg-white/10 text-slate-300 font-mono text-base text-center inline-block">0</span>
-              <button type="button" onclick="App.adjustScore('opponent', 1)" class="w-6 h-6 flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Opponent Goal">+</button>
+              <button type="button" onclick="App.adjustScore('opponent', 1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Opponent Goal">+</button>
               <span class="text-slate-400 font-semibold truncate min-w-0 max-w-[65px]" id="scoreboardOpponent" title="Opponent">Echo</span>
             </div>
           </div>
@@ -395,13 +435,13 @@
         </div>
         <!-- Clock Action Controls (Start/Pause, Reset, End Match) -->
         <div class="flex items-center justify-center space-x-2 mt-4">
-          <button id="clockToggleBtn" onclick="App.toggleTimer()" class="flex-1 max-w-[125px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-xs tracking-wide shadow-lg active:scale-95 transition">
+          <button id="clockToggleBtn" onclick="App.toggleTimer()" class="chip-btn flex-1 max-w-[125px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-xs tracking-wide shadow-lg active:scale-95 transition">
             START
           </button>
-          <button onclick="App.resetTimer()" class="px-3.5 py-2.5 rounded-2xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/10 text-slate-300 font-bold text-xs active:scale-95 transition" title="Reset stopwatch only">
+          <button onclick="App.resetTimer()" class="chip-btn px-3.5 py-2.5 rounded-2xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/10 text-slate-300 font-bold text-xs active:scale-95 transition" title="Reset stopwatch only">
             Reset
           </button>
-          <button onclick="App.endMatch()" class="px-3.5 py-2.5 rounded-2xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 font-bold text-xs active:scale-95 transition flex items-center space-x-1" title="End match and archive to history">
+          <button onclick="App.endMatch()" class="chip-btn px-3.5 py-2.5 rounded-2xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 font-bold text-xs active:scale-95 transition flex items-center space-x-1" title="End match and archive to history">
             <span><svg class="ci ci-16" aria-hidden="true"><use href="#ci-end-match"></use></svg> End Match</span>
           </button>
         </div>
@@ -457,13 +497,13 @@
             <h3 class="text-sm font-bold text-white">Squad Registry</h3>
             <p class="text-xs text-slate-400">Manage roster and pre-game availability</p>
           </div>
-          <button onclick="App.openAddPlayerModal()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 text-xs font-bold active:scale-95 transition shadow-sm">
+          <button onclick="App.openAddPlayerModal()" class="chip-btn px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 text-xs font-bold active:scale-95 transition shadow-sm">
             + Add Player
           </button>
         </div>
         <div class="flex items-center space-x-2 text-xs pt-1">
-          <button onclick="App.setAllAvailability(true)" class="px-2 py-1 rounded-lg bg-cyber-mint/15 text-cyber-mint border border-cyber-mint/30 font-medium">Mark All Available</button>
-          <button onclick="App.setAllAvailability(false)" class="px-2 py-1 rounded-lg bg-white/5 text-slate-400 border border-white/10 font-medium">Reset</button>
+          <button onclick="App.setAllAvailability(true)" class="chip-btn px-2 py-1 rounded-lg bg-cyber-mint/15 text-cyber-mint border border-cyber-mint/30 font-medium">Mark All Available</button>
+          <button onclick="App.setAllAvailability(false)" class="chip-btn px-2 py-1 rounded-lg bg-white/5 text-slate-400 border border-white/10 font-medium">Reset</button>
         </div>
       </div>
       <!-- Squad Cards Pod Container -->
@@ -493,7 +533,7 @@
             <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Register PDF</span>
           </div>
         </div>
-        <a id="upgradeProCta" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="w-full py-3 rounded-2xl font-black text-xs uppercase tracking-wider text-center flex items-center justify-center active:scale-95 transition" style="background: linear-gradient(90deg, var(--cs-amber-300), var(--cs-amber-500)); color: #0b0f17; box-shadow: 0 0 22px rgba(251, 191, 36, 0.22);">Upgrade to Pro</a>
+        <a id="upgradeProCta" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="chip-btn w-full py-3 rounded-2xl font-black text-xs uppercase tracking-wider text-center flex items-center justify-center active:scale-95 transition" style="background: linear-gradient(90deg, var(--cs-amber-300), var(--cs-amber-500)); color: #0b0f17; box-shadow: 0 0 22px rgba(251, 191, 36, 0.22);">Upgrade to Pro</a>
         <p class="text-[10px] text-slate-400 leading-relaxed">Opens Clubstride Pro inside this app with a Back to Lite control. Sign in or create your coach account - the yearly plan keeps Pro active.</p>
         <p id="upgradeProOffline" role="status" aria-live="polite" class="hidden text-[11px] leading-relaxed" style="color: var(--cs-amber-300);">You're offline. Open Clubstride Pro once you're back online - Lite keeps working offline.</p>
       </div>
@@ -514,35 +554,35 @@
         <div class="grid grid-cols-2 gap-2 text-xs">
           <div>
             <label class="text-slate-400 block mb-1 font-medium">From Date</label>
-            <input type="date" id="statsStartDate" onchange="App.renderStats()" class="w-full bg-obsidian-950 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-cyber-cyan" />
+            <input type="date" id="statsStartDate" onchange="App.renderStats()" class="touch-input w-full bg-obsidian-950 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-cyber-cyan" />
           </div>
           <div>
             <label class="text-slate-400 block mb-1 font-medium">To Date</label>
-            <input type="date" id="statsEndDate" onchange="App.renderStats()" class="w-full bg-obsidian-950 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-cyber-cyan" />
+            <input type="date" id="statsEndDate" onchange="App.renderStats()" class="touch-input w-full bg-obsidian-950 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-cyber-cyan" />
           </div>
         </div>
         <!-- MULTI-SELECT ACTIONS -->
         <div class="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center space-x-1.5 text-xs">
             <span class="text-[11px] text-slate-400 font-bold uppercase">Select:</span>
-            <button type="button" onclick="App.selectAllGames()" class="px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-200 hover:text-white text-[11px] font-semibold active:scale-95 transition">
+            <button type="button" onclick="App.selectAllGames()" class="chip-btn px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-200 hover:text-white text-[11px] font-semibold active:scale-95 transition">
               ✓ All
             </button>
-            <button type="button" onclick="App.deselectAllGames()" class="px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-400 hover:text-white text-[11px] font-semibold active:scale-95 transition">
+            <button type="button" onclick="App.deselectAllGames()" class="chip-btn px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-400 hover:text-white text-[11px] font-semibold active:scale-95 transition">
               ✗ Clear
             </button>
-            <button type="button" onclick="App.selectRecentGames(3)" class="px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-200 hover:text-white text-[11px] font-semibold active:scale-95 transition">
+            <button type="button" onclick="App.selectRecentGames(3)" class="chip-btn px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-200 hover:text-white text-[11px] font-semibold active:scale-95 transition">
               Last 3
             </button>
-            <button type="button" onclick="App.selectRecentGames(5)" class="px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-200 hover:text-white text-[11px] font-semibold active:scale-95 transition">
+            <button type="button" onclick="App.selectRecentGames(5)" class="chip-btn px-2.5 py-1 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-200 hover:text-white text-[11px] font-semibold active:scale-95 transition">
               Last 5
             </button>
           </div>
           <div class="flex items-center space-x-2">
-            <button id="btnCreatePdfReport" onclick="App.openPdfReportModal()" class="btn-primary px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md">
+            <button id="btnCreatePdfReport" onclick="App.openPdfReportModal()" class="chip-btn btn-primary px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md">
               <span><svg class="ci ci-16" aria-hidden="true"><use href="#ci-pdf-export"></use></svg> Create PDF Report</span>
             </button>
-            <button onclick="App.openExportModal('selected')" class="btn-secondary px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md">
+            <button onclick="App.openExportModal('selected')" class="chip-btn btn-secondary px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-md">
               <span><svg class="ci ci-16" aria-hidden="true"><use href="#ci-pdf-export"></use></svg> Export Selected</span>
             </button>
           </div>
@@ -552,7 +592,7 @@
     </section>
   </main>
   <!-- BOTTOM FLOATING PWA NAVIGATION DOCK -->
-  <nav class="fixed bottom-0 left-0 right-0 z-50 bg-obsidian-950/95 backdrop-blur-xl border-t border-white/10 px-4 pt-2 flex items-center justify-around pb-safe pwa-dock" style="z-index: 1000;">
+  <nav class="fixed bottom-0 left-0 right-0 z-50 bg-obsidian-950/95 backdrop-blur-xl border-t border-white/10 px-4 pt-2 flex items-center justify-around pb-safe pwa-dock">
     <button onclick="App.switchTab('pitch')" class="dock-btn flex-1 py-1 flex flex-col items-center text-cyber-cyan transition active:scale-90" data-dock="pitch">
       <span class="text-xl ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-attendance"></use></svg></span>
       <span class="text-[10px] font-bold mt-0.5">Tactics</span>
@@ -576,7 +616,7 @@
     <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-white">Match Configuration</h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+        <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
@@ -617,7 +657,7 @@
     <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 id="modalAddPlayerTitle" class="text-base font-bold text-white">Add Squad Player</h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+        <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
@@ -675,7 +715,7 @@
     <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-bold text-white">Save Custom Formation</h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+        <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <div class="space-y-3 text-xs">
         <div>
@@ -703,7 +743,7 @@
         <h3 id="eventModalTitle" class="text-base font-bold text-white flex items-center space-x-2">
           <span><svg class="ci ci-16 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> Register Goal</span>
         </h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+        <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <p class="text-xs text-slate-300">Only players on the pitch can score or assist. The assist is optional.</p>
       <div>
@@ -732,7 +772,7 @@
         <h3 class="text-base font-bold text-white flex items-center space-x-2">
           <span><svg class="ci ci-16" aria-hidden="true"><use href="#ci-teams"></use></svg> Club & Teams Manager</span>
         </h3>
-        <button onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+        <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <!-- Current Team Overview Card -->
       <div class="p-3.5 rounded-2xl bg-obsidian-950 border border-white/10 space-y-3">
@@ -745,6 +785,10 @@
           <input type="file" id="teamModalLogoInput" accept="image/*" class="hidden" onchange="App.handleTeamLogoUpload(event)" />
           <div class="flex-1">
             <input type="text" id="inputCurrentTeamName" class="w-full bg-obsidian-900 border border-white/15 rounded-xl px-2.5 py-1.5 text-white font-bold text-sm focus:outline-none focus:border-cyber-mint" placeholder="Team Name (e.g. Clubstride FC)" />
+            <div class="mt-1.5 flex items-center gap-2">
+              <input type="text" id="inputTeamShortName" maxlength="5" autocomplete="off" spellcheck="false" class="short-name-input bg-obsidian-900 border border-white/15 rounded-xl px-2 py-1 text-white font-bold text-xs uppercase focus:outline-none focus:border-cyber-mint" placeholder="CLUB" aria-label="Short team name used in the header and on the scoreboard" />
+              <span class="text-[10px] text-slate-400">Abbreviation for tight spots</span>
+            </div>
             <div class="text-[10px] text-slate-400 mt-1" id="currentTeamSquadMeta">10 Players • Kit Colour Synced</div>
           </div>
         </div>
@@ -831,7 +875,7 @@
             <p id="endMatchMeta" class="text-[11px] text-slate-400 mt-0.5">Match 1 · 0 min played</p>
           </div>
         </div>
-        <button type="button" onclick="App.closeModals()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition" aria-label="Keep playing">✕</button>
+        <button type="button" onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition" aria-label="Keep playing">✕</button>
       </div>
       <div class="rounded-2xl bg-obsidian-950 border border-white/10 p-3.5 text-center space-y-1">
         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Final score</div>
@@ -860,13 +904,27 @@
           <h3 id="formatShiftTitle" class="text-base font-bold text-white">Who comes off the pitch?</h3>
           <p id="formatShiftSub" class="text-[11px] text-slate-400 mt-0.5"></p>
         </div>
-        <button type="button" onclick="App.cancelFormatShift()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition active:scale-95" aria-label="Cancel the format change">✕</button>
+        <button type="button" onclick="App.cancelFormatShift()" class="sheet-close rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition active:scale-95" aria-label="Cancel the format change">✕</button>
       </div>
       <div id="formatShiftList" class="space-y-1.5"></div>
       <p id="formatShiftHint" class="text-[10px] text-slate-400"></p>
       <div class="grid grid-cols-2 gap-2 pt-1">
         <button type="button" onclick="App.cancelFormatShift()" class="py-2.5 rounded-xl bg-obsidian-950 border border-white/15 text-slate-300 font-bold text-xs transition active:scale-95">Cancel</button>
         <button type="button" id="formatShiftConfirmBtn" onclick="App.confirmFormatShift()" class="py-2.5 rounded-xl bg-cyber-cyan/20 hover:bg-cyber-cyan/30 border border-cyber-cyan/40 text-cyber-cyan font-bold text-xs transition active:scale-95">Save &amp; bench</button>
+      </div>
+    </div>
+  </div>
+  <!-- 5c. CONFIRM SHEET — destructive roster actions get one tap to think about -->
+  <div id="modalConfirm" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
+      <div class="flex items-center justify-between gap-2">
+        <h3 id="confirmTitle" class="text-base font-bold text-white">Are you sure?</h3>
+        <button type="button" onclick="App.cancelConfirm()" class="sheet-close rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition" aria-label="Cancel">✕</button>
+      </div>
+      <p id="confirmBody" class="text-xs leading-relaxed text-slate-300"></p>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button type="button" onclick="App.cancelConfirm()" class="py-2.5 rounded-xl bg-obsidian-950 border border-white/15 text-slate-300 font-bold text-xs transition active:scale-95">Cancel</button>
+        <button type="button" id="confirmYesBtn" onclick="App.runConfirm()" class="py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 font-bold text-xs transition active:scale-95">Confirm</button>
       </div>
     </div>
   </div>
@@ -881,7 +939,7 @@
           </h3>
           <p class="text-xs text-slate-400">Export tactical intelligence for a single fixture or aggregated date range</p>
         </div>
-        <button onclick="App.closeModals()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition active:scale-95">✕</button>
+        <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition active:scale-95">✕</button>
       </div>
       <!-- Segmented Tab Switcher (Single Match vs Date Range) -->
       <div class="grid grid-cols-2 gap-1.5 p-1 bg-obsidian-950/80 rounded-xl border border-white/10 text-xs font-bold">
@@ -997,7 +1055,7 @@
     </div>
   </div>
   <!-- FLOATING TOAST -->
-  <div id="toastPod" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none max-w-xs w-full px-4">
+  <div id="toastPod" class="fixed left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none max-w-xs w-full px-4">
     <div id="toastInner" class="bg-obsidian-900/95 backdrop-blur-md border border-cyber-cyan/50 text-white rounded-2xl p-3 shadow-2xl flex items-center space-x-2 text-xs font-semibold">
       <span id="toastIcon"><svg class="ci ci-16 ci-accent" aria-hidden="true"><use href="#ci-star"></use></svg></span>
       <span id="toastMessage">Notification</span>
@@ -1582,6 +1640,11 @@
       },
       openTeamsModal() {
         document.getElementById('inputCurrentTeamName').value = AppState.currentTeamName || 'Clubstride FC';
+        const shortInput = document.getElementById('inputTeamShortName');
+        if (shortInput) {
+          const cur = (AppState.teams || []).find(t => t.id === AppState.currentTeamId);
+          shortInput.value = (cur && cur.shortName) || '';
+        }
         document.getElementById('currentTeamSquadMeta').innerText = `${AppState.squad.length} Players • Kit: ${AppState.kitColor}`;
         const preview = document.getElementById('teamModalLogoPreview');
         if (preview) {
@@ -1623,6 +1686,21 @@
             btn.classList.add('border-white/15', 'bg-obsidian-900', 'text-slate-300');
           }
         });
+      },
+      // Tight spots cannot carry a full club name, so the team record keeps an optional
+      // abbreviation and everything else falls back to a readable short form.
+      activeTeamShortName(name) {
+        if (!AppState.currentTeamName && !name) return 'Teams';
+        const team = (AppState.teams || []).find(t => t.id === AppState.currentTeamId);
+        const stored = String((team && team.shortName) || '').trim();
+        if (stored) return stored;
+        const full = String(name || AppState.currentTeamName || 'Clubstride FC').trim();
+        const first = full.split(/\s+/)[0] || 'Clubstride';
+        return first.length > 8 ? first.slice(0, 7) + '…' : first;
+      },
+      setHeaderTeamBadge() {
+        const badge = document.getElementById('headerTeamNameBadge');
+        if (badge) badge.innerText = this.activeTeamShortName();
       },
       setTeamThemeColor(color) {
         if (!this.rosterMutationAllowed()) return;
@@ -1684,7 +1762,7 @@
               } transition active:scale-95" title="Switch to this team">
                 ${isActive ? 'Loaded' : 'Load'}
               </button>
-              <button type="button" onclick="App.deleteTeam('${t.id}')" ${AppState.readOnly || t.readOnly ? 'disabled title="Shared roster is read-only"' : ''} class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete Team">
+              <button type="button" onclick="App.deleteTeam('${t.id}')" ${AppState.readOnly || t.readOnly ? 'disabled title="Shared roster is read-only"' : ''} class="roster-icon-btn rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete Team">
                 <svg class="ci ci-16 ci-danger" aria-hidden="true"><use href="#ci-delete"></use></svg>
               </button>
             </div>
@@ -1699,6 +1777,13 @@
           this.toast('Please provide a valid team name');
           return;
         }
+        const shortEl = document.getElementById('inputTeamShortName');
+        const shortName = (shortEl ? shortEl.value : '').trim().toUpperCase();
+        if (shortName && !/^[A-Z0-9][A-Z0-9 ._-]{0,4}$/.test(shortName)) {
+          this.toast('Short names are up to 5 letters, digits or spaces');
+          return;
+        }
+        if (shortEl) shortEl.value = shortName;
         const teamLogo = localStorage.getItem('Clubstride Mobile_custom_logo') || EMBEDDED_ICON_B64 || './icon-192.png';
         if (!AppState.teams) AppState.teams = [];
         let team = AppState.teams.find(t => t.id === AppState.currentTeamId);
@@ -1710,6 +1795,7 @@
             kitColor: AppState.kitColor,
             themeStyle: AppState.themeStyle || 'glass',
             format: AppState.match.format,
+            shortName,
             squad: JSON.parse(JSON.stringify(AppState.squad)),
             fieldPositions: JSON.parse(JSON.stringify(AppState.match.fieldPositions || {}))
           };
@@ -1721,11 +1807,12 @@
           team.kitColor = AppState.kitColor;
           team.themeStyle = AppState.themeStyle || 'glass';
           team.format = AppState.match.format;
+          team.shortName = shortName;
           team.squad = JSON.parse(JSON.stringify(AppState.squad));
           team.fieldPositions = JSON.parse(JSON.stringify(AppState.match.fieldPositions || {}));
         }
         AppState.currentTeamName = teamName;
-        document.getElementById('headerTeamNameBadge').innerText = teamName.length > 8 ? teamName.substring(0, 8) + '…' : teamName;
+        this.setHeaderTeamBadge();
         this.saveStorage();
         this.renderSavedTeamsList();
         this.toast(`Team "${teamName}" saved with theme! `);
@@ -1776,6 +1863,7 @@
         if (!incomingShared) this.captureActiveTeamMatch();
         AppState.currentTeamId = team.id;
         AppState.currentTeamName = team.name;
+        this.setHeaderTeamBadge();
         this.setSharedTeamMetadata(team);
         AppState.squad = JSON.parse(JSON.stringify(team.squad || []));
         AppState.kitColor = team.kitColor || '#22D3EE';
@@ -1816,7 +1904,7 @@
         } catch (e) {
           this.reportStorageFailure('teamLogo', 'Team logo could not be saved.');
         }
-        document.getElementById('headerTeamNameBadge').innerText = team.name.length > 8 ? team.name.substring(0, 8) + '…' : team.name;
+        this.setHeaderTeamBadge();
         document.getElementById('inputCurrentTeamName').value = team.name;
         this.setupIcons();
         const wasInitializing = this._initializingMatches;
@@ -1888,8 +1976,7 @@
           const curName = localStorage.getItem('Clubstride Mobile_current_team_name');
           if (curName) {
             AppState.currentTeamName = curName;
-            const badge = document.getElementById('headerTeamNameBadge');
-            if (badge) badge.innerText = curName.length > 8 ? curName.substring(0, 8) + '…' : curName;
+            this.setHeaderTeamBadge();
           }
           this.applyTheme();
           this._storageLoadFailed = false;
@@ -1967,9 +2054,10 @@
         }
         const actions = [...MATCH_TOOLS, 'openAddPlayerModal', 'openEditPlayerModal', 'saveNewPlayer', 'deletePlayer',
           'updatePlayerPosition', 'toggleAvailability', 'setAllAvailability', 'saveActiveTeam',
-          'createNewTeamPrompt', 'setTeamThemeColor', 'setTeamThemeStyle', 'setKitColor'];
+          'createNewTeamPrompt', 'setTeamThemeColor', 'setTeamThemeStyle', 'setKitColor',
+          'askConfirm', 'cancelConfirm', 'runConfirm', 'removePlayer'];
         const selectors = actions.map(action => `[onclick^="App.${action}("], [onchange^="App.${action}("]`);
-        selectors.push('#inputCurrentTeamName', '#inputPlayerName', '#inputPlayerNumber', '#inputPlayerPosition',
+        selectors.push('#inputCurrentTeamName', '#inputTeamShortName', '#inputPlayerName', '#inputPlayerNumber', '#inputPlayerPosition',
           '#teamModalLogoInput', '#teamModalColorPicker', '#teamModalColorSwatches button',
           '#customKitPicker', '#kitColorSwatches button', '#backupFileInput', '[onclick*="backupFileInput"]', '#recoverSharedRosterBtn');
         document.querySelectorAll(selectors.join(',')).forEach(control => {
@@ -2112,7 +2200,7 @@
             if (!ids.has(AppState.subOutPlayerId)) AppState.subOutPlayerId = null;
             if (!ids.has(AppState.editingPlayerId)) AppState.editingPlayerId = null;
             document.getElementById('inputCurrentTeamName').value = team.name;
-            document.getElementById('headerTeamNameBadge').innerText = team.name.length > 8 ? team.name.substring(0, 8) + '…' : team.name;
+            this.setHeaderTeamBadge();
           }
           this._sharedRosterRevision = snapshot.revision;
           this._sharedRosterContent = fingerprint;
@@ -2634,13 +2722,15 @@
             sec.classList.remove('hidden');
             btn.className = 'py-2 rounded-xl text-center transition flex flex-col items-center justify-center bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold shadow-md';
             if (dock) {
-              dock.className = 'dock-btn flex flex-col items-center text-cyber-cyan';
+              // Keep the dock utilities in the rewrite: dropping flex-1 shrank every tab button
+              // to the width of its label, taking the 44px target away after the first tap.
+              dock.className = 'dock-btn flex-1 py-1 flex flex-col items-center text-cyber-cyan transition active:scale-90';
             }
           } else {
             sec.classList.add('hidden');
             btn.className = 'py-2 rounded-xl text-center transition flex flex-col items-center justify-center text-slate-400 hover:text-white';
             if (dock) {
-              dock.className = 'dock-btn flex flex-col items-center text-slate-400 hover:text-white';
+              dock.className = 'dock-btn flex-1 py-1 flex flex-col items-center text-slate-400 hover:text-white transition active:scale-90';
             }
           }
         });
@@ -2648,6 +2738,10 @@
         if (tab === 'roster') this.renderRoster();
         if (tab === 'stats') this.renderStats();
         if (tab === 'pitch') this.renderPitchTokens();
+      },
+      jumpToLineupPanel() {
+        const panel = document.getElementById('lineupPanel');
+        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
       },
       initKitColors() {
         const presets = ['#22D3EE', '#3BE38A', '#C8F230', '#FF8A80', '#FFD500', '#2DD4BF', '#38BDF8', '#ffffff', '#0B1B33'];
@@ -3001,7 +3095,7 @@
             <div class="relative flex items-center justify-center transition-transform hover:scale-105 active:scale-110">
               ${this.getShirtSvg(p.number, AppState.kitColor, 46)}
               ${!AppState.clock.running ? `
-                <button type="button" onclick="event.stopPropagation(); App.sendToBench('${pid}')" title="Move to Bench" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-obsidian-900 border border-white/30 text-amber-300 hover:text-white flex items-center justify-center text-[10px] font-bold shadow-md transition hover:scale-110 active:scale-95 z-20">
+                <button type="button" onclick="event.stopPropagation(); App.sendToBench('${pid}')" title="Move to Bench" class="token-bench-btn absolute -top-1.5 -right-1.5 rounded-full bg-obsidian-900 border border-white/30 text-amber-300 hover:text-white flex items-center justify-center text-[10px] font-bold shadow-md transition hover:scale-110 active:scale-95 z-20">
                   <svg class="ci ci-16" aria-hidden="true"><use href="#ci-sub-out"></use></svg>
                 </button>
               ` : ''}
@@ -3200,22 +3294,22 @@
             </div>
             <div class="flex items-center space-x-1.5 flex-shrink-0 ml-auto">
               ${isAvail ? `
-                <button type="button" onclick="App.toggleStarter('${p.id}')" class="px-2.5 py-1.5 rounded-xl font-bold text-xs transition active:scale-95 flex items-center space-x-1 ${
+                <button type="button" onclick="App.toggleStarter('${p.id}')" class="roster-chip-btn px-2.5 py-1.5 rounded-xl font-bold text-xs transition active:scale-95 flex items-center space-x-1 ${
                   isStarter ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/40 hover:bg-cyber-cyan/30' : 'bg-obsidian-950 text-slate-300 border border-white/15 hover:text-white'
                 }" title="Toggle between Starting Pitch and Bench">
                   <span>${isStarter ? '<svg class="ci ci-14 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> Pitch' : '<svg class="ci ci-14" aria-hidden="true"><use href="#ci-sub-out"></use></svg> Bench'}</span>
                   <span class="text-[9px] opacity-70"><svg class="ci ci-12" aria-hidden="true"><use href="#ci-sub-swap"></use></svg></span>
                 </button>
               ` : ''}
-              <button onclick="App.toggleAvailability('${p.id}')" class="px-2.5 py-1.5 rounded-xl font-bold text-xs transition active:scale-95 ${
+              <button onclick="App.toggleAvailability('${p.id}')" class="roster-chip-btn px-2.5 py-1.5 rounded-xl font-bold text-xs transition active:scale-95 ${
                 isAvail ? 'bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
               }">
                 ${isAvail ? '✓ Avail' : '✗ Out'}
               </button>
-              <button type="button" onclick="App.openEditPlayerModal('${p.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-cyber-cyan/20 text-slate-400 hover:text-cyber-cyan transition flex items-center justify-center text-xs" title="Edit player name, number or position">
+              <button type="button" onclick="App.openEditPlayerModal('${p.id}')" class="roster-icon-btn rounded-xl bg-white/5 hover:bg-cyber-cyan/20 text-slate-400 hover:text-cyber-cyan transition flex items-center justify-center text-xs" title="Edit player name, number or position">
                 <svg class="ci ci-16" aria-hidden="true"><use href="#ci-edit"></use></svg>
               </button>
-              <button onclick="App.deletePlayer('${p.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete player from squad">
+              <button onclick="App.deletePlayer('${p.id}')" class="roster-icon-btn rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete player from squad">
                 <svg class="ci ci-16 ci-danger" aria-hidden="true"><use href="#ci-delete"></use></svg>
               </button>
             </div>
@@ -3274,6 +3368,17 @@
       },
       deletePlayer(pid) {
         if (!this.rosterMutationAllowed()) return;
+        const p = AppState.squad.find(item => item.id === pid);
+        if (!p) return;
+        this.askConfirm({
+          title: `Remove #${p.number} ${p.name}?`,
+          body: 'They leave the squad sheet, the pitch and the bench. Archived matches keep their goals and minutes.',
+          confirmLabel: 'Remove player',
+          action: () => this.removePlayer(pid)
+        });
+      },
+      removePlayer(pid) {
+        if (!this.rosterMutationAllowed()) return;
         AppState.squad = AppState.squad.filter(p => p.id !== pid);
         AppState.match.starters = AppState.match.starters.filter(id => id !== pid);
         AppState.match.bench = AppState.match.bench.filter(id => id !== pid);
@@ -3293,7 +3398,7 @@
           AppState.clock.startedAt = 0;
           this.saveStorage();
           document.getElementById('clockToggleBtn').innerText = 'RESUME';
-          document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
+          document.getElementById('clockToggleBtn').className = 'chip-btn flex-1 max-w-[140px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
           document.getElementById('clockStatusSubtext').innerText = 'Clock Paused';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-amber-400 font-medium mt-1';
         } else {
@@ -3309,7 +3414,7 @@
           this.syncLiveGameSelection();
           AppState.clock.intervalId = setInterval(() => App.tickClock(), 1000);
           document.getElementById('clockToggleBtn').innerText = 'PAUSE';
-          document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-amber-500 text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
+          document.getElementById('clockToggleBtn').className = 'chip-btn flex-1 max-w-[140px] py-2.5 rounded-2xl bg-amber-500 text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
           document.getElementById('clockStatusSubtext').innerText = '● Live Match In Progress — Accumulating Playing Seconds';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-cyber-mint font-medium mt-1 glow-pulse';
           this.saveStorage();
@@ -3383,11 +3488,11 @@
         const b1 = document.getElementById('periodBtn_1');
         const b2 = document.getElementById('periodBtn_2');
         if (period === '1st Half') {
-          b1.className = 'px-2.5 py-1 rounded-lg font-bold bg-cyber-cyan text-obsidian-950';
-          b2.className = 'px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white';
+          b1.className = 'chip-btn px-2.5 py-1 rounded-lg font-bold bg-cyber-cyan text-obsidian-950';
+          b2.className = 'chip-btn px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white';
         } else {
-          b2.className = 'px-2.5 py-1 rounded-lg font-bold bg-cyber-cyan text-obsidian-950';
-          b1.className = 'px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white';
+          b2.className = 'chip-btn px-2.5 py-1 rounded-lg font-bold bg-cyber-cyan text-obsidian-950';
+          b1.className = 'chip-btn px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white';
         }
         this.saveStorage();
         this.toast('Period set to ' + period);
@@ -3902,7 +4007,7 @@
                 <div class="font-mono font-bold text-xs text-cyber-cyan">${this.formatTime(ev.matchTimeSeconds)}</div>
                 <div class="text-[9px] text-slate-400">${ev.period}</div>
               </div>
-              <button type="button" onclick="App.deleteEvent('${ev.id}')" class="px-2 py-0.5 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-[10px] font-bold active:scale-95 transition" title="Undo / Delete event">
+              <button type="button" onclick="App.deleteEvent('${ev.id}')" class="timeline-undo rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-[10px] font-bold active:scale-95 transition" title="Undo / Delete event">
                 ✕ Undo
               </button>
             </div>
@@ -4162,7 +4267,7 @@
             </div>
             <div class="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
               <div class="flex items-center space-x-1.5">
-                <button type="button" onclick="App.toggleGameDetail('live')" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition">
+                <button type="button" onclick="App.toggleGameDetail('live')" class="chip-btn px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition">
                   <span>${isLiveExpanded ? 'Hide Detail' : 'Game Detail'}</span>
                 </button>
               </div>
@@ -4203,7 +4308,7 @@
               </div>
               <div class="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
                 <div class="flex items-center space-x-1.5">
-                  <button type="button" onclick="App.toggleGameDetail('${m.id}')" class="px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition" title="View breakdown of player minutes & timeline">
+                  <button type="button" onclick="App.toggleGameDetail('${m.id}')" class="chip-btn px-2.5 py-1 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition" title="View breakdown of player minutes & timeline">
                     <span>${isExpanded ? 'Hide Detail' : 'Game Detail'}</span>
                   </button>
                 </div>
@@ -4211,7 +4316,7 @@
                   <button type="button" onclick="App.openExportModal('${m.id}')" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/15 border border-white/15 text-slate-200 font-bold text-[11px] flex items-center space-x-1 active:scale-95 transition" title="Export Match PDF">
                     <span><svg class="ci ci-14" aria-hidden="true"><use href="#ci-pdf-export"></use></svg> PDF</span>
                   </button>
-                  <button type="button" onclick="App.deleteMatchHistory('${m.id}')" class="w-7 h-7 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 flex items-center justify-center text-xs active:scale-95 transition" title="Delete this match record">
+                  <button type="button" onclick="App.deleteMatchHistory('${m.id}')" class="roster-icon-btn rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 flex items-center justify-center text-xs active:scale-95 transition" title="Delete this match record">
                     <svg class="ci ci-16 ci-danger" aria-hidden="true"><use href="#ci-delete"></use></svg>
                   </button>
                 </div>
@@ -5295,10 +5400,38 @@
       },
       closeModals() {
         AppState.editingPlayerId = null;
-        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalPdfReport, #modalEndMatch, #modalFormatShift').forEach(m => {
+        this._pendingConfirm = null;
+        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalPdfReport, #modalEndMatch, #modalFormatShift, #modalConfirm').forEach(m => {
           m.classList.add('hidden');
           m.classList.remove('flex');
         });
+      },
+      // A gloved thumb on the touchline must never delete a squad record by accident.
+      askConfirm(opts) {
+        this._pendingConfirm = opts;
+        document.getElementById('confirmTitle').innerText = opts.title;
+        document.getElementById('confirmBody').innerText = opts.body;
+        document.getElementById('confirmYesBtn').innerText = opts.confirmLabel || 'Confirm';
+        const modal = document.getElementById('modalConfirm');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      },
+      dismissConfirm() {
+        this._pendingConfirm = null;
+        const modal = document.getElementById('modalConfirm');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      },
+      cancelConfirm() { this.dismissConfirm(); },
+      // The sheet holds a closure, so a global close must drop it rather than orphan it.
+      confirmSheetIsOpen() {
+        const modal = document.getElementById('modalConfirm');
+        return !!modal && !modal.classList.contains('hidden');
+      },
+      runConfirm() {
+        const job = this._pendingConfirm;
+        this.dismissConfirm();
+        if (job && typeof job.action === 'function') job.action();
       },
       TOAST_TINT: { goal: 'ci-goal', assist: 'ci-assist', star: 'ci-accent', 'card-yellow': 'ci-card-yellow', 'card-red': 'ci-card-red', 'sub-in': 'ci-go', 'sub-out': 'ci-danger', 'end-match': 'ci-danger', delete: 'ci-danger' },
       toast(msg, icon = 'star') {
@@ -5326,7 +5459,7 @@
         const fmtBadge = document.getElementById('activeMatchFormatBadge');
         if (fmtBadge) fmtBadge.innerText = `${fmt}v${fmt}`;
         const teamScoreEl = document.getElementById('scoreboardTeam');
-        if (teamScoreEl) teamScoreEl.innerText = teamName;
+        if (teamScoreEl) teamScoreEl.innerText = this.activeTeamShortName(teamName);
         const oppScoreEl = document.getElementById('scoreboardOpponent');
         if (oppScoreEl) oppScoreEl.innerText = opp.split(' ')[0];
         const ourGoalsEl = document.getElementById('scoreboardGoals');

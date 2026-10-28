@@ -171,6 +171,7 @@ const dom = new Proxy({}, {
         getAttribute: function (key) { return Object.prototype.hasOwnProperty.call(this._attrs, key) ? this._attrs[key] : null; },
         removeAttribute: function (key) { delete this._attrs[key]; },
         focus: function () { this.focused = true; },
+        getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
         options: [],
         children: [],
         appendChild: function(c) { if (this.options) this.options.push(c); if (this.children) this.children.push(c); },
@@ -235,6 +236,8 @@ global.CustomEvent = class CustomEvent {
   constructor(type) { this.type = type; }
 };
 global.window = {
+  innerHeight: 844,
+  innerWidth: 390,
   crypto: {
     randomUUID: () => { installationUuidCalls += 1; return nodeCrypto.randomUUID(); },
     getRandomValues: (bytes) => { installationRandomValuesCalls += 1; return nodeCrypto.randomFillSync(bytes); }
@@ -772,7 +775,15 @@ assert.deepStrictEqual(AppState.squad, [editedPlayer], 'Switching away and back 
 assert.deepStrictEqual(readRoster().players, [editedPlayer]);
 assert.notStrictEqual(AppState.squad, AppState.teams[0].squad, 'Saved teams must keep a detached squad copy');
 App.deletePlayer(createdPlayer.id);
-assert.deepStrictEqual(readRoster().players, [], 'Deleting the last player must publish an empty array');
+assert.deepStrictEqual(readRoster().players, [editedPlayer], 'A delete tap asks first instead of removing the player');
+assert.strictEqual(dom['modalConfirm'].className.includes('flex'), true, 'The confirm sheet opens');
+assert.ok(dom['confirmTitle'].innerText.includes(editedPlayer.name), 'The sheet names the player at risk');
+App.cancelConfirm();
+assert.deepStrictEqual(readRoster().players, [editedPlayer], 'Cancel leaves the squad alone');
+assert.strictEqual(dom['modalConfirm'].className.includes('hidden'), true, 'Cancel closes the sheet');
+App.deletePlayer(createdPlayer.id);
+App.runConfirm();
+assert.deepStrictEqual(readRoster().players, [], 'Confirming deletes the last player and publishes an empty array');
 assert.deepStrictEqual(JSON.parse(storage['Clubstride Mobile_teams'])[0].squad, []);
 App.loadTeam('lite-team-b');
 App.loadTeam('lite-team-a');
@@ -1744,8 +1755,78 @@ AppState.match.starters.filter(pid => pid !== promoted).forEach(other => {
 });
 console.log('✓ Squad sheet order is stable, a format drop-down asks who to bench, and tokens stay off the area lines');
 
+// ==========================================
+// TEST 40: touchline ergonomics — 44px controls, bottom toasts, a dock in the content column,
+// a confirm before a squad deletion, and a short team name for tight spots
+// ==========================================
+const touchCss = html.match(/<style>([\s\S]*?)<\/style>/)[1];
+[
+  '.score-step { width: 44px; height: 44px;',
+  '.roster-icon-btn { width: 44px; height: 44px; }',
+  '.roster-chip-btn { min-height: 44px; }',
+  '.position-select { min-height: 44px; }',
+  '.timeline-undo { min-height: 44px;',
+  '.sheet-close { width: 44px; height: 44px; }',
+  '.chip-btn { min-height: 44px; }',
+  '.touch-input { min-height: 44px; }',
+  '[id^="tabBtn_"] { min-height: 44px; }',
+  '.header-icon-btn { width: 44px; height: 44px; }',
+  ".token-bench-btn::after { content: ''; position: absolute; inset: -10px; }",
+].forEach(needle => assert.ok(touchCss.includes(needle), 'The touchline CSS keeps ' + needle));
+assert.ok(touchCss.includes('.fixed .glass-card button:not(.w-5),'), 'Sheet controls carry the same 44px floor');
+assert.ok((html.match(/dock\.className = 'dock-btn flex-1/g) || []).length === 2,
+  'switchTab rewrites the dock buttons with flex-1 intact, so their 44px box survives a tap');
+['score-step', 'roster-icon-btn', 'roster-chip-btn', 'timeline-undo', 'token-bench-btn', 'sheet-close', 'chip-btn']
+  .forEach(cls => assert.ok((html.match(new RegExp('\\b' + cls + '\\b', 'g')) || []).length >= 2,
+    cls + ' is applied to real controls, not just declared'));
+assert.ok(!/id="toastPod"[^>]*top-16/.test(html), 'Toasts no longer hang from the top of the screen');
+assert.ok(touchCss.includes('#toastPod { top: auto; bottom:'), 'and are pinned above the dock instead');
+assert.ok(touchCss.includes('z-index: 45 !important;'), 'The dock sits under the modal overlays');
+assert.ok(touchCss.includes('max-width: 32rem;'), 'The dock keeps the content column width on a big screen');
+assert.ok(!/pwa-dock"[^>]*style="z-index: 1000/.test(html), 'and no inline style puts it back over the sheets');
+assert.ok(/id="tacticsScrollHint"[^>]*jumpToLineupPanel/.test(html), 'Tactics carries a jump control to the bench');
+const hintMarkup = html.indexOf('id="tacticsScrollHint"');
+assert.ok(html.indexOf('id="section_pitch"') < hintMarkup && hintMarkup < html.indexOf('id="pitchField"'),
+  'The jump control sits above the pitch, so it can never cover a shirt');
+assert.ok(!/#tacticsScrollHint\s*\{[^}]*position:\s*fixed/.test(touchCss),
+  'and it is in the page flow rather than a floating overlay');
+
+const savedTeams = AppState.teams, savedTeamId = AppState.currentTeamId, savedTeamName = AppState.currentTeamName;
+AppState.teams = [{ id: 't-short', name: 'Pretoria Juventus Rangers', shortName: 'PRETU' }];
+AppState.currentTeamId = 't-short';
+AppState.currentTeamName = 'Pretoria Juventus Rangers';
+assert.strictEqual(App.activeTeamShortName(), 'PRETU', 'A saved abbreviation is what the tight spots show');
+AppState.teams = [{ id: 't-short', name: 'Pretoria Juventus Rangers' }];
+assert.strictEqual(App.activeTeamShortName(), 'Pretoria', 'With no abbreviation the first word is used whole');
+AppState.teams = [{ id: 't-short', name: 'Klerksdorp United' }];
+AppState.currentTeamName = 'Klerksdorp United';
+assert.strictEqual(App.activeTeamShortName(), 'Klerksd…', 'A long first word is shortened to the width the chip has always allowed');
+App.setHeaderTeamBadge();
+assert.strictEqual(dom['headerTeamNameBadge'].innerText, 'Klerksd…', 'The header chip uses the short form');
+assert.strictEqual(App.activeTeamShortName('Clubstride FC'), 'Clubstr…', 'The scoreboard gets the same treatment');
+AppState.currentTeamName = '';
+assert.strictEqual(App.activeTeamShortName(), 'Teams', 'With no team at all the chip still reads Teams');
+
+dom['inputCurrentTeamName'].value = 'Soshanguve Supreme';
+dom['inputTeamShortName'].value = 'SUPREME';
+const shortBefore = AppState.teams[0].shortName;
+const toastSpy = [];
+const realToast = App.toast;
+App.toast = function (msg) { toastSpy.push(msg); };
+App.saveActiveTeam();
+assert.strictEqual(AppState.teams[0].shortName, shortBefore, 'An over-long abbreviation is refused');
+assert.ok(toastSpy.some(msg => /Short names are up to 5/.test(msg)), 'and the coach is told why');
+dom['inputTeamShortName'].value = 'sos';
+App.saveActiveTeam();
+App.toast = realToast;
+assert.strictEqual(AppState.teams[0].shortName, 'SOS', 'A legal abbreviation is stored upper-cased');
+assert.strictEqual(App.activeTeamShortName(), 'SOS', 'and reads back through the helper');
+AppState.teams = savedTeams; AppState.currentTeamId = savedTeamId; AppState.currentTeamName = savedTeamName;
+App.setHeaderTeamBadge();
+console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way, deletes ask first, and tight spots get a short team name');
+
 console.log('\n=========================================');
-console.log('ALL 39 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 40 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 
