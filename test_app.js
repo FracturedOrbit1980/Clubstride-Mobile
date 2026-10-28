@@ -1819,6 +1819,8 @@ assert.ok((html.match(/dock\.className = 'dock-btn flex-1/g) || []).length === 2
     cls + ' is applied to real controls, not just declared'));
 assert.ok(!/id="toastPod"[^>]*top-16/.test(html), 'Toasts no longer hang from the top of the screen');
 assert.ok(touchCss.includes('#toastPod { top: auto; bottom:'), 'and are pinned above the dock instead');
+assert.ok(/id="toastPod"[^>]*pointer-events-none/.test(html), 'A toast never intercepts a tap on the control under it');
+assert.ok(!/pod\.classList\.remove\([^)]*pointer-events-none/.test(html), 'and no toast call hands it the pointer back');
 assert.ok(touchCss.includes('z-index: 45 !important;'), 'The dock sits under the modal overlays');
 assert.ok(touchCss.includes('max-width: 32rem;'), 'The dock keeps the content column width on a big screen');
 assert.ok(!/pwa-dock"[^>]*style="z-index: 1000/.test(html), 'and no inline style puts it back over the sheets');
@@ -2047,8 +2049,264 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   console.log('✓ Opponent and own goals stay out of the cloud file but survive a shared-match round trip in Lite');
 }
 
+// ==========================================
+// TEST 43: Dates read dd/mm/yyyy on every screen, in every PDF, and still sort as ISO
+// ==========================================
+{
+  const saved = { match: { ...AppState.match }, readOnly: AppState.readOnly, pendingFormat: AppState.pendingFormat };
+  AppState.readOnly = false;
+
+  assert.strictEqual(App.formatDate('2026-10-28'), '28/10/2026', 'A coach in South Africa reads day first');
+  assert.strictEqual(App.formatDate('2026-1-5'), '2026-1-5', 'A malformed date is shown as it came in, not scrambled');
+  assert.strictEqual(App.formatDate(''), '', 'and a match with no date shows no date');
+  assert.strictEqual(App.formatDateTime(new Date(2026, 9, 28, 23, 5)), '28/10/2026, 23:05', 'Print stamps keep local time');
+
+  // The bug being removed: UTC conversion dated a late-evening match on the day before it was played.
+  [0, 6, 12, 18, 22, 23].forEach(hour => {
+    assert.strictEqual(App.localDateIso(new Date(2026, 9, 28, hour, 30)), '2026-10-28',
+      `A match dated ${hour}:30 local stays on 28 October in storage`);
+  });
+  assert.match(App.localDateIso(new Date(2026, 9, 28)), /^\d{4}-\d{2}-\d{2}$/, 'Storage stays sortable ISO');
+
+  assert(!/new Date\(\)\.toISOString\(\)\.split\('T'\)\[0\]/.test(html), 'Nothing dates a screen from the UTC clock');
+  assert(!html.includes('toLocaleDateString') && !html.includes('.toLocaleString'), 'No screen leaves date order to the browser locale');
+  [
+    "document.getElementById('activeMatchDateBadge').innerText = this.formatDate(",
+    "document.getElementById('pdfMatchDate').innerText = this.formatDate(",
+    '<span>${this.formatDate(m.date)}</span>',
+    '${this.formatDate(m.date)}</td>',
+    'const dateLabel = this.formatDate(date);',
+    'const rangeLabel = `${this.formatDate(startDate) || \'start\'} to ${this.formatDate(endDate) || \'today\'}`;'
+  ].forEach(needle => assert(html.includes(needle), `A date surface still bypasses formatDate: ${needle}`));
+  // Filenames keep ISO because a slash cannot appear in one.
+  assert(html.includes('Clubstride_${safeTeam}_${safeOpp}_${date}.pdf'), 'The PDF filename keeps the ISO date');
+
+  AppState.match.starters = [];
+  dom['inputMatchTeamName'].value = 'Clubstride FC';
+  dom['inputMatchTitle'].value = 'Match 9';
+  dom['inputMatchOpponent'].value = 'Echo Strikers';
+  dom['inputMatchDate'].value = '2026-10-28';
+  AppState.pendingFormat = '7';
+  App.saveMatchSetup();
+  assert.strictEqual(AppState.match.date, '2026-10-28', 'Saving from the sheet still stores a sortable ISO date');
+  assert.strictEqual(dom['activeMatchDateBadge'].innerText, '28/10/2026', 'while the pitch header shows the coach\'s order');
+
+  AppState.match = saved.match; AppState.readOnly = saved.readOnly; AppState.pendingFormat = saved.pendingFormat;
+
+  // The printed sheets go through the same helper: a range report reads 01/10/2026 to 31/10/2026.
+  const teamId = AppState.currentTeamId || 'lite-default';
+  const savedHistory = AppState.matchHistory;
+  AppState.matchHistory = [{
+    id: 'm_dated_report', title: 'Match 1', teamName: 'Clubstride FC', opponent: 'Echo Strikers',
+    date: '2026-10-14', format: '7', ourGoals: 2, opponentGoals: 1, durationSeconds: 1200,
+    status: 'completed', teamId, players: AppState.squad.slice(0, 2), events: [], starters: [], bench: [],
+    playerTimers: {}
+  }];
+  AppState.selectedGameIds = null;
+  App.generateDateRangePdf('2026-10-01', '2026-10-31');
+  const rangeSheet = dom['pdfExportContainer'].innerHTML;
+  assert(rangeSheet.includes('01/10/2026 to 31/10/2026'), 'The range sheet prints the date order the coach picked');
+  assert(rangeSheet.includes('14/10/2026'), 'and each fixture row follows it');
+  assert(!rangeSheet.includes('2026-10-14'), 'No stored ISO date leaks onto the page');
+  assert(!/day\s*\/\s*month/i.test(rangeSheet) && !/\b1[0-2]\/\d{2}\/\d{4}\b/.test(rangeSheet.replace(/14\/10\/2026|01\/10\/2026|31\/10\/2026/g, '')),
+    'and no month-first date is left on the report');
+  AppState.matchHistory = savedHistory;
+  AppState.selectedGameIds = null;
+
+  // The report sheet is read before a preview exists, so it must open already stamped in locale order.
+  assert(html.includes("if (stamp) stamp.innerText = 'Generated: ' + this.formatDateTime();"),
+    'The PDF sheet stamps its own header as it opens');
+  App.openPdfReportModal();
+  assert.match(dom['pdfGeneratedTime'].innerText, /^Generated: \d{2}\/\d{2}\/\d{4}, \d{2}:\d{2}$/,
+    `Opening the report sheet replaces the placeholder stamp with ${dom['pdfGeneratedTime'].innerText}`);
+  assert(!/Generated: [A-Z][a-z]{2,3} \d{1,2}, \d{4}/.test(html), 'No month-name date is left in the markup');
+
+  console.log('✓ Dates show dd/mm/yyyy on the pitch, in Stats and in every PDF while storage stays sortable ISO');
+}
+
+// ==========================================
+// TEST 44: New Match files the game on the board so Last 3 / Last 5 have something to pick
+// ==========================================
+{
+  const saved = { match: AppState.match, events: AppState.events, timers: AppState.playerTimers,
+    history: AppState.matchHistory, clock: { ...AppState.clock }, readOnly: AppState.readOnly,
+    selected: AppState.selectedGameIds, teamId: AppState.currentTeamId };
+  const p = AppState.squad.slice(0, 2);
+  const toasts = [];
+  const realToast = App.toast;
+  App.toast = msg => toasts.push(msg);
+  AppState.readOnly = false;
+  const board = (title, seconds) => {
+    AppState.clock = { running: false, intervalId: null, startedAt: 0, seconds, period: '1st Half', sinceSync: 0 };
+    AppState.events = seconds > 0
+      ? [{ id: 'ev_nm_' + title, type: 'Goal', side: 'our', playerId: p[0].id, playerName: p[0].name,
+        playerNumber: p[0].number, matchTimeSeconds: 60, period: '1st Half', timestamp: Date.now() }]
+      : [];
+    AppState.match = { ...saved.match, id: 'm_new_match', title, status: 'scheduled', ourGoals: seconds > 0 ? 1 : 0,
+      opponentGoals: 0, starters: [p[0].id], bench: [p[1].id], availability: {}, fieldPositions: {},
+      players: AppState.squad, initialStarters: undefined, initialBench: undefined };
+    App.dismissConfirm();
+    App.closeModals();
+  };
+
+  assert(html.includes('id="btnNewMatch" onclick="App.startNewMatch()"'), 'The matches list carries a New Match control');
+  assert(html.includes("'startNewMatch'"), 'New Match is guarded like every other match tool');
+  assert(html.includes('<span class="block truncate">Matches ('), 'The list says it is a list of matches');
+
+  board('Match 4', 0);
+  App.startNewMatch();
+  assert(!App.confirmSheetIsOpen(), 'A board with nothing on it is not interrogated');
+  assert(!dom['modalMatchSetup'].classList.contains('hidden'), 'and goes straight to the fixture sheet');
+
+  board('Match 4', 600);
+  App.startNewMatch();
+  assert(App.confirmSheetIsOpen(), 'Minutes on the board are put to the coach before a new match');
+  assert(dom['confirmYesBtn'].innerText.includes('Save'), 'The safe answer is offered first');
+  assert(!dom['confirmYesBtn'].className.includes('bg-red-500'), 'Saving is not styled like a deletion');
+  assert(dom['confirmAltBtn'].className.includes('bg-red-500'), 'while dropping the board wears the warning colour');
+  const filed = AppState.matchHistory.length;
+  App.runConfirm();
+  assert.strictEqual(AppState.matchHistory.length, filed + 1, 'Save files the match that was on the board');
+  assert.strictEqual(AppState.match.ourGoals, 0, 'The next board starts from nil');
+  assert.strictEqual(AppState.match.title, 'Match 5', 'and takes the following match number');
+  assert(!dom['modalMatchSetup'].classList.contains('hidden'), 'so the new fixture can be named at once');
+
+  board('Match 5', 600);
+  const before = AppState.matchHistory.length;
+  App.startNewMatch();
+  App.runConfirmAlt();
+  assert.strictEqual(AppState.matchHistory.length, before, 'Drop does not quietly add a match to history');
+  assert.strictEqual(AppState.events.length, 0, 'The dropped board really is cleared');
+  assert.strictEqual(AppState.clock.seconds, 0, 'with the clock back at nil');
+  assert.strictEqual(AppState.match.title, 'Match 6', 'and the numbering still moves on');
+
+  AppState.readOnly = true;
+  board('Match 6', 600);
+  assert.strictEqual(App.startNewMatch(), false, 'A shared team view cannot start a match');
+  assert(!App.confirmSheetIsOpen(), 'and no sheet opens behind that guard');
+  AppState.readOnly = false;
+
+  // The Last 3 / Last 5 chips report what they actually found, in correct English.
+  const scopeTeamId = AppState.currentTeamId || 'lite-default';
+  const archived = (id, title, date) => ({ id, title, teamName: 'Clubstride FC', opponent: 'Echo Strikers',
+    date, format: '7', ourGoals: 2, opponentGoals: 1, durationSeconds: 600, status: 'completed',
+    teamId: scopeTeamId, players: [], events: [], starters: [], bench: [] });
+  AppState.matchHistory = [archived('m_recent_one', 'Match 2', '2026-10-21'), archived('m_recent_two', 'Match 1', '2026-10-14')];
+  AppState.selectedGameIds = null;
+  board('Match 7', 0);
+  toasts.length = 0;
+  App.selectRecentGames(5);
+  assert.strictEqual(toasts[toasts.length - 1], 'Selected the last 2 matches, which is every match on file',
+    'Asking for five over two games says so instead of claiming five');
+  App.selectRecentGames(1);
+  assert.strictEqual(toasts[toasts.length - 1], 'Selected the last 1 match', 'one match is not "match(es)"');
+  AppState.matchHistory = [];
+  App.selectRecentGames(3);
+  assert.strictEqual(toasts[toasts.length - 1], 'No games on file yet - save this match with End Match or New Match',
+    'and an empty club is told how to fill it');
+  AppState.selectedGameIds = null;
+  App.selectAllGames();
+  assert.strictEqual(toasts[toasts.length - 1], 'No games on file yet - save this match with End Match or New Match',
+    'All games over nothing says so too');
+  AppState.matchHistory = [archived('m_only', 'Match 1', '2026-10-14')];
+  AppState.selectedGameIds = null;
+  App.selectAllGames();
+  assert.strictEqual(toasts[toasts.length - 1], 'Selected the only game on file', 'one game is not "all 1 games"');
+  board('Match 2', 600);
+  AppState.selectedGameIds = null;
+  App.selectAllGames();
+  assert.strictEqual(toasts[toasts.length - 1], 'Selected all 2 games to pull totals', 'two games pluralise');
+
+  App.toast = realToast;
+  AppState.match = saved.match; AppState.events = saved.events; AppState.playerTimers = saved.timers;
+  Object.assign(AppState.clock, saved.clock); AppState.matchHistory = saved.history;
+  AppState.readOnly = saved.readOnly; AppState.selectedGameIds = saved.selected;
+  AppState.currentTeamId = saved.teamId;
+  console.log('✓ New Match files or drops the board on request, and the recent-game chips count in English');
+}
+
+// ==========================================
+// TEST 45: The Pro upsell only promises what Lite actually does
+// ==========================================
+{
+  assert(html.includes('Your Lite squad and saved matches come with you'), 'The upsell states the shared data a coach gets');
+  assert(html.includes('Back to Lite control'), 'Upgrade copy must say Pro opens inside the app with a way back');
+  assert(!/yearly|monthly|subscription|billing|payment|per season/i.test(html), 'Lite sells no plan it cannot process');
+  const offlineCopy = ['upgradeProOffline', 'proToggleNote'].map(id =>
+    html.match(new RegExp(`id="${id}"[^>]*>([^<]*)<`))[1]);
+  offlineCopy.forEach(copy => assert(/needs a connection|back online/i.test(copy),
+    `Offline copy must not promise Pro without a network: ${copy}`));
+  console.log('✓ Pro upsell copy matches the in-app shell, the shared data and the connection Pro needs');
+}
+
+// ==========================================
+// TEST 46: The Stats date window admits when it hides a saved match
+// ==========================================
+{
+  const saved = { history: AppState.matchHistory, selected: AppState.selectedGameIds,
+    readOnly: AppState.readOnly, teamId: AppState.currentTeamId, expanded: AppState.expandedGameIds,
+    match: AppState.match, events: AppState.events, clock: { ...AppState.clock },
+    from: dom['statsStartDate'].value, to: dom['statsEndDate'].value };
+  const toasts = [];
+  const realToast = App.toast;
+  App.toast = msg => toasts.push(msg);
+  AppState.readOnly = false;
+  AppState.expandedGameIds = {};
+  AppState.selectedGameIds = null;
+  AppState.events = [];
+  AppState.clock = { running: false, intervalId: null, startedAt: 0, seconds: 0, period: '1st Half', sinceSync: 0 };
+  const scopeTeamId = AppState.currentTeamId || 'lite-default';
+  const archived = (id, title, date) => ({ id, title, teamName: 'Clubstride FC', opponent: 'Echo Strikers',
+    date, format: '7', ourGoals: 2, opponentGoals: 1, durationSeconds: 600, status: 'completed',
+    teamId: scopeTeamId, players: [], events: [], starters: [], bench: [] });
+  // The cards are built with createElement, so read what renderStats actually appended.
+  const rendered = () => {
+    const at = dom['statsCardsContainer'].children.length;
+    App.renderStats();
+    return dom['statsCardsContainer'].children.slice(at).map(c => String(c.innerHTML)).join(' ');
+  };
+
+  AppState.matchHistory = [archived('m_window_old', 'Match 1', '2026-03-07')];
+  dom['statsStartDate'].value = '2026-10-01';
+  dom['statsEndDate'].value = '2026-10-28';
+  let out = rendered();
+  assert(out.includes('Matches (0 of 1)'), 'A match the date window hides is counted, not dropped silently');
+  assert(out.includes('1 saved match falls outside the From / To dates above.'),
+    'and the empty list names the date window instead of claiming nothing is archived');
+  assert(out.includes('onclick="App.clearStatsDates()"'), 'The list offers a way to see the hidden match');
+
+  AppState.matchHistory = [archived('m_window_old', 'Match 1', '2026-03-07'),
+    archived('m_window_older', 'Match 0', '2025-11-02')];
+  out = rendered();
+  assert(out.includes('Matches (0 of 2)'), 'two hidden matches both count');
+  assert(out.includes('2 saved matches fall outside'), 'and the sentence pluralises correctly');
+
+  App.clearStatsDates();
+  assert.strictEqual(dom['statsStartDate'].value, '', 'The control empties the From date');
+  assert.strictEqual(dom['statsEndDate'].value, '', 'and the To date');
+  assert.strictEqual(toasts[toasts.length - 1], 'Showing every saved match for this team', 'and says what it did');
+  out = rendered();
+  assert(out.includes('Matches (2)'), 'after clearing, the count stops hiding rows');
+  assert(!/saved matches? fall outside/i.test(out), 'and the warning is gone');
+  assert(out.includes('07/03/2026'), 'the revealed row reads dd/mm/yyyy');
+  assert(!out.includes('2026-03-07'), 'with no ISO date left in the list');
+
+  dom['statsStartDate'].value = '';
+  dom['statsEndDate'].value = '';
+  out = rendered();
+  assert(!out.includes('of 2)'), 'a list that hides nothing needs no apology');
+
+  App.toast = realToast;
+  AppState.match = saved.match; AppState.events = saved.events;
+  Object.assign(AppState.clock, saved.clock); AppState.matchHistory = saved.history;
+  AppState.readOnly = saved.readOnly; AppState.selectedGameIds = saved.selected;
+  AppState.currentTeamId = saved.teamId; AppState.expandedGameIds = saved.expanded;
+  dom['statsStartDate'].value = saved.from; dom['statsEndDate'].value = saved.to;
+  console.log('✓ A date window that hides saved matches says so and offers the whole history');
+}
+
 console.log('\n=========================================');
-console.log('ALL 42 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 46 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 
