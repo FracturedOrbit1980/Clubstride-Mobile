@@ -766,6 +766,14 @@
             </button>
           </div>
           <input type="file" id="backupFileInput" accept=".json,application/json" class="hidden" onchange="App.importBackup(event)" />
+          <button type="button" id="installPwaBtn" onclick="App.triggerInstallPrompt()" class="hidden w-full py-2 px-2 rounded-xl bg-obsidian-900 hover:bg-obsidian-800 border border-cyber-cyan/40 text-cyber-cyan font-bold text-xs flex items-center justify-center space-x-1 active:scale-95 transition">
+            <span>Install Clubstride</span>
+          </button>
+          <div id="installGuideNote" role="status" aria-live="polite" class="hidden rounded-xl border border-cyber-mint/40 bg-obsidian-900 p-3 space-y-1">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-cyber-mint">Add Clubstride to your Home Screen</p>
+            <p id="installGuideSteps" class="text-[11px] text-slate-300" style="white-space: pre-line"></p>
+            <p id="installGuideHint" class="text-[10px] text-slate-400"></p>
+          </div>
           <p id="offlineStatusLine" class="text-[10px] text-slate-400 font-medium">Checking offline readiness…</p>
         </div>
       </div>
@@ -1384,17 +1392,61 @@
         el.innerText = text;
         el.className = `text-[10px] font-medium ${isProblem ? 'text-amber-400' : 'text-cyber-mint'}`;
       },
+      isStandaloneLaunch() {
+        if (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches) return true;
+        return typeof navigator !== 'undefined' && navigator.standalone === true;
+      },
+      isIOSDevice(userAgent, maxTouchPoints) {
+        const ua = typeof userAgent === 'string' ? userAgent : ((typeof navigator !== 'undefined' && navigator.userAgent) || '');
+        const touches = typeof maxTouchPoints === 'number' ? maxTouchPoints : ((typeof navigator !== 'undefined' && navigator.maxTouchPoints) || 0);
+        if (/iPhone|iPod|iPad/.test(ua)) return true;
+        // iPadOS 13+ Safari asks for the desktop site by default, so an iPad reports a Macintosh UA.
+        // A real Mac reports Macintosh too but never more than one touch point.
+        return /Macintosh/.test(ua) && touches > 1;
+      },
+      setInstallControlsVisible(visible) {
+        const btn = document.getElementById('installPwaBtn');
+        if (btn) btn.classList[visible ? 'remove' : 'add']('hidden');
+        // The written steps only ever unfold on a tap - a card that explains installing before
+        // anyone asked would push the offline status line out of view.
+        const note = document.getElementById('installGuideNote');
+        if (note) note.classList.add('hidden');
+      },
+      renderInstallGuide() {
+        const steps = document.getElementById('installGuideSteps');
+        const hint = document.getElementById('installGuideHint');
+        if (steps) {
+          steps.innerText = this.isIOSDevice()
+            ? '1. Tap the Share button in the browser bar.\n2. Tap "Add to Home Screen".\n3. Open Clubstride from that icon.'
+            : '1. Tap the browser menu.\n2. Tap "Install app" or "Add to Home screen".\n3. Open Clubstride from that icon.';
+        }
+        if (hint) {
+          hint.innerText = this.isIOSDevice()
+            ? 'On iPhone or iPad that icon is the only way Clubstride can keep matches offline.'
+            : 'Installing keeps the pitch and the match history working without signal.';
+        }
+      },
       setupInstallPrompt() {
+        // Launched from the home-screen icon means there is nothing left to install, and the nag
+        // would bury the offline status line that actually matters on match day.
+        if (this.isStandaloneLaunch()) {
+          this.setInstallControlsVisible(false);
+          return;
+        }
         window.addEventListener('beforeinstallprompt', (e) => {
           e.preventDefault();
           deferredInstallPrompt = e;
-          const btn = document.getElementById('installPwaBtn');
-          if (btn) btn.classList.remove('hidden');
+          this.setInstallControlsVisible(true);
         });
         window.addEventListener('appinstalled', () => {
           deferredInstallPrompt = null;
+          this.setInstallControlsVisible(false);
           App.toast('Clubstride installed to home screen!');
         });
+        // Safari never fires beforeinstallprompt, so the install path cannot wait on an event only
+        // Chrome sends - the button has to be there from the start.
+        this.renderInstallGuide();
+        this.setInstallControlsVisible(true);
       },
       triggerInstallPrompt() {
         if (deferredInstallPrompt) {
@@ -1405,15 +1457,12 @@
             }
             deferredInstallPrompt = null;
           });
-        } else {
-          // If iOS or already installed, show clear guide modal
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-          if (isIOS) {
-            this.toast('Tap Share then "Add to Home Screen"', 'star');
-          } else {
-            this.toast('Tap Chrome Menu (⋮) then "Add to Home screen"', 'star');
-          }
+          return;
         }
+        this.renderInstallGuide();
+        const note = document.getElementById('installGuideNote');
+        if (note) note.classList.remove('hidden');
+        this.toast(this.isIOSDevice() ? 'Tap Share then "Add to Home Screen"' : 'Tap the browser menu then "Install app"', 'star');
       },
       setupIcons() {
         let customLogo = null;

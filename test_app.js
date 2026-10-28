@@ -18,7 +18,8 @@ const expectedIds = [
   'clockToggleBtn', 'matchClockDisplay', 'clockStatusSubtext',
   'eventModalTitle', 'eventPlayerSelector', 'eventAssistSelector',
   'inputMatchTeamName', 'inputMatchTitle', 'inputMatchOpponent', 'inputMatchDate',
-  'backupFileInput', 'storageFailureStatus', 'sharedRosterStatus', 'recoverSharedRosterBtn'
+  'backupFileInput', 'storageFailureStatus', 'sharedRosterStatus', 'recoverSharedRosterBtn',
+  'installPwaBtn', 'installGuideNote', 'installGuideSteps', 'installGuideHint'
 ];
 
 for (const id of expectedIds) {
@@ -1157,7 +1158,7 @@ App.saveNewPlayer();
 assert.strictEqual(readRoster().players[0].name, 'Writable Again');
 assert.strictEqual(readRoster().players[0].proId, uuidA);
 assert.strictEqual(readRoster().readOnly, false);
-assert.strictEqual(cacheVersion[1], 'Clubstride Lite-v17', 'Do not bump the pending publication version');
+assert.strictEqual(cacheVersion[1], 'Clubstride Lite-v18', 'Do not bump the pending publication version');
 console.log('✓ Read-only controls/mutators block edits without writes, auth or credentials, and restore editing when permission changes');
 
 // ==========================================
@@ -1379,8 +1380,80 @@ assert.strictEqual(keyWrites(cloudKey), brokenWrites);
 assert.strictEqual(App.saveStorage(), true);
 console.log('✓ Malformed shared match data is refused visibly and non-destructively, and recovers without a rewrite');
 
+// ==========================================
+// TEST 35: The install path works on Safari, where Chrome's prompt event never fires
+// ==========================================
+const installBtnTag = (html.match(/<button[^>]*id="installPwaBtn"[^>]*>/) || [])[0] || '';
+assert(installBtnTag.includes('class="hidden'), 'Install button must start hidden until the app knows the platform');
+assert(installBtnTag.includes('onclick="App.triggerInstallPrompt()"'), 'Install button must run the install path, not a dead label');
+assert(html.indexOf('id="installPwaBtn"') > html.indexOf('id="backupFileInput"'), 'Install lives in the Data Backup card, beside the offline status');
+assert(html.indexOf('id="installPwaBtn"') < html.indexOf('id="offlineStatusLine"'), 'Install must sit above the offline status line');
+const installNoteTag = (html.match(/<div id="installGuideNote"[^>]*>/) || [])[0] || '';
+assert(installNoteTag.includes('role="status" aria-live="polite" class="hidden'), 'Install guide must start hidden but be announced when shown');
+const readOnlyGate = html.slice(html.indexOf('const selectors = actions.map'), html.indexOf('forEach(control'));
+assert(!readOnlyGate.includes('installPwaBtn'), 'Installing is a device action, so read-only staff and parents keep it');
+
+const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15';
+const IPAD_DESKTOP_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15';
+const MAC_UA = IPAD_DESKTOP_UA;
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36';
+assert.strictEqual(App.isIOSDevice(IPHONE_UA, 5), true, 'iPhone is iOS');
+assert.strictEqual(App.isIOSDevice(IPAD_DESKTOP_UA, 5), true, 'iPadOS 13+ reports a Macintosh UA by default');
+assert.strictEqual(App.isIOSDevice(MAC_UA, 0), false, 'A real Mac is not an iPad');
+assert.strictEqual(App.isIOSDevice(ANDROID_UA, 5), false, 'Android is not iOS');
+
+// Launched in a browser tab, init has to reveal the path without waiting for beforeinstallprompt.
+const realNavigator = globalThis.navigator;
+const setNavigator = props => Object.defineProperty(globalThis, 'navigator', { value: props, configurable: true, writable: true });
+delete global.matchMedia;
+setNavigator({ userAgent: ANDROID_UA, maxTouchPoints: 5, standalone: false });
+App.setupInstallPrompt();
+assert(!dom['installPwaBtn'].className.includes('hidden'), 'Install must be reachable on Safari, which never fires beforeinstallprompt');
+assert(dom['installGuideNote'].className.includes('hidden'), 'The written guide stays folded until the coach taps Install');
+assert(dom['installGuideSteps'].innerText.includes('Install app'), 'Android steps name the browser menu action');
+setNavigator({ userAgent: IPHONE_UA, maxTouchPoints: 5, standalone: false });
+App.renderInstallGuide();
+assert(dom['installGuideSteps'].innerText.includes('Share'), 'iPhone steps name Share');
+assert(dom['installGuideSteps'].innerText.includes('Add to Home Screen'), 'iPhone steps name Add to Home Screen');
+assert(dom['installGuideHint'].innerText.includes('only way'), 'iPhone is told offline depends on the home-screen icon');
+
+// A tap with no native prompt must leave the coach readable instructions, not a silent button.
+let promptsUsed = 0;
+toastMsg = '';
+App.triggerInstallPrompt();
+assert(!dom['installGuideNote'].className.includes('hidden'), 'Tapping install reveals the guide');
+assert(toastMsg.includes('Add to Home Screen'), 'The toast repeats the iOS step');
+
+// Chrome still gets its native install dialog.
+let preventedDefault = false;
+window.dispatchEvent({
+  type: 'beforeinstallprompt',
+  preventDefault: () => { preventedDefault = true; },
+  prompt: () => { promptsUsed += 1; },
+  userChoice: Promise.resolve({ outcome: 'accepted' })
+});
+assert.strictEqual(preventedDefault, true, 'The browser install bubble must stay under the app control');
+App.triggerInstallPrompt();
+assert.strictEqual(promptsUsed, 1, 'A real install prompt takes priority over the written guide');
+
+// Already installed, or launched from the icon, nothing may nag the coach.
+window.dispatchEvent({ type: 'appinstalled' });
+assert(dom['installPwaBtn'].className.includes('hidden'), 'Installing hides the path once the icon exists');
+global.matchMedia = () => ({ matches: true });
+App.setupInstallPrompt();
+assert(dom['installPwaBtn'].className.includes('hidden'), 'A home-screen launch has nothing left to install');
+delete global.matchMedia;
+setNavigator({ userAgent: IPHONE_UA, maxTouchPoints: 5, standalone: true });
+App.setupInstallPrompt();
+assert(dom['installPwaBtn'].className.includes('hidden'), 'Safari reports a home-screen launch as navigator.standalone');
+setNavigator({ userAgent: ANDROID_UA, maxTouchPoints: 5, standalone: false });
+App.setupInstallPrompt();
+assert(!dom['installPwaBtn'].className.includes('hidden'), 'A browser tab gets the install path back');
+Object.defineProperty(globalThis, 'navigator', { value: realNavigator, configurable: true, writable: true });
+console.log('✓ Install path shows on Safari, names Share on iPhone and iPad, keeps Chrome dialog, and stays quiet once installed');
+
 console.log('\n=========================================');
-console.log('ALL 34 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 35 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 
