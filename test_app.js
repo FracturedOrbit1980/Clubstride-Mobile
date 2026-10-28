@@ -158,7 +158,12 @@ const dom = new Proxy({}, {
             let classes = (target[prop].className || '').split(' ');
             target[prop].className = classes.filter(c => !cls.includes(c)).join(' ');
           },
-          contains: (c) => (target[prop].className || '').split(' ').includes(c)
+          contains: (c) => (target[prop].className || '').split(' ').includes(c),
+          toggle: (c, force) => {
+            const on = force === undefined ? !target[prop].classList.contains(c) : !!force;
+            if (on) target[prop].classList.add(c); else target[prop].classList.remove(c);
+            return on;
+          }
         },
         style: {},
         _attrs: {},
@@ -176,6 +181,24 @@ const dom = new Proxy({}, {
   }
 });
 
+const bodyEl = {
+  appendChild: () => {},
+  removeChild: () => {},
+  style: {},
+  className: 'bg-obsidian-950 text-slate-100',
+  click: () => {},
+};
+bodyEl.classList = {
+  add: (...cls) => { bodyEl.className = Array.from(new Set(bodyEl.className.split(' ').filter(Boolean).concat(cls))).join(' '); },
+  remove: (...cls) => { bodyEl.className = bodyEl.className.split(' ').filter(c => c && !cls.includes(c)).join(' '); },
+  contains: (c) => bodyEl.className.split(' ').includes(c),
+  toggle: (c, force) => {
+    const on = force === undefined ? !bodyEl.classList.contains(c) : !!force;
+    if (on) bodyEl.classList.add(c); else bodyEl.classList.remove(c);
+    return on;
+  }
+};
+
 global.document = {
   getElementById: (id) => dom[id],
   querySelectorAll: (selector) => String(selector).split(',')
@@ -192,17 +215,12 @@ global.document = {
     innerText: '',
     classList: { add: ()=>{}, remove: ()=>{} }, click: () => {}
   }),
-  body: {
-    appendChild: () => {},
-    removeChild: () => {},
-    style: {},
-    classList: { add: ()=>{}, remove: ()=>{} }, click: () => {}
-  },
+  body: bodyEl,
   documentElement: {
     className: '',
     style: {},
-    setAttribute: () => {},
-    getAttribute: () => null,
+    setAttribute: function (k, v) { this._attrs = Object.assign(this._attrs || {}, { [k]: v }); },
+    getAttribute: function (k) { return (this._attrs || {})[k] ?? null; },
     classList: { add: ()=>{}, remove: ()=>{}, contains: ()=>false }
   },
   addEventListener: () => {}
@@ -1492,8 +1510,242 @@ assert((liveRegion.match(/<div class="text-right flex-shrink-0">/g) || []).lengt
 assert(liveRegion.includes('col-span-full') && !liveRegion.includes('col-span-2'), 'The empty-bench note spans whatever columns exist instead of forcing a second track');
 console.log('✓ Squad pods, scoreboard steppers, header lockup and sub-board cells stay inside a 320px phone');
 
+// ==========================================
+// TEST 37: Each squad row shows its own role, shirt numbers stay unique, and the preset survives a reload
+// ==========================================
+AppState.readOnly = false;
+AppState.currentTeamId = 'lite-default';
+AppState.squad = [
+  { id: 'role-gk', number: 1, name: 'Grace Keep', position: 'GK' },
+  { id: 'role-def', number: 4, name: 'Dala Wall', position: 'DEF' },
+  { id: 'role-mid', number: 8, name: 'Mid Lane', position: 'MID' },
+  { id: 'role-fwd', number: 9, name: 'Fast Forward', position: 'FWD' },
+  { id: 'role-cm', number: 6, name: 'Cloud Mid', position: 'CM' }
+];
+AppState.match.availability = {};
+AppState.match.starters = AppState.squad.map(p => p.id);
+AppState.match.bench = [];
+AppState.squad.forEach(p => { AppState.match.availability[p.id] = true; });
+App.renderRoster();
+assert(podRegion.includes('this.positionOptionHtml(p.position)'), 'A squad row binds its select to that player saved role');
+assert(App.positionOptionHtml('DEF').includes('<option value="DEF" selected>DEF</option>'), 'A coarse DEF is selected in its own row instead of falling back to GK');
+assert(App.positionOptionHtml('CM').includes('<option value="CM" selected>CM</option>'), 'A role only another app uses still shows truthfully');
+assert(!App.positionOptionHtml('MID').includes('value="DEF" selected'), 'No row preselects a role that is not its own');
+const modalPositionList = html.slice(html.indexOf('id="inputPlayerPosition"'), html.indexOf('</select>', html.indexOf('id="inputPlayerPosition"')));
+['GK', 'CB', 'DEF', 'MID', 'FWD', 'CM', 'ST'].forEach(value => assert(
+  new RegExp('<option value="' + value + '"[ >]').test(modalPositionList),
+  value + ' must be selectable in the player form, or editing that player silently fails validation'));
+
+AppState.squad = [
+  { id: 'dup-1', number: 1, name: 'One Walker', position: 'GK' },
+  { id: 'dup-2', number: 2, name: 'Two Runner', position: 'DEF' },
+  { id: 'dup-10', number: 10, name: 'Ten Ten', position: 'FWD' }
+];
+AppState.match.starters = AppState.squad.map(p => p.id);
+AppState.match.bench = [];
+AppState.squad.forEach(p => { AppState.match.availability[p.id] = true; });
+App.openAddPlayerModal();
+assert.strictEqual(String(dom['inputPlayerNumber'].value), '3', 'The shirt field opens on the next free number');
+toastMsg = '';
+dom['inputPlayerName'].value = 'Clash Kid';
+dom['inputPlayerNumber'].value = '10';
+dom['inputPlayerPosition'].value = 'LW';
+App.saveNewPlayer();
+assert.strictEqual(AppState.squad.length, 3, 'A second player on a worn shirt number is blocked');
+assert(toastMsg.includes('already worn by Ten Ten'), 'The clash warning names the player who owns the number');
+dom['inputPlayerName'].value = 'Free Kid';
+dom['inputPlayerNumber'].value = '4';
+App.saveNewPlayer();
+assert.strictEqual(AppState.squad.length, 4, 'A free shirt number still saves');
+App.openEditPlayerModal('dup-10');
+assert.strictEqual(String(dom['inputPlayerNumber'].value), '10', 'Editing opens on the player own number');
+dom['inputPlayerName'].value = 'Ten Renamed';
+App.saveNewPlayer();
+assert.strictEqual(AppState.squad.find(p => p.id === 'dup-10').name, 'Ten Renamed', 'Re-saving your own number is not a clash');
+
+AppState.match.format = '5';
+AppState.match.formation = '2-1-1';
+dom['formationSelect'].value = '';
+App.populateFormationSelect(AppState.match.formation);
+assert.strictEqual(dom['formationSelect'].value, '2-1-1', 'The saved preset is reselected by name');
+App.populateFormationSelect('NoSuchPreset');
+assert.strictEqual(dom['formationSelect'].value, '1-2-1', 'An unknown saved name falls back to the first preset of the format');
+dom['formationSelect'].value = '';
+App.saveStorage();
+App.init();
+assert.strictEqual(dom['formationSelect'].value, '2-1-1', 'A reload restores the chosen preset, shared roster or not');
+assert.strictEqual(dom['starterQuotaText'].innerText, 'Required starters: 5', 'The quota line is rebuilt from stored data on reload');
+const initRegion = jsCode.slice(jsCode.indexOf('init() {'), jsCode.indexOf('registerServiceWorker()'));
+assert(initRegion.includes('this.applyFormatDefaults();'), 'A device with no shared roster still gets seeded defaults');
+console.log('✓ Squad rows bind the saved role, duplicate shirts are blocked, and the formation preset outlives a reload');
+
+// ==========================================
+// TEST 38: The clock tick leaves the Stats tab alone, and day mode themes the whole shell
+// ==========================================
+const statsRegion = jsCode.slice(jsCode.indexOf('renderStats() {'), jsCode.indexOf('renderGameDetailHtml'));
+['data-stat-time="clock"', 'data-stat-time="total"', 'data-stat-time="player"', 'data-stat-time="avg"'].forEach(attr =>
+  assert(statsRegion.includes(attr), `A Stats cell that ages with the clock must carry ${attr} for in-place updates`));
+assert(statsRegion.includes('id="statsLiveClockCell"'), 'The live clock cell needs an id so kickoff can detect the missing card');
+
+let statsRebuilds = 0;
+let cellRefreshes = 0;
+const realRenderStats = App.renderStats;
+const realCellRefresh = App.updateStatsClockText;
+App.renderStats = () => { statsRebuilds += 1; };
+App.updateStatsClockText = () => { cellRefreshes += 1; };
+AppState.match.starters = ['dup-1'];
+AppState.match.bench = [];
+AppState.playerTimers = { 'dup-1': 5 };
+AppState.clock.running = true;
+AppState.clock.seconds = 10;
+AppState.clock.sinceSync = 0;
+AppState.clock.startedAt = Date.now() - 2000;
+AppState.activeTab = 'stats';
+App.tickClock();
+assert.strictEqual(statsRebuilds, 0, 'A clock tick must never rebuild the Stats tab mid-tap');
+assert.strictEqual(cellRefreshes, 1, 'A clock tick refreshes only the time cells');
+// The LIVE card has to appear at kickoff and vanish at the archive, so those two
+// transitions rebuild Stats once instead of every tick.
+const realGetById = document.getElementById;
+let kickoffRebuilds = 0;
+App.renderStats = () => { kickoffRebuilds += 1; };
+document.getElementById = (id) => (id === 'statsLiveClockCell' ? null : realGetById(id));
+AppState.clock.sinceSync = 0;
+AppState.clock.startedAt = Date.now() - 2000;
+AppState.events = [];
+App.tickClock();
+assert.strictEqual(kickoffRebuilds, 1, 'The tick that makes a match live builds the LIVE Stats card');
+document.getElementById = realGetById;
+App.renderStats = realRenderStats;
+App.updateStatsClockText = realCellRefresh;
+AppState.clock.running = false;
+AppState.clock.intervalId = null;
+
+const dayRules = ['body.theme-day [class*="bg-obsidian"]', 'body.theme-day .glass-card', 'body.theme-day .text-white',
+  'body.theme-day [class*="border-white/"]', 'body.theme-day header, body.theme-day nav'];
+dayRules.forEach(rule => assert(html.includes(rule), `Day mode must re-map ${rule}, or that part of the shell stays dark`));
+dom['appHeaderIcon'].setAttribute('src', './assets/brand/L1_lockup_dark.svg');
+AppState.theme = 'day';
+App.applyTheme();
+assert(bodyEl.classList.contains('theme-day'), 'Day mode puts the theme class on the element every chrome rule hangs off');
+assert.strictEqual(document.documentElement.getAttribute('data-theme'), 'light', 'The CI light tokens are switched on');
+assert.strictEqual(dom['themeIcon'].innerText, 'Night', 'The toggle names the mode a tap switches to, not the current one');
+assert.strictEqual(dom['appHeaderIcon'].src, './assets/brand/L1_lockup_light.svg', 'The lockup swaps to the light-background artwork');
+const logoBefore = 'data:image/png;base64,clublogo';
+dom['appHeaderIcon'].src = logoBefore;
+dom['appHeaderIcon'].setAttribute('src', logoBefore);
+App.applyTheme();
+assert.strictEqual(dom['appHeaderIcon'].getAttribute('src'), logoBefore, 'A club logo is never replaced by theme switching');
+assert.strictEqual(dom['appHeaderIcon'].src, logoBefore, 'Neither is its src property');
+AppState.theme = 'night';
+App.applyTheme();
+assert(!bodyEl.classList.contains('theme-day'), 'Night mode drops the day class again');
+assert.strictEqual(dom['themeIcon'].innerText, 'Day', 'The toggle reads Day while the app is dark');
+assert.strictEqual(dom['appHeaderIcon'].src, logoBefore, 'The club logo stays put in both modes');
+console.log('✓ Clock ticks update Stats cells in place, and day mode themes header, tabs, dock, cards and lockup');
+
+// ==========================================
+// TEST 39: The squad sheet holds its order, and a smaller format asks before it drops anyone
+// ==========================================
+const shiftSquad = [
+  { id: 's-f9', name: 'Dev Nine', number: 9, position: 'FWD' },
+  { id: 's-gk', name: 'Ana One', number: 1, position: 'GK' },
+  { id: 's-m11', name: 'Elk Eleven', number: 11, position: 'CM' },
+  { id: 's-def2', name: 'Ben Two', number: 2, position: 'DEF' },
+  { id: 's-b18', name: 'Gus Eighteen', number: 18, position: 'LB' },
+  { id: 's-m3', name: 'Cai Three', number: 3, position: 'MID' },
+  { id: 's-f14', name: 'Foe Fourteen', number: 14, position: 'ST' },
+];
+AppState.squad = shiftSquad.map(p => ({ ...p }));
+AppState.match.starters = shiftSquad.map(p => p.id);
+AppState.match.bench = [];
+AppState.match.fieldPositions = {};
+AppState.match.availability = {};
+AppState.match.format = '7';
+AppState.match.formation = '2-3-1';
+AppState.playerTimers = {};
+AppState.events = [];
+AppState.clock.running = false;
+
+assert.deepStrictEqual(App.rosterOrder().map(p => p.number), [1, 2, 3, 9, 11, 14, 18],
+  'A full sheet lists starters first, then by shirt number');
+App.sendToBench('s-f9');
+assert.deepStrictEqual(App.rosterOrder().map(p => p.number), [1, 2, 3, 11, 14, 18, 9],
+  'A sub drops to the bottom of the sheet without reshuffling anyone else');
+App.promoteBenchToStarter('s-f9');
+assert.deepStrictEqual(App.rosterOrder().map(p => p.number), [1, 2, 3, 9, 11, 14, 18],
+  'Bringing him back restores the same order');
+assert.strictEqual(AppState.match.starters.length, 7, 'The promotion filled the vacated slot');
+assert.ok(AppState.match.starters.every((pid, i, all) => all.indexOf(pid) === i), 'No starter is listed twice');
+assert.notStrictEqual(AppState.match.fieldPositions['s-f9'], undefined, 'A promoted starter is given a place on the turf');
+
+dom['inputMatchTeamName'].value = 'Clubstride';
+dom['inputMatchTitle'].value = 'Match 1';
+dom['inputMatchOpponent'].value = 'Echo Strikers';
+dom['inputMatchDate'].value = '2026-10-28';
+AppState.pendingFormat = '5';
+App.saveMatchSetup();
+assert.strictEqual(AppState.match.format, '7', 'A smaller format is not applied until the coach names who comes off');
+assert.strictEqual(AppState.match.starters.length, 7, 'Nothing is dropped while the question is open');
+assert.ok(AppState.formatShift, 'Stepping 7v7 down to 5v5 asks instead of silently losing players');
+assert.strictEqual(AppState.formatShift.toBench, 2, 'Seven starters in five slots means two come off');
+assert.strictEqual(AppState.formatShift.picked.size, 2, 'Two players are pre-picked so the sheet is never short');
+assert.ok(!AppState.formatShift.picked.has('s-gk'), 'The keeper is never the automatic benching');
+assert.strictEqual(AppState.formatShift.picked.has('s-f9') && AppState.formatShift.picked.has('s-f14'), true,
+  'The extra attackers are the default picks');
+assert.strictEqual(dom['modalFormatShift'].className.includes('flex'), true, 'The bench sheet opens');
+assert.strictEqual(dom['modalFormatShift'].className.includes('hidden'), false, 'And is not left folded away');
+
+App.cancelFormatShift();
+assert.strictEqual(AppState.formatShift, null, 'Cancel clears the question');
+assert.strictEqual(AppState.match.format, '7', 'Cancel leaves the match alone');
+assert.strictEqual(AppState.match.starters.length, 7, 'Cancel benches nobody');
+assert.strictEqual(dom['modalFormatShift'].className.includes('hidden'), true, 'Cancel closes the sheet');
+assert.strictEqual(AppState.pendingFormat, '7', 'Cancel puts the setup buttons back on the current format');
+
+AppState.pendingFormat = '5';
+App.saveMatchSetup();
+const sentOff = [...AppState.formatShift.picked];
+App.confirmFormatShift();
+assert.strictEqual(AppState.match.format, '5', '5v5 applies once the coach has answered');
+assert.strictEqual(AppState.match.starters.length, 5, 'Exactly the new quota stays on the pitch');
+sentOff.forEach(pid => {
+  assert.ok(!AppState.match.starters.includes(pid), 'The chosen player is off the pitch');
+  assert.ok(AppState.match.bench.includes(pid), '...and lands on the bench instead of vanishing');
+  assert.strictEqual(AppState.match.fieldPositions[pid], undefined, '...and gives up his spot on the turf');
+});
+assert.strictEqual(new Set([...AppState.match.starters, ...AppState.match.bench]).size, 7,
+  'Every squad player is still accounted for after the shift');
+assert.strictEqual(AppState.formatShift, null, 'The question is spent');
+assert.strictEqual(dom['modalFormatShift'].className.includes('hidden'), true, 'The sheet closes on confirm');
+assert.ok(['1-2-1', '2-1-1', '2-2', '1-1-2', '3-1'].includes(AppState.match.formation),
+  'The saved preset is one that exists in 5v5, not the orphaned 7v7 name: ' + AppState.match.formation);
+
+assert.deepStrictEqual(App.keepOffPitchLines({ x: 50, y: 50 }), { x: 50, y: 50 },
+  'A midfield slot stays exactly where the preset put it');
+const keeperSlot = App.keepOffPitchLines({ x: 50, y: 88 });
+assert.ok(keeperSlot.y <= 77, `The keeper is moved clear of the penalty-area line (y ${keeperSlot.y})`);
+AppState.match.starters.forEach(pid => {
+  const p = AppState.match.fieldPositions[pid];
+  assert.deepStrictEqual(App.keepOffPitchLines(p), p, `The slot placed for ${pid} is clear of the area paint`);
+});
+
+// The keeper promotion is where a raw preset slot used to escape the paint check.
+App.sendToBench(AppState.match.starters[0]);
+const promoted = AppState.match.bench[0];
+App.promoteBenchToStarter(promoted);
+const promotedSlot = AppState.match.fieldPositions[promoted];
+assert.deepStrictEqual(App.keepOffPitchLines(promotedSlot), promotedSlot,
+  'A player promoted from the bench lands clear of the area paint');
+AppState.match.starters.filter(pid => pid !== promoted).forEach(other => {
+  const q = AppState.match.fieldPositions[other];
+  assert.ok(!q || Math.abs(q.x - promotedSlot.x) > 4 || Math.abs(q.y - promotedSlot.y) > 4,
+    'The promoted shirt does not stand on top of another starter');
+});
+console.log('✓ Squad sheet order is stable, a format drop-down asks who to bench, and tokens stay off the area lines');
+
 console.log('\n=========================================');
-console.log('ALL 36 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 39 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 

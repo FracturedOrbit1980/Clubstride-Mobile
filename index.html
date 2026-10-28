@@ -119,6 +119,29 @@
       border: 1px solid rgba(180, 83, 9, 0.35);
       box-shadow: 0 0 15px -3px rgba(180, 83, 9, 0.2);
     }
+    /* Day mode is a whole-app theme. The chrome is written with dark-only Tailwind utilities, so
+       those same class names are re-mapped onto the CI light tokens here rather than editing every
+       element; [class*=] catches every alpha variant (bg-obsidian-950/85, /90, /95) in one rule. */
+    body.theme-day { background-color: var(--cs-bg) !important; color: var(--cs-text) !important; }
+    body.theme-day .glass-card {
+      background: rgba(255, 255, 255, 0.88);
+      border-color: var(--cs-border);
+      box-shadow: var(--cs-elevation-1);
+    }
+    body.theme-day [class*="bg-obsidian"] { background-color: var(--cs-surface-raised) !important; }
+    body.theme-day [class*="bg-white/"] { background-color: rgba(11, 27, 51, 0.07) !important; }
+    body.theme-day [class*="bg-cyber-cyan/"], body.theme-day [class*="bg-cyber-mint/"] {
+      background-color: rgba(15, 118, 110, 0.13) !important;
+    }
+    body.theme-day [class*="border-white/"] { border-color: var(--cs-border) !important; }
+    body.theme-day .text-white, body.theme-day .text-slate-100, body.theme-day .text-slate-200 { color: var(--cs-text) !important; }
+    body.theme-day .text-slate-300, body.theme-day .text-slate-400, body.theme-day .text-slate-500 { color: var(--cs-text-muted) !important; }
+    body.theme-day .hover\:text-white:hover { color: var(--cs-primary-text) !important; }
+    body.theme-day .text-cyber-cyan, body.theme-day .text-cyber-mint, body.theme-day .text-sky-400 { color: var(--cs-primary-text) !important; }
+    body.theme-day .text-amber-300, body.theme-day .text-amber-400 { color: var(--cs-warning-text) !important; }
+    body.theme-day .text-red-400, body.theme-day .ci-danger { color: var(--cs-danger) !important; }
+    body.theme-day .text-emerald-400 { color: var(--cs-success) !important; }
+    body.theme-day header, body.theme-day nav { border-color: var(--cs-border) !important; }
     .player-token {
       transition: transform 0.12s ease-out, box-shadow 0.15s ease-out;
       touch-action: none;
@@ -625,6 +648,7 @@
                 <option value="CAM">CAM (Attacking Mid)</option>
                 <option value="LM">LM (Left Mid)</option>
                 <option value="RM">RM (Right Mid)</option>
+                <option value="CM">CM (Central Mid)</option>
                 <option value="MID">MID (Midfielder)</option>
               </optgroup>
               <optgroup label="Forwards / Attackers" class="bg-obsidian-900 text-slate-300">
@@ -632,6 +656,7 @@
                 <option value="RW">RW (Right Wing)</option>
                 <option value="CF">CF (Centre Forward)</option>
                 <option value="S">S (Striker)</option>
+                <option value="ST">ST (Striker)</option>
                 <option value="FWD">FWD (Forward)</option>
               </optgroup>
             </select>
@@ -824,6 +849,24 @@
           <svg class="ci ci-16" aria-hidden="true"><use href="#ci-end-match"></use></svg>
           <span>End Match</span>
         </button>
+      </div>
+    </div>
+  </div>
+  <!-- 5b. FORMAT SHIFT MODAL — a smaller squad size has to say who comes off -->
+  <div id="modalFormatShift" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="formatShiftTitle">
+    <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[86vh] overflow-y-auto">
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <h3 id="formatShiftTitle" class="text-base font-bold text-white">Who comes off the pitch?</h3>
+          <p id="formatShiftSub" class="text-[11px] text-slate-400 mt-0.5"></p>
+        </div>
+        <button type="button" onclick="App.cancelFormatShift()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition active:scale-95" aria-label="Cancel the format change">✕</button>
+      </div>
+      <div id="formatShiftList" class="space-y-1.5"></div>
+      <p id="formatShiftHint" class="text-[10px] text-slate-400"></p>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button type="button" onclick="App.cancelFormatShift()" class="py-2.5 rounded-xl bg-obsidian-950 border border-white/15 text-slate-300 font-bold text-xs transition active:scale-95">Cancel</button>
+        <button type="button" id="formatShiftConfirmBtn" onclick="App.confirmFormatShift()" class="py-2.5 rounded-xl bg-cyber-cyan/20 hover:bg-cyber-cyan/30 border border-cyber-cyan/40 text-cyber-cyan font-bold text-xs transition active:scale-95">Save &amp; bench</button>
       </div>
     </div>
   </div>
@@ -1319,6 +1362,14 @@
         this.setupIcons();
         this.initKitColors();
         if (!sharedLoaded) this.applyFormatDefaults();
+        else {
+          // The shared roster path must not rebuild the lineup, but the Tactics controls still have
+          // to come back showing the saved match, not the built-in defaults.
+          const fmt = AppState.match.format || '7';
+          const quotaText = document.getElementById('starterQuotaText');
+          if (quotaText) quotaText.innerText = `Required starters: ${parseInt(fmt, 10) || 7}`;
+          this.populateFormationSelect(AppState.match.formation);
+        }
         if (AppState.readOnly) this.clearActiveTeamMatch(true);
         else this.applySharedMatches(true);
         this._initializingMatches = false;
@@ -1339,7 +1390,7 @@
           if (document.visibilityState === 'hidden') App.saveStorage();
           else if (AppState.clock.running) {
             App.tickClock();
-            if (AppState.activeTab === 'stats') App.renderStats();
+            if (AppState.activeTab === 'stats') App.refreshStatsClock();
           }
         });
         this.publishLiteRoster(false);
@@ -1480,7 +1531,7 @@
         const pdfIcon = document.getElementById('pdfIcon');
         // Clubstride CI: header uses the L1 lockup, PDF letterhead the light symbol.
         const squareDefault = EMBEDDED_ICON_B64 || './icon-192.png';
-        const headerDefault = customLogo ? squareDefault : './assets/brand/L1_lockup_dark.svg';
+        const headerDefault = customLogo ? squareDefault : this.brandLockupSrc();
         const pdfDefault = customLogo || './assets/brand/L1_symbol_light.svg';
         if (headerIcon) {
           headerIcon.src = headerDefault;
@@ -2523,6 +2574,9 @@
         this.saveStorage();
         this.toast(AppState.theme === 'day' ? 'Day Mode (High Turf Contrast)' : 'Night Mode (Cyber Glow)');
       },
+      brandLockupSrc() {
+        return AppState.theme === 'day' ? './assets/brand/L1_lockup_light.svg' : './assets/brand/L1_lockup_dark.svg';
+      },
       applyTheme() {
         const isDay = AppState.theme === 'day';
         const style = AppState.themeStyle || 'glass';
@@ -2530,6 +2584,11 @@
         const pitchCont = document.getElementById('pitchCanvasContainer');
         const themeIcon = document.getElementById('themeIcon');
         document.documentElement.setAttribute('data-theme', isDay ? 'light' : 'dark');
+        body.classList.toggle('theme-day', isDay);
+        const lockup = document.getElementById('appHeaderIcon');
+        if (lockup && /L1_lockup_(dark|light)\.svg$/.test(lockup.getAttribute('src') || '')) {
+          lockup.src = this.brandLockupSrc();
+        }
         // Clean any existing style class on body
         body.classList.remove('theme-style-glass', 'theme-style-neon', 'theme-style-stadium', 'theme-style-vintage');
         body.classList.add('theme-style-' + style);
@@ -2540,7 +2599,6 @@
           if (pitchCont) {
             pitchCont.className = 'relative w-full rounded-lite-xl overflow-hidden p-2.5 transition-all duration-300 pitch-day';
           }
-          if (themeIcon) themeIcon.innerText = 'Day';
         } else {
           body.classList.add('bg-obsidian-950', 'text-slate-100');
           body.classList.remove('bg-slate-100', 'text-slate-900');
@@ -2551,7 +2609,15 @@
             else if (style === 'stadium') pitchClass = 'pitch-stadium';
             pitchCont.className = `relative w-full rounded-lite-xl overflow-hidden p-2.5 transition-all duration-300 ${pitchClass}`;
           }
-          if (themeIcon) themeIcon.innerText = 'Night';
+        }
+        // The button is labelled with the mode a tap switches to, not the one already on screen.
+        if (themeIcon) {
+          themeIcon.innerText = isDay ? 'Night' : 'Day';
+          const toggleBtn = document.getElementById('themeToggleBtn');
+          if (toggleBtn) {
+            toggleBtn.setAttribute('aria-label', isDay ? 'Switch to night turf mode' : 'Switch to day turf mode');
+            toggleBtn.title = isDay ? 'Switch to Night Mode (Cyber Glow)' : 'Switch to Day Mode (High Turf Contrast)';
+          }
         }
       },
       switchTab(tab) {
@@ -2660,7 +2726,7 @@
         const quota = parseInt(fmt);
         document.getElementById('activeMatchFormatBadge').innerText = `${fmt}v${fmt}`;
         document.getElementById('starterQuotaText').innerText = `Required starters: ${quota}`;
-        this.populateFormationSelect();
+        this.populateFormationSelect(AppState.match.formation);
         AppState.squad.forEach(p => {
           if (AppState.match.availability[p.id] === undefined) {
             AppState.match.availability[p.id] = true;
@@ -2677,6 +2743,9 @@
         }
         const select = document.getElementById('formationSelect');
         const defaultName = select ? select.value : Object.keys(AppState.formations[fmt])[0];
+        // populateFormationSelect falls back when the old preset has no slots in this format,
+        // so the saved name follows what the coach actually sees.
+        if (select && select.value) AppState.match.formation = select.value;
         this.applyFormationPositions(defaultName);
       },
       getPositionRank(pos) {
@@ -2717,7 +2786,7 @@
         return { ...builtIns, ...customs };
       },
       populateFormationSelect(selectedName) {
-        const fmt = AppState.match.format;
+        const fmt = AppState.match.format || '7';
         const select = document.getElementById('formationSelect');
         if (!select) return;
         select.innerHTML = '';
@@ -2782,18 +2851,77 @@
         this.sortStartersByPosition();
         const allPresets = this.getAllFormations(fmt);
         const formationSlots = allPresets[name] || allPresets[Object.keys(allPresets)[0]] || [];
-        
+
         AppState.match.starters.forEach((pid, idx) => {
-          if (formationSlots[idx]) {
-            AppState.match.fieldPositions[pid] = {
-              x: formationSlots[idx].x,
-              y: formationSlots[idx].y
-            };
-          } else {
-            AppState.match.fieldPositions[pid] = { x: 50, y: 50 };
-          }
+          const slot = formationSlots[idx] || { x: 50, y: 50 };
+          AppState.match.fieldPositions[pid] = this.keepOffPitchLines(slot);
         });
         this.saveStorage();
+      },
+      // The SVG markings use a 300x420 viewBox, so the box lines are re-expressed as percentages
+      // of the field to match how tokens are placed.
+      pitchMarkings() {
+        const X = v => v / 300 * 100;
+        const Y = v => v / 420 * 100;
+        return [
+          { axis: 'h', at: Y(67), from: X(65), to: X(235) },
+          { axis: 'h', at: Y(26), from: X(100), to: X(200) },
+          { axis: 'h', at: Y(353), from: X(65), to: X(235) },
+          { axis: 'h', at: Y(394), from: X(100), to: X(200) },
+          { axis: 'v', at: X(65), from: Y(2), to: Y(67) },
+          { axis: 'v', at: X(235), from: Y(2), to: Y(67) },
+          { axis: 'v', at: X(100), from: Y(2), to: Y(26) },
+          { axis: 'v', at: X(200), from: Y(2), to: Y(26) },
+          { axis: 'v', at: X(65), from: Y(353), to: Y(418) },
+          { axis: 'v', at: X(235), from: Y(353), to: Y(418) },
+          { axis: 'v', at: X(100), from: Y(394), to: Y(418) },
+          { axis: 'v', at: X(200), from: Y(394), to: Y(418) },
+        ];
+      },
+      tokenHalfExtents() {
+        const field = document.getElementById('pitchField');
+        const token = document.querySelector('#pitchTokensLayer .player-token');
+        if (!field || !token) return { x: 7, y: 7 };
+        const fr = field.getBoundingClientRect();
+        const tr = token.getBoundingClientRect();
+        if (!fr.width || !fr.height) return { x: 7, y: 7 };
+        return { x: Math.min(18, tr.width / fr.width * 50), y: Math.min(18, tr.height / fr.height * 50) };
+      },
+      // A shirt parked on the paint swallows the line and the token behind it, so tokens are
+      // nudged to the nearest spot where their whole box clears the area lines.
+      keepOffPitchLines(slot) {
+        const segs = this.pitchMarkings();
+        const half = this.tokenHalfExtents();
+        const clear = (x, y) => !segs.some(s => s.axis === 'h'
+          ? (y - half.y < s.at && s.at < y + half.y && x + half.x > s.from && x - half.x < s.to)
+          : (x - half.x < s.at && s.at < x + half.x && y + half.y > s.from && y - half.y < s.to));
+        const pos = { x: Number(slot.x), y: Number(slot.y) };
+        if (clear(pos.x, pos.y)) return pos;
+        for (let d = 1; d <= 20; d++) {
+          const tries = [[0, -d], [0, d], [-d, 0], [d, 0], [-d, -d], [d, -d], [-d, d], [d, d]];
+          for (const [dx, dy] of tries) {
+            const x = pos.x + dx;
+            const y = pos.y + dy;
+            if (x < 8 || x > 92 || y < 8 || y > 92) continue;
+            if (clear(x, y)) return { x, y };
+          }
+        }
+        return pos;
+      },
+      // A promoted starter takes the first preset slot nobody is standing on, so two shirts
+      // never land on the same spot.
+      nextFreeSlot() {
+        const select = document.getElementById('formationSelect');
+        const all = this.getAllFormations(AppState.match.format);
+        const slots = (select && all[select.value]) || all[Object.keys(all)[0]] || [];
+        const occupied = AppState.match.starters
+          .map(pid => AppState.match.fieldPositions[pid]).filter(Boolean);
+        const isTaken = p => occupied.some(q => Math.abs(q.x - p.x) <= 4 && Math.abs(q.y - p.y) <= 4);
+        for (const s of slots) {
+          const safe = this.keepOffPitchLines({ x: Number(s.x), y: Number(s.y) });
+          if (!isTaken(safe)) return safe;
+        }
+        return this.keepOffPitchLines({ x: 50, y: 50 });
       },
       openSaveFormationModal() {
         const count = AppState.match.starters.length;
@@ -2948,15 +3076,15 @@
         }
         const quota = parseInt(AppState.match.format);
         if (AppState.match.starters.length < quota) {
+          AppState.match.fieldPositions[benchPid] = this.nextFreeSlot();
           AppState.match.starters.push(benchPid);
           AppState.match.bench = AppState.match.bench.filter(id => id !== benchPid);
-          AppState.match.fieldPositions[benchPid] = { x: 50, y: 50 };
         } else {
           const demoted = AppState.match.starters.pop();
           AppState.match.bench = AppState.match.bench.filter(id => id !== benchPid);
           AppState.match.bench.push(demoted);
           AppState.match.starters.push(benchPid);
-          AppState.match.fieldPositions[benchPid] = AppState.match.fieldPositions[demoted] || { x: 50, y: 50 };
+          AppState.match.fieldPositions[benchPid] = AppState.match.fieldPositions[demoted] || this.nextFreeSlot();
         }
         this.saveStorage();
         this.renderPitchTokens();
@@ -3005,6 +3133,14 @@
           if (!activeEl) return;
           try { activeEl.releasePointerCapture(e.pointerId); } catch (_) {}
           activeEl.style.zIndex = 10;
+          const movedPid = activeEl.dataset.playerId;
+          const parked = movedPid && AppState.match.fieldPositions[movedPid];
+          if (parked) {
+            const safe = App.keepOffPitchLines(parked);
+            AppState.match.fieldPositions[movedPid] = safe;
+            activeEl.style.left = `${safe.x}%`;
+            activeEl.style.top = `${safe.y}%`;
+          }
           activeEl = null;
           App.saveStorage();
         };
@@ -3013,10 +3149,32 @@
         field.addEventListener('pointerup', onPointerUp);
         field.addEventListener('pointercancel', onPointerUp);
       },
+      // The Add/Edit player modal owns the position vocabulary, so the squad row reads its options
+      // instead of keeping a second list that can drift. Values missing from that list are added
+      // back verbatim, because an unknown role makes the browser fall back to its first option: GK.
+      positionOptionHtml(pos) {
+        const source = document.getElementById('inputPlayerPosition');
+        const values = source && source.options ? Array.from(source.options).map(o => o.value) : [];
+        const wanted = String(pos == null ? '' : pos).trim();
+        if (wanted && !values.includes(wanted)) values.push(wanted);
+        const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const upper = wanted.toUpperCase();
+        return values.map(v => `<option value="${esc(v)}"${String(v).toUpperCase() === upper
+          ? ' selected' : ''}>${esc(v)}</option>`).join('');
+      },
+      // A substitution must not reshuffle the team sheet: starters keep the top of the list in
+      // shirt order, everyone else follows in shirt order, with names breaking a tie.
+      rosterOrder() {
+        const onPitch = p => (AppState.match.starters.includes(p.id) ? 0 : 1);
+        return [...AppState.squad].sort((a, b) => onPitch(a) - onPitch(b)
+          || (Number(a.number) || 0) - (Number(b.number) || 0)
+          || String(a.name).localeCompare(String(b.name)));
+      },
       renderRoster() {
         const container = document.getElementById('squadPodsList');
         container.innerHTML = '';
-        AppState.squad.forEach(p => {
+        this.rosterOrder().forEach(p => {
           const isAvail = AppState.match.availability[p.id] !== false;
           const isStarter = AppState.match.starters.includes(p.id);
           const shirtColor = isStarter ? AppState.kitColor : '#303A4A';
@@ -3033,21 +3191,8 @@
                   ${isStarter ? '<span class="flex-shrink-0 px-1.5 py-0.2 rounded bg-cyber-cyan/20 text-cyber-cyan text-[10px] font-bold">Starter</span>' : ''}
                 </div>
                 <div class="flex items-center space-x-2 mt-1">
-                  <select onchange="App.updatePlayerPosition('${p.id}', this.value)" class="bg-obsidian-950/80 border border-white/15 text-[10px] font-bold text-cyber-cyan rounded-lg px-2 py-0.5 focus:outline-none">
-                    <option value="GK" ${p.position === 'GK' ? 'selected' : ''}>GK</option>
-                    <option value="CB" ${p.position === 'CB' ? 'selected' : ''}>CB</option>
-                    <option value="LB" ${p.position === 'LB' ? 'selected' : ''}>LB</option>
-                    <option value="RB" ${p.position === 'RB' ? 'selected' : ''}>RB</option>
-                    <option value="LWB" ${p.position === 'LWB' ? 'selected' : ''}>LWB</option>
-                    <option value="RWB" ${p.position === 'RWB' ? 'selected' : ''}>RWB</option>
-                    <option value="CDM" ${p.position === 'CDM' ? 'selected' : ''}>CDM</option>
-                    <option value="CAM" ${p.position === 'CAM' ? 'selected' : ''}>CAM</option>
-                    <option value="LM" ${p.position === 'LM' ? 'selected' : ''}>LM</option>
-                    <option value="RM" ${p.position === 'RM' ? 'selected' : ''}>RM</option>
-                    <option value="LW" ${p.position === 'LW' ? 'selected' : ''}>LW</option>
-                    <option value="RW" ${p.position === 'RW' ? 'selected' : ''}>RW</option>
-                    <option value="CF" ${p.position === 'CF' ? 'selected' : ''}>CF</option>
-                    <option value="S" ${p.position === 'S' ? 'selected' : ''}>S</option>
+                  <select onchange="App.updatePlayerPosition('${p.id}', this.value)" class="position-select bg-obsidian-950/80 border border-white/15 text-[10px] font-bold text-cyber-cyan rounded-lg px-2 py-0.5 focus:outline-none" aria-label="Position for ${p.name}">
+                    ${this.positionOptionHtml(p.position)}
                   </select>
                   <span class="text-[11px] text-slate-400 font-mono">${this.formatTime(AppState.playerTimers[p.id] || 0)}</span>
                 </div>
@@ -3184,8 +3329,34 @@
         if (AppState.clock.sinceSync >= 1) {
           AppState.clock.sinceSync = 0;
           this.saveStorage();
-          if (AppState.activeTab === 'stats') this.renderStats();
+          if (AppState.activeTab === 'stats') this.refreshStatsClock();
         }
+      },
+      // The LIVE card and its clock only exist once the match has seconds or events, and they must
+      // go again when the match is archived. Those two transitions rebuild Stats once; every
+      // ordinary tick just rewrites the time cells so scroll position and a mid-tap control live on.
+      refreshStatsClock() {
+        const hasLiveActive = AppState.clock.seconds > 0 || (AppState.events || []).length > 0;
+        const liveCard = document.getElementById('statsLiveClockCell');
+        if (!!liveCard !== hasLiveActive) { this.renderStats(); return; }
+        this.updateStatsClockText();
+      },
+      // The Stats tab is rebuilt by renderStats, which throws away scroll position and any control
+      // mid-tap. While the clock runs, only the time cells are rewritten in place.
+      updateStatsClockText() {
+        document.querySelectorAll('#statsCardsContainer [data-stat-time]').forEach(el => {
+          const kind = el.getAttribute('data-stat-time');
+          if (kind === 'clock') { el.innerText = this.formatTime(AppState.clock.seconds || 0); return; }
+          const live = kind === 'total' ? (AppState.clock.seconds || 0)
+            : (AppState.playerTimers[el.getAttribute('data-pid')] || 0);
+          const seconds = (Number(el.getAttribute('data-base')) || 0) + live;
+          if (kind === 'avg') {
+            const games = Number(el.getAttribute('data-games')) || 0;
+            el.innerText = this.formatTime(games > 0 ? Math.round(seconds / games) : 0);
+          } else {
+            el.innerText = this.formatTime(seconds);
+          }
+        });
       },
       syncLiveGameSelection() {
         const ids = AppState.selectedGameIds;
@@ -3890,7 +4061,7 @@
           <div class="grid grid-cols-3 gap-2 text-center pt-1">
             <div class="p-2 rounded-xl bg-obsidian-950 border border-white/5">
               <div class="text-[10px] text-slate-400 uppercase font-medium">Match Time</div>
-              <div class="font-mono font-black text-sm text-white mt-0.5">${this.formatTime(combinedTotalSec)}</div>
+              <div class="font-mono font-black text-sm text-white mt-0.5" data-stat-time="total" data-base="${combinedTotalSec - (liveSelected ? (AppState.clock.seconds || 0) : 0)}">${this.formatTime(combinedTotalSec)}</div>
             </div>
             <div class="p-2 rounded-xl bg-obsidian-950 border border-white/5">
               <div class="text-[10px] text-slate-400 uppercase font-medium">Squad Goals</div>
@@ -3922,6 +4093,7 @@
             const wasStarter = AppState.match.starters.includes(p.id);
             const shirtColor = wasStarter ? AppState.kitColor : '#303A4A';
             const avgSec = stats.appearances > 0 ? Math.round(stats.totalSeconds / stats.appearances) : 0;
+            const archivedSec = stats.totalSeconds - (liveSelected ? (AppState.playerTimers[p.id] || 0) : 0);
             const card = document.createElement('div');
             card.className = 'glass-card rounded-lite p-3 flex items-center justify-between';
             card.innerHTML = `
@@ -3934,12 +4106,12 @@
                     <span>${p.name}</span>
                     ${stats.appearances > 0 ? `<span class="px-1.5 py-0.2 rounded bg-white/10 text-slate-300 text-[10px] font-normal">${stats.appearances}/${totalSelectedCount} Apps</span>` : ''}
                   </div>
-                  <div class="text-[11px] text-slate-400 mt-0.5">${p.position} • #${p.number} • Avg: <span class="text-white font-mono">${this.formatTime(avgSec)}</span>/gm</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">${p.position} • #${p.number} • Avg: <span class="text-white font-mono" data-stat-time="avg" data-pid="${p.id}" data-base="${archivedSec}" data-games="${stats.appearances}">${this.formatTime(avgSec)}</span>/gm</div>
                 </div>
               </div>
               <div class="flex items-center space-x-3 text-right flex-shrink-0">
                 <div>
-                  <div class="font-mono font-bold text-sm text-cyber-mint">${this.formatTime(stats.totalSeconds)}</div>
+                  <div class="font-mono font-bold text-sm text-cyber-mint" data-stat-time="player" data-pid="${p.id}" data-base="${archivedSec}">${this.formatTime(stats.totalSeconds)}</div>
                   <div class="text-[9px] uppercase tracking-wider text-slate-400">Total Min</div>
                 </div>
                 <div class="flex items-center space-x-1.5 text-xs font-bold">
@@ -3977,7 +4149,7 @@
                   </div>
                   <div class="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
                     <span class="px-1.5 py-0.2 rounded bg-white/10 text-white font-medium">${AppState.match.format || '7'}v${AppState.match.format || '7'}</span>
-                    <span>Clock: ${this.formatTime(AppState.clock.seconds)}</span>
+                    <span>Clock: <span id="statsLiveClockCell" data-stat-time="clock">${this.formatTime(AppState.clock.seconds)}</span></span>
                     <span>• vs ${AppState.match.opponent || 'Opponent'}</span>
                   </div>
                 </div>
@@ -4875,21 +5047,123 @@
           !/^\d{4}-\d{2}-\d{2}$/.test(date) || !['5', '7', '9', '11'].includes(fmt)) {
           this.toast('Please enter safe match details and a valid date.'); return;
         }
-        AppState.match.teamName = teamName;
-        AppState.match.title = title;
-        AppState.match.opponent = opp;
-        AppState.match.date = date;
-        AppState.match.format = fmt;
-        document.getElementById('activeMatchTitleDisplay').innerText = `${title} — ${teamName} vs ${opp}`;
-        document.getElementById('activeMatchDateBadge').innerText = date;
-        document.getElementById('activeMatchFormatBadge').innerText = `${fmt}v${fmt}`;
-        document.getElementById('scoreboardTeam').innerText = teamName;
-        document.getElementById('scoreboardOpponent').innerText = opp.split(' ')[0];
+        const starters = AppState.match.starters || [];
+        const quota = parseInt(fmt);
+        if (starters.length > quota) {
+          // Dropping starters silently loses them from both the pitch and the bench record,
+          // so the coach names who comes off before the smaller format is applied.
+          this.openFormatShiftModal({ teamName, title, opp, date, fmt }, starters.length - quota);
+          return;
+        }
+        this.commitMatchSetup({ teamName, title, opp, date, fmt });
+      },
+      commitMatchSetup(setup) {
+        AppState.match.teamName = setup.teamName;
+        AppState.match.title = setup.title;
+        AppState.match.opponent = setup.opp;
+        AppState.match.date = setup.date;
+        AppState.match.format = setup.fmt;
+        document.getElementById('activeMatchTitleDisplay').innerText = `${setup.title} — ${setup.teamName} vs ${setup.opp}`;
+        document.getElementById('activeMatchDateBadge').innerText = setup.date;
+        document.getElementById('activeMatchFormatBadge').innerText = `${setup.fmt}v${setup.fmt}`;
+        document.getElementById('scoreboardTeam').innerText = setup.teamName;
+        document.getElementById('scoreboardOpponent').innerText = setup.opp.split(' ')[0];
         this.applyFormatDefaults();
         this.saveStorage();
         this.closeModals();
         this.renderPitchTokens();
+        this.renderRoster();
         this.toast('Match configuration saved!');
+      },
+      openFormatShiftModal(setup, toBench) {
+        const byRole = [...AppState.match.starters].sort((a, b) => {
+          const pA = AppState.squad.find(p => p.id === a) || {};
+          const pB = AppState.squad.find(p => p.id === b) || {};
+          const rank = this.getPositionRank(pA.position) - this.getPositionRank(pB.position);
+          return rank !== 0 ? rank : (Number(pA.number) || 0) - (Number(pB.number) || 0);
+        });
+        AppState.formatShift = {
+          setup,
+          toBench,
+          order: byRole,
+          picked: new Set(byRole.slice(parseInt(setup.fmt))),
+        };
+        document.getElementById('formatShiftSub').innerText =
+          `${AppState.match.format}v${AppState.match.format} → ${setup.fmt}v${setup.fmt}: pick ${toBench} ${toBench === 1 ? 'player' : 'players'} to bench`;
+        const modal = document.getElementById('modalFormatShift');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        this.renderFormatShiftList();
+      },
+      renderFormatShiftList() {
+        const shift = AppState.formatShift;
+        const container = document.getElementById('formatShiftList');
+        if (!shift) return;
+        container.innerHTML = shift.order.map(pid => {
+          const p = AppState.squad.find(item => item.id === pid) || { name: 'Player', number: '', position: '' };
+          const out = shift.picked.has(pid);
+          return `
+            <button type="button" onclick="App.toggleFormatBenchPick('${pid}')" aria-pressed="${out}"
+              class="w-full min-h-[44px] flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left transition active:scale-[0.99] ${
+                out ? 'bg-red-500/10 border-red-500/35 text-red-300' : 'bg-obsidian-950 border-white/15 text-slate-200'
+              }">
+              <span class="flex items-center space-x-2 min-w-0">
+                <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-white/10 text-[10px] font-black flex items-center justify-center">${p.number}</span>
+                <span class="truncate text-xs font-bold">${p.name}</span>
+                <span class="text-[10px] font-bold opacity-80 flex-shrink-0">${p.position}</span>
+              </span>
+              <span class="text-[10px] font-black uppercase tracking-wider flex-shrink-0">${out ? 'Bench' : 'On pitch'}</span>
+            </button>`;
+        }).join('');
+        const left = shift.toBench - shift.picked.size;
+        const hint = document.getElementById('formatShiftHint');
+        hint.innerText = left > 0 ? `${left} more to bench.`
+          : left < 0 ? `${-left} too many chosen — keep ${shift.setup.fmt} on the pitch.`
+          : `${shift.setup.fmt} starters stay on the pitch.`;
+        const btn = document.getElementById('formatShiftConfirmBtn');
+        btn.disabled = left !== 0;
+        btn.classList.toggle('opacity-40', left !== 0);
+      },
+      toggleFormatBenchPick(pid) {
+        const shift = AppState.formatShift;
+        if (!shift) return;
+        if (shift.picked.has(pid)) shift.picked.delete(pid); else shift.picked.add(pid);
+        this.renderFormatShiftList();
+      },
+      closeFormatShiftModal() {
+        const modal = document.getElementById('modalFormatShift');
+        if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+      },
+      cancelFormatShift() {
+        AppState.formatShift = null;
+        this.closeFormatShiftModal();
+        // The setup sheet is still open behind this one, so put its buttons back to the truth.
+        this.selectFormat(AppState.match.format);
+      },
+      confirmFormatShift() {
+        const shift = AppState.formatShift;
+        if (!shift) return;
+        if (shift.picked.size !== shift.toBench) { this.renderFormatShiftList(); return; }
+        const benched = [...shift.picked];
+        AppState.match.starters = AppState.match.starters.filter(id => !shift.picked.has(id));
+        AppState.match.bench = (AppState.match.bench || []).filter(id => !AppState.match.starters.includes(id));
+        benched.forEach(pid => {
+          if (!AppState.match.bench.includes(pid)) AppState.match.bench.push(pid);
+          delete AppState.match.fieldPositions[pid];
+        });
+        AppState.formatShift = null;
+        this.closeFormatShiftModal();
+        this.commitMatchSetup(shift.setup);
+        this.toast(`${benched.length} ${benched.length === 1 ? 'player' : 'players'} benched for ${shift.setup.fmt}v${shift.setup.fmt}`);
+      },
+      nextFreeShirtNumber() {
+        for (let n = 1; n <= 99; n++) {
+          if (!AppState.squad.some(p => Number(p.number) === n)) return n;
+        }
+        return '';
+      },
+      shirtClash(number, exceptId) {
+        return AppState.squad.find(p => Number(p.number) === number && p.id !== exceptId) || null;
       },
       openAddPlayerModal() {
         if (!this.rosterMutationAllowed()) return;
@@ -4897,7 +5171,7 @@
         const title = document.getElementById('modalAddPlayerTitle');
         if (title) title.innerText = 'Add Squad Player';
         document.getElementById('inputPlayerName').value = '';
-        document.getElementById('inputPlayerNumber').value = '';
+        document.getElementById('inputPlayerNumber').value = this.nextFreeShirtNumber();
         document.getElementById('inputPlayerPosition').value = 'CB';
         const submitBtn = document.getElementById('modalAddPlayerSubmitBtn');
         if (submitBtn) submitBtn.innerText = 'Add to Squad';
@@ -4927,6 +5201,12 @@
         if (!name || name.length > 200 || /[<>\u0000-\u001f\u007f]/.test(name) ||
           !Number.isInteger(num) || num < 1 || num > 99 || !pos.trim() || pos.length > 40 || /[<>\u0000-\u001f\u007f]/.test(pos)) {
           this.toast('Please provide a valid name and shirt number (1-99)');
+          return;
+        }
+        // Two players on one shirt number makes every downstream report ambiguous, so it is blocked.
+        const clash = this.shirtClash(num, AppState.editingPlayerId);
+        if (clash) {
+          this.toast(`Shirt #${num} is already worn by ${clash.name}. Free number: ${this.nextFreeShirtNumber() || 'none left'}`);
           return;
         }
         if (AppState.editingPlayerId) {
@@ -5015,7 +5295,7 @@
       },
       closeModals() {
         AppState.editingPlayerId = null;
-        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalPdfReport, #modalEndMatch').forEach(m => {
+        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalPdfReport, #modalEndMatch, #modalFormatShift').forEach(m => {
           m.classList.add('hidden');
           m.classList.remove('flex');
         });
