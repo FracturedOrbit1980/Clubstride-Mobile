@@ -18,7 +18,7 @@ const expectedIds = [
   'clockToggleBtn', 'matchClockDisplay', 'clockStatusSubtext',
   'eventModalTitle', 'eventPlayerSelector', 'eventAssistSelector',
   'inputMatchTeamName', 'inputMatchTitle', 'inputMatchOpponent', 'inputMatchDate',
-  'backupFileInput'
+  'backupFileInput', 'storageFailureStatus', 'sharedRosterStatus', 'recoverSharedRosterBtn'
 ];
 
 for (const id of expectedIds) {
@@ -135,9 +135,10 @@ jsCode = jsCode.replace('const AppState =', 'global.AppState =').replace('const 
 
 // Mock browser environment
 const storage = {};
+const storageWrites = [];
 global.localStorage = {
   getItem: (k) => storage[k] || null,
-  setItem: (k, v) => { storage[k] = String(v); },
+  setItem: (k, v) => { storage[k] = String(v); storageWrites.push(k); },
   removeItem: (k) => { delete storage[k]; }
 };
 
@@ -206,13 +207,34 @@ global.document = {
   addEventListener: () => {}
 };
 
+const nodeCrypto = require('crypto');
+let installationUuidCalls = 0;
+let installationRandomValuesCalls = 0;
+const rosterChangeEvents = [];
+const windowListeners = new Map();
+global.CustomEvent = class CustomEvent {
+  constructor(type) { this.type = type; }
+};
 global.window = {
-  addEventListener: () => {},
+  crypto: {
+    randomUUID: () => { installationUuidCalls += 1; return nodeCrypto.randomUUID(); },
+    getRandomValues: (bytes) => { installationRandomValuesCalls += 1; return nodeCrypto.randomFillSync(bytes); }
+  },
+  dispatchEvent: (event) => {
+    if (event.type === 'cs-lite-roster-change') rosterChangeEvents.push(event);
+    (windowListeners.get(event.type) || []).forEach(listener => listener(event));
+    return true;
+  },
+  addEventListener: (type, listener) => {
+    if (!windowListeners.has(type)) windowListeners.set(type, []);
+    windowListeners.get(type).push(listener);
+  },
   location: { reload: () => {} },
   print: () => {},
   scrollY: 0,
   scrollTo: () => {}
 };
+if (typeof navigator === 'undefined') global.navigator = {};
 global.history = {
   _pushed: 0,
   _backed: 0,
@@ -229,7 +251,20 @@ eval(jsCode);
 
 // Run App.init()
 App.init();
-console.log('✓ App.init() executed successfully');
+const rosterKey = 'cs.lite.roster.v1';
+const installationKey = 'cs.lite.installation.v1';
+const readRoster = () => JSON.parse(storage[rosterKey]);
+const initialRoster = readRoster();
+assert.strictEqual(initialRoster.version, 1);
+assert.strictEqual(initialRoster.teamId, 'lite-default');
+assert.strictEqual(initialRoster.teamName, 'Clubstride FC');
+assert.deepStrictEqual(initialRoster.players, AppState.squad);
+assert.strictEqual(initialRoster.installationId, storage[installationKey]);
+assert.match(initialRoster.installationId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+assert.strictEqual(new Date(initialRoster.revision).toISOString(), initialRoster.revision);
+assert.strictEqual(rosterChangeEvents.length, 1, 'Initialization must publish and notify once');
+assert.strictEqual(rosterChangeEvents[0].type, 'cs-lite-roster-change');
+console.log('✓ App.init() executed successfully and published the Lite roster');
 
 // ==========================================
 // TEST 7: Tab navigation
@@ -543,6 +578,14 @@ const sampleMatchB = {
   ]
 };
 
+[sampleMatchA, sampleMatchB].forEach(match => {
+  match.teamId = AppState.currentTeamId || 'lite-default';
+  match.period = '2nd Half'; match.status = 'completed';
+  match.endedAt = '2026-10-14T15:00:00.000Z'; match.recordedAt = match.endedAt;
+  match.players = AppState.squad.map(({ id, name, number, position, proId }) => ({ id, name, number, position, ...(proId ? { proId } : {}) }));
+  match.bench = AppState.squad.map(p => p.id).filter(id => !match.starters.includes(id));
+  match.events.forEach((event, index) => Object.assign(event, { id: `${match.id}_ev_${index}`, period: match.period, timestamp: 1000 + index }));
+});
 AppState.matchHistory = [sampleMatchA, sampleMatchB];
 
 // Empty range test should toast and not throw
@@ -631,11 +674,20 @@ assert.notStrictEqual(proShell.style.display, 'flex', 'Offline upgrade tap must 
 
 navigator.onLine = true;
 prevented = false;
+AppState.squad[0].name = 'Updated before Pro opens';
+const setFrameAttribute = proFrame.setAttribute;
+let rosterReadyBeforeFrame = false;
+proFrame.setAttribute = function (key, value) {
+  if (key === 'src') rosterReadyBeforeFrame = readRoster().players[0].name === AppState.squad[0].name;
+  return setFrameAttribute.call(this, key, value);
+};
 assert.strictEqual(
   App.openProUpgrade({ preventDefault: () => { prevented = true; } }),
   false,
   'Online Pro tap must open in-app instead of navigating the pane'
 );
+proFrame.setAttribute = setFrameAttribute;
+assert(rosterReadyBeforeFrame, 'The current roster must be published before iframe src is set');
 assert(prevented, 'Online Pro tap must cancel the raw anchor navigation');
 assert(offlineNote.classList.contains('hidden'), 'Online retry must clear the offline note');
 assert.strictEqual(proShell.style.display, 'flex', 'Online Pro tap must reveal the in-app Pro shell');
@@ -649,8 +701,686 @@ assert(document.body.style.overflow === '', 'Back to Lite must release the page 
 assert.strictEqual(history._backed, 1, 'Back to Lite must consume the pushed history entry');
 console.log('✓ Pro upgrade opens in-app with Back to Lite, and offline taps stay blocked');
 
+// ==========================================
+// TEST 22: Lite roster snapshots and active saved-team synchronization
+// ==========================================
+AppState.teams = [
+  { id: 'lite-team-a', name: 'Lite Team A', squad: [] },
+  { id: 'lite-team-b', name: 'Lite Team B', squad: [{ id: 'other-player', name: 'Other Player', number: 1, position: 'GK' }] }
+];
+App.loadTeam('lite-team-a');
+assert.deepStrictEqual(readRoster().players, [], 'An empty saved squad must not import demo players');
+assert.strictEqual(readRoster().teamId, 'lite-team-a');
+assert.strictEqual(readRoster().teamName, 'Lite Team A');
+assert.strictEqual(readRoster().installationId, initialRoster.installationId);
+const emptySnapshot = storage[rosterKey];
+const writesBeforeNoChange = storageWrites.filter(k => k === rosterKey).length;
+const eventsBeforeNoChange = rosterChangeEvents.length;
+AppState.clock.seconds += 1;
+AppState.match.ourGoals += 1;
+App.saveStorage();
+App.publishLiteRoster();
+assert.strictEqual(storage[rosterKey], emptySnapshot, 'Unrelated saves must preserve the exact snapshot and revision');
+assert.strictEqual(storageWrites.filter(k => k === rosterKey).length, writesBeforeNoChange);
+assert.strictEqual(rosterChangeEvents.length, eventsBeforeNoChange, 'No event may be dispatched for unchanged content');
+
+App.openAddPlayerModal();
+dom['inputPlayerName'].value = 'Lite Created Player';
+dom['inputPlayerNumber'].value = '23';
+dom['inputPlayerPosition'].value = 'CM';
+App.saveNewPlayer();
+const createdPlayer = { ...AppState.squad[0] };
+assert.deepStrictEqual(readRoster().players, [createdPlayer], 'Added player must appear in the snapshot');
+assert(new Date(readRoster().revision) > new Date(JSON.parse(emptySnapshot).revision), 'A content change must advance revision, even in the same millisecond');
+assert.deepStrictEqual(AppState.teams[0].squad, [createdPlayer]);
+assert.deepStrictEqual(JSON.parse(storage['Clubstride Mobile_teams'])[0].squad, [createdPlayer]);
+assert.strictEqual(rosterChangeEvents.length, eventsBeforeNoChange + 1);
+assert.deepStrictEqual(Object.keys(readRoster()).sort(), ['version', 'installationId', 'teamId', 'teamName', 'players', 'revision'].sort());
+assert.deepStrictEqual(Object.keys(readRoster().players[0]).sort(), ['id', 'name', 'number', 'position'].sort());
+
+App.openEditPlayerModal(createdPlayer.id);
+dom['inputPlayerName'].value = 'Lite Edited Player';
+dom['inputPlayerNumber'].value = '24';
+dom['inputPlayerPosition'].value = 'ST';
+App.saveNewPlayer();
+const editedPlayer = { id: createdPlayer.id, name: 'Lite Edited Player', number: 24, position: 'ST' };
+assert.deepStrictEqual(readRoster().players, [editedPlayer], 'All edited fields must be shared, without changing player identity');
+App.loadTeam('lite-team-b');
+assert.strictEqual(readRoster().teamId, 'lite-team-b');
+assert.deepStrictEqual(readRoster().players, AppState.teams[1].squad);
+App.loadTeam('lite-team-a');
+assert.deepStrictEqual(AppState.squad, [editedPlayer], 'Switching away and back must preserve created and edited players');
+assert.deepStrictEqual(readRoster().players, [editedPlayer]);
+assert.notStrictEqual(AppState.squad, AppState.teams[0].squad, 'Saved teams must keep a detached squad copy');
+App.deletePlayer(createdPlayer.id);
+assert.deepStrictEqual(readRoster().players, [], 'Deleting the last player must publish an empty array');
+assert.deepStrictEqual(JSON.parse(storage['Clubstride Mobile_teams'])[0].squad, []);
+App.loadTeam('lite-team-b');
+App.loadTeam('lite-team-a');
+assert.deepStrictEqual(AppState.squad, [], 'Switching teams must not resurrect deleted players');
+const snapshotBeforeReload = storage[rosterKey];
+App.init();
+assert.deepStrictEqual(AppState.squad, [], 'Loading persisted data must keep the squad empty');
+assert.strictEqual(storage[rosterKey], snapshotBeforeReload, 'Initialization after reload must preserve identities and revision');
+assert.strictEqual(installationUuidCalls, 1, 'Installation UUID must be generated only once');
+assert.strictEqual(installationRandomValuesCalls, 0);
+
+AppState.currentTeamId = null;
+AppState.currentTeamName = '';
+dom['inputCurrentTeamName'].value = 'Input Team Name';
+App.saveStorage();
+assert.strictEqual(readRoster().teamId, 'lite-default');
+assert.strictEqual(readRoster().teamName, 'Input Team Name');
+assert.strictEqual(storage['Clubstride Mobile_current_team_id'], '', 'Clearing team selection must not reload a stale saved-team ID');
+dom['inputCurrentTeamName'].value = '';
+App.saveStorage();
+assert.strictEqual(readRoster().teamName, 'Clubstride FC');
+assert.strictEqual(readRoster().installationId, initialRoster.installationId);
+console.log('✓ Lite snapshots include added/edited/deleted players, preserve empty squads and identities, and sync saved teams');
+
+// ==========================================
+// TEST 23: Secure UUID fallback and visible, non-destructive storage failures
+// ==========================================
+const secureCrypto = window.crypto;
+const installationBeforeFallback = storage[installationKey];
+delete storage[installationKey];
+window.crypto = { getRandomValues: secureCrypto.getRandomValues };
+const fallbackId = App.getLiteInstallationId();
+assert.match(fallbackId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+assert.strictEqual(App.getLiteInstallationId(), fallbackId);
+assert.strictEqual(installationRandomValuesCalls, 1, 'Secure fallback must generate a UUID only once');
+storage[installationKey] = installationBeforeFallback;
+window.crypto = secureCrypto;
+
+const workingSetItem = localStorage.setItem;
+const originalConsoleError = console.error;
+console.error = () => {};
+try {
+  const durableSquad = storage['Clubstride Mobile_squad'];
+  const durableSnapshot = storage[rosterKey];
+  const eventsBeforeFailure = rosterChangeEvents.length;
+  AppState.squad.push({ id: 'unsaved-player', name: 'Keep Me', number: 42, position: 'GK' });
+  localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+  assert.strictEqual(App.saveStorage(), false);
+  assert.strictEqual(storage['Clubstride Mobile_squad'], durableSquad, 'Failed save must not clear durable Lite data');
+  assert.strictEqual(storage[rosterKey], durableSnapshot, 'Snapshot must not publish after a failed normal save');
+  assert.strictEqual(rosterChangeEvents.length, eventsBeforeFailure);
+  assert(!dom['storageFailureStatus'].classList.contains('hidden'));
+  assert(dom['storageFailureStatus'].innerText.includes('could not be saved'));
+  assert(AppState.squad.some(p => p.id === 'unsaved-player'), 'Unsaved edits must stay in memory');
+
+  localStorage.setItem = (key, value) => {
+    if (key === rosterKey) throw new Error('QuotaExceededError');
+    workingSetItem(key, value);
+  };
+  assert.strictEqual(App.saveStorage(), false);
+  assert(JSON.parse(storage['Clubstride Mobile_squad']).some(p => p.id === 'unsaved-player'), 'A snapshot failure must not discard a successful Lite save');
+  assert.strictEqual(storage[rosterKey], durableSnapshot, 'Failed atomic snapshot replacement must leave the old snapshot intact');
+  assert.strictEqual(rosterChangeEvents.length, eventsBeforeFailure);
+  assert(dom['storageFailureStatus'].innerText.includes('Roster sharing'));
+  App.openProShell(false);
+  assert.strictEqual(proShell.style.display, 'none', 'Do not open Pro with stale data after a snapshot failure');
+
+  localStorage.setItem = workingSetItem;
+  assert.strictEqual(App.saveStorage(), true, 'A later save must retry publication successfully');
+  assert(dom['storageFailureStatus'].classList.contains('hidden'));
+  assert(readRoster().players.some(p => p.id === 'unsaved-player'));
+  assert.strictEqual(rosterChangeEvents.length, eventsBeforeFailure + 1);
+
+  const storedInstallation = storage[installationKey];
+  delete storage[installationKey];
+  window.crypto = {};
+  const snapshotBeforeCryptoFailure = storage[rosterKey];
+  assert.strictEqual(App.publishLiteRoster(), false, 'Missing secure crypto must fail visibly, not use Math.random');
+  assert.strictEqual(storage[installationKey], undefined);
+  assert.strictEqual(storage[rosterKey], snapshotBeforeCryptoFailure);
+  assert(!dom['storageFailureStatus'].classList.contains('hidden'));
+  window.crypto = secureCrypto;
+  storage[installationKey] = storedInstallation;
+  App.publishLiteRoster();
+
+  const storedMatch = storage['Clubstride Mobile_match'];
+  storage['Clubstride Mobile_match'] = '{invalid JSON';
+  const writesBeforeLoadFailure = storageWrites.length;
+  App.loadStorage();
+  assert.strictEqual(App.saveStorage(), false, 'A load failure must block overwriting partially loaded Lite data');
+  assert.strictEqual(App.publishLiteRoster(), false);
+  assert.strictEqual(storageWrites.length, writesBeforeLoadFailure);
+  assert(dom['storageFailureStatus'].innerText.includes('Saving is paused'));
+  storage['Clubstride Mobile_match'] = storedMatch;
+  App.loadStorage();
+  assert.strictEqual(App.saveStorage(), true);
+  assert(dom['storageFailureStatus'].classList.contains('hidden'));
+} finally {
+  localStorage.setItem = workingSetItem;
+  window.crypto = secureCrypto;
+  console.error = originalConsoleError;
+}
+console.log('✓ Secure UUID fallback, storage failure alerts, retained data, and successful retries verified');
+
+// ==========================================
+// TEST 24: Incoming Pro edits/additions retain the running match and Lite identities
+// ==========================================
+const clone = value => JSON.parse(JSON.stringify(value));
+const uuidA = 'a1111111-1111-4111-8111-111111111111';
+const uuidB = 'b2222222-2222-4222-8222-222222222222';
+const uuidTeam = 'c3333333-3333-4333-8333-333333333333';
+const uuidOwner = 'd4444444-4444-4444-8444-444444444444';
+const incoming = (snapshot, eventType = 'cs-lite-roster-change') => {
+  storage[rosterKey] = JSON.stringify(snapshot); // A different document's atomic write.
+  window.dispatchEvent({ type: eventType, key: rosterKey });
+};
+const advance = snapshot => ({ ...clone(snapshot), revision: new Date(Date.parse(snapshot.revision) + 1).toISOString() });
+assert.strictEqual(windowListeners.get('storage').length, 1, 'Repeated init must not multiply shared listeners');
+assert.strictEqual(windowListeners.get('cs-lite-roster-change').length, 1);
+assert.strictEqual(windowListeners.get('focus').length, 1);
+App.loadTeam('lite-team-b');
+const originalPlayer = clone(AppState.squad[0]);
+AppState.match.starters = [originalPlayer.id];
+AppState.match.bench = [];
+AppState.clock.seconds = 127;
+AppState.clock.running = true;
+AppState.clock.startedAt = Date.now();
+AppState.playerTimers = { [originalPlayer.id]: 127, archived_player: 80 };
+AppState.events = [{ id: 'pro-test-goal', type: 'Goal', playerId: originalPlayer.id, matchTimeSeconds: 50 }];
+App.saveStorage();
+const matchBeforeIncoming = clone({ clock: AppState.clock, events: AppState.events, timers: AppState.playerTimers });
+const archivedHistoryBefore = clone(AppState.matchHistory);
+let proUpdate = advance(readRoster());
+// A Pro-backed Lite team keeps its original Lite key; cloudTeamId is a separate identity.
+proUpdate.cloudTeamId = uuidTeam;
+proUpdate.ownerId = uuidOwner;
+proUpdate.readOnly = false;
+proUpdate.players = [
+  { ...originalPlayer, name: 'Pro Edited Player', number: 21, position: 'CM', proId: uuidA, available: true },
+  { id: 'lite-pro-added', name: 'Pro Added Player', number: 0, position: 'ST', proId: uuidB, available: false }
+];
+const incomingWritesBefore = storageWrites.filter(k => k === rosterKey).length;
+incoming(proUpdate, 'storage');
+assert.deepStrictEqual(AppState.squad, proUpdate.players);
+assert.deepStrictEqual(AppState.match.starters, [originalPlayer.id], 'Existing lineup IDs must not be reseeded');
+assert.deepStrictEqual(AppState.match.bench, [], 'An unavailable addition must not be fielded');
+assert.deepStrictEqual({ clock: AppState.clock, events: AppState.events, timers: AppState.playerTimers }, matchBeforeIncoming);
+assert.strictEqual(AppState.match.availability['lite-pro-added'], false);
+assert.deepStrictEqual(JSON.parse(storage['Clubstride Mobile_squad']), proUpdate.players);
+assert.deepStrictEqual(AppState.teams.find(t => t.id === 'lite-team-b').squad, proUpdate.players);
+assert.strictEqual(storageWrites.filter(k => k === rosterKey).length, incomingWritesBefore, 'Applying Pro must not republish the snapshot');
+console.log('✓ Incoming Pro additions/edits preserve the running clock, events, timers, lineup IDs and saved squad');
+
+// ==========================================
+// TEST 25: Lite edits keep canonical Pro UUID and availability, with no write loop
+// ==========================================
+App.openEditPlayerModal('lite-pro-added');
+dom['inputPlayerName'].value = 'Edited in Lite';
+dom['inputPlayerNumber'].value = '22';
+dom['inputPlayerPosition'].value = 'CM';
+const beforeLiteEditEvents = rosterChangeEvents.length;
+App.saveNewPlayer();
+const liteEdited = readRoster().players.find(p => p.id === 'lite-pro-added');
+assert.strictEqual(liteEdited.proId, uuidB);
+assert.strictEqual(liteEdited.available, false);
+assert.strictEqual(liteEdited.id, 'lite-pro-added');
+assert.strictEqual(readRoster().teamId, 'lite-team-b', 'Cloud backing must not remint the Lite team key');
+assert.strictEqual(readRoster().cloudTeamId, uuidTeam);
+assert.strictEqual(readRoster().ownerId, uuidOwner);
+assert.strictEqual(AppState.teams.find(t => t.id === 'lite-team-b').cloudTeamId, uuidTeam);
+assert.strictEqual(rosterChangeEvents.length, beforeLiteEditEvents + 1, 'Self-dispatched events must not cause a second write');
+App.toggleAvailability('lite-pro-added');
+assert.strictEqual(readRoster().players.find(p => p.id === 'lite-pro-added').available, true);
+assert.strictEqual(readRoster().players.find(p => p.id === 'lite-pro-added').proId, uuidB);
+const beforeDuplicateWrites = storageWrites.length;
+const beforeDuplicateEvents = rosterChangeEvents.length;
+window.dispatchEvent({ type: 'focus' });
+window.dispatchEvent({ type: 'storage', key: 'unrelated-key' });
+window.dispatchEvent({ type: 'cs-lite-roster-change' });
+assert.strictEqual(storageWrites.length, beforeDuplicateWrites, 'Identical notifications must not even rewrite legacy data');
+assert.strictEqual(rosterChangeEvents.length, beforeDuplicateEvents + 1, 'Only the simulated incoming custom event is recorded');
+const contentOnlyRevision = advance(readRoster());
+incoming(contentOnlyRevision, 'storage');
+assert.strictEqual(storageWrites.length, beforeDuplicateWrites, 'A revision-only change must be a no-op');
+App.saveStorage();
+assert.deepStrictEqual(readRoster(), contentOnlyRevision, 'Saving identical content must keep the source revision');
+console.log('✓ Lite saves preserve proId/availability; self, duplicate and revision-only notifications have no write loops');
+
+// ==========================================
+// TEST 26: Incoming delete and empty roster retain historical timers/events
+// ==========================================
+let deletion = advance(readRoster());
+deletion.players = deletion.players.filter(p => p.id !== originalPlayer.id);
+incoming(deletion);
+assert(!AppState.match.starters.includes(originalPlayer.id));
+assert(!AppState.match.bench.includes(originalPlayer.id));
+assert(!Object.prototype.hasOwnProperty.call(AppState.match.availability, originalPlayer.id));
+assert.strictEqual(AppState.playerTimers[originalPlayer.id], 127, 'Deletion cannot erase accrued minutes');
+assert.deepStrictEqual(AppState.events, matchBeforeIncoming.events);
+const timersBeforeEmpty = clone(AppState.playerTimers);
+const emptyIncoming = { ...advance(readRoster()), players: [] };
+incoming(emptyIncoming);
+assert.deepStrictEqual(AppState.squad, []);
+assert.deepStrictEqual(AppState.match.starters, []);
+assert.deepStrictEqual(AppState.match.bench, []);
+assert.deepStrictEqual(AppState.match.availability, {});
+assert.deepStrictEqual(AppState.playerTimers, timersBeforeEmpty);
+assert.strictEqual(AppState.clock.running, true);
+assert.deepStrictEqual(AppState.matchHistory, archivedHistoryBefore);
+assert.deepStrictEqual(JSON.parse(storage['Clubstride Mobile_squad']), []);
+console.log('✓ Incoming deletion/empty roster clean live IDs without erasing events, accrued timers or archived history');
+
+// ==========================================
+// TEST 27: Cloud team switch saves the unsaved Lite default and unrelated teams
+// ==========================================
+AppState.clock.running = false;
+AppState.currentTeamId = null;
+AppState.currentTeamName = 'My Unsaved Local Team';
+App.setSharedTeamMetadata({});
+AppState.teams = AppState.teams.filter(t => t.id !== 'lite-default');
+AppState.squad = [{ id: 'local-kept', name: 'Local Kept Player', number: 7, position: 'FWD' }];
+AppState.match.starters = ['local-kept'];
+AppState.match.bench = [];
+AppState.match.availability = { 'local-kept': true };
+AppState.clock.seconds = 90;
+AppState.clock.running = true;
+const runningInterval = setInterval(() => {}, 100000);
+AppState.clock.intervalId = runningInterval;
+// Do not serialize the Node timer handle, which is unlike a browser's numeric handle.
+AppState.clock.intervalId = null;
+App.saveStorage();
+AppState.clock.intervalId = runningInterval;
+const unrelatedTeams = clone(AppState.teams);
+const cloudSnapshot = {
+  version: 1, installationId: uuidOwner,
+  teamId: `cloud-${uuidTeam}`, teamName: 'Shared Cloud Team', cloudTeamId: uuidTeam,
+  ownerId: uuidOwner, readOnly: false,
+  revision: new Date(Date.parse(readRoster().revision) + 1).toISOString(),
+  players: [{ id: 'lite-cloud-id', name: 'Cloud Player', number: 9, position: 'ST', proId: uuidA, available: true }],
+  access_token: 'must-not-copy', refresh_token: 'must-not-copy'
+};
+const cloudWritesBefore = storageWrites.filter(k => k === rosterKey).length;
+try { incoming(cloudSnapshot, 'storage'); } finally { clearInterval(runningInterval); }
+assert.strictEqual(AppState.currentTeamId, cloudSnapshot.teamId);
+assert.strictEqual(AppState.cloudTeamId, uuidTeam);
+assert.strictEqual(AppState.ownerId, uuidOwner);
+assert.strictEqual(AppState.clock.running, false);
+assert.strictEqual(AppState.clock.seconds, 0);
+assert.strictEqual(AppState.clock.intervalId, null);
+assert.deepStrictEqual(AppState.events, []);
+assert.deepStrictEqual(AppState.playerTimers, {});
+assert.deepStrictEqual(AppState.matchHistory, archivedHistoryBefore);
+const preservedDefault = AppState.teams.find(t => t.id === 'lite-default');
+assert.strictEqual(preservedDefault.name, 'My Unsaved Local Team');
+assert.strictEqual(preservedDefault.squad[0].id, 'local-kept');
+for (const team of unrelatedTeams) assert.deepStrictEqual(clone(AppState.teams.find(t => t.id === team.id)), team);
+const savedCloud = AppState.teams.find(t => t.id === cloudSnapshot.teamId);
+assert.strictEqual(savedCloud.cloudTeamId, uuidTeam);
+assert.strictEqual(savedCloud.ownerId, uuidOwner);
+assert.strictEqual(savedCloud.readOnly, false);
+assert.strictEqual(savedCloud.squad[0].proId, uuidA);
+assert(!JSON.stringify(AppState).includes('must-not-copy'), 'No transport credentials may enter Lite state');
+assert.strictEqual(storageWrites.filter(k => k === rosterKey).length, cloudWritesBefore);
+App.openEditPlayerModal('lite-cloud-id');
+dom['inputPlayerName'].value = 'Cloud Player Edited in Lite';
+dom['inputPlayerNumber'].value = '10';
+dom['inputPlayerPosition'].value = 'CM';
+App.saveNewPlayer();
+assert.strictEqual(readRoster().teamId, `cloud-${uuidTeam}`);
+assert.strictEqual(readRoster().installationId, uuidOwner, 'Incoming installation identity must not be reminted');
+assert.strictEqual(readRoster().players[0].id, 'lite-cloud-id');
+assert.strictEqual(readRoster().players[0].proId, uuidA);
+assert.strictEqual(readRoster().cloudTeamId, uuidTeam);
+assert.strictEqual(readRoster().ownerId, uuidOwner);
+App.loadTeam('lite-default');
+assert.strictEqual(AppState.squad[0].id, 'local-kept');
+assert.strictEqual(readRoster().cloudTeamId, undefined, 'Cloud metadata cannot leak into an unrelated local team');
+App.loadTeam(cloudSnapshot.teamId);
+assert.strictEqual(AppState.squad[0].proId, uuidA);
+assert.strictEqual(AppState.squad[0].name, 'Cloud Player Edited in Lite');
+console.log('✓ Cloud team switches stop/reset the live match, preserve unsaved Lite/default and unrelated teams, history and cloud identities');
+
+// ==========================================
+// TEST 28: A cold startup prioritizes the canonical snapshot over stale legacy storage
+// ==========================================
+const canonicalStartup = advance(readRoster());
+canonicalStartup.players.push({ id: 'fresh-pro-player', name: 'New Since Lite Closed', number: 14, position: 'DEF', proId: uuidB });
+canonicalStartup.teamName = 'Canonical Team Name';
+storage[rosterKey] = JSON.stringify(canonicalStartup);
+const canonicalBytes = storage[rosterKey];
+storage['Clubstride Mobile_squad'] = JSON.stringify(preservedDefault.squad);
+storage['Clubstride Mobile_current_team_id'] = 'lite-default';
+storage['Clubstride Mobile_current_team_name'] = preservedDefault.name;
+storage['Clubstride Mobile_match'] = JSON.stringify({ ...AppState.match, starters: ['local-kept'], bench: [], availability: { 'local-kept': true } });
+windowListeners.clear();
+eval(jsCode); // Fresh App and AppState, with the same durable browser storage.
+const writesBeforeColdInit = storageWrites.filter(k => k === rosterKey).length;
+App.init();
+assert.strictEqual(AppState.currentTeamId, canonicalStartup.teamId);
+assert.strictEqual(AppState.currentTeamName, canonicalStartup.teamName);
+assert.deepStrictEqual(AppState.squad, canonicalStartup.players);
+assert.strictEqual(storage[rosterKey], canonicalBytes, 'Startup cannot republish stale legacy data or advance the canonical revision');
+assert.strictEqual(storageWrites.filter(k => k === rosterKey).length, writesBeforeColdInit);
+assert.deepStrictEqual(AppState.matchHistory, archivedHistoryBefore);
+assert.strictEqual(AppState.teams.find(t => t.id === 'lite-default').squad[0].id, 'local-kept');
+console.log('✓ Cold reload honors canonical Pro data before any Lite publication and preserves outgoing local data/history');
+
+// ==========================================
+// TEST 29: Whole-snapshot validation is non-destructive, and explicit publish recovers
+// ==========================================
+const goodIncoming = clone(readRoster());
+const goodLocalState = JSON.stringify(AppState);
+const malformedSnapshots = [
+  { ...clone(goodIncoming), version: 2 },
+  { ...clone(goodIncoming), installationId: 'not-a-uuid' },
+  { ...clone(goodIncoming), revision: 123 },
+  { ...clone(goodIncoming), revision: 'not-a-date' },
+  { ...clone(goodIncoming), teamName: '  ' },
+  { ...clone(goodIncoming), cloudTeamId: 'bad-uuid' },
+  { ...clone(goodIncoming), teamId: 'cloud-bad-uuid' },
+  { ...clone(goodIncoming), ownerId: 42 },
+  { ...clone(goodIncoming), readOnly: 'false' },
+  { ...clone(goodIncoming), players: [...goodIncoming.players, goodIncoming.players[0]] },
+  ...[
+    { name: '' }, { name: '<script>bad</script>' }, { number: '7' }, { number: -1 },
+    { number: 100 }, { number: 1.5 }, { proId: 'bad-uuid' }, { available: 1 }, { id: '' }
+  ].map(edit => ({ ...clone(goodIncoming), players: [goodIncoming.players[0], { ...goodIncoming.players[1], ...edit }] })),
+  { ...clone(goodIncoming), players: [goodIncoming.players[0], { ...goodIncoming.players[1], proId: uuidA.toUpperCase() }] }
+];
+for (const malformed of malformedSnapshots) {
+  storage[rosterKey] = JSON.stringify(malformed);
+  const writesBeforeInvalid = storageWrites.length;
+  assert.strictEqual(App.applySharedRoster(), false);
+  assert.strictEqual(JSON.stringify(AppState), goodLocalState, 'One invalid row must reject the entire snapshot');
+  assert.strictEqual(storageWrites.length, writesBeforeInvalid);
+  assert(!dom['storageFailureStatus'].classList.contains('hidden'));
+}
+storage[rosterKey] = '{broken JSON';
+assert.strictEqual(App.applySharedRoster(), false);
+const brokenBytes = storage[rosterKey];
+App.saveStorage();
+assert.strictEqual(storage[rosterKey], brokenBytes, 'Automatic saving must not erase an invalid source');
+App.init();
+assert.strictEqual(storage[rosterKey], brokenBytes, 'Startup must leave malformed source visible, not silently replace it');
+assert.deepStrictEqual(AppState.squad, goodIncoming.players);
+assert(!dom['recoverSharedRosterBtn'].classList.contains('hidden'));
+assert.strictEqual(App.publishLiteRoster(), true, 'An explicit publish must recover using retained good Lite data');
+assert.deepStrictEqual(readRoster().players, goodIncoming.players);
+assert(dom['recoverSharedRosterBtn'].classList.contains('hidden'));
+assert(dom['storageFailureStatus'].classList.contains('hidden'));
+console.log('✓ Invalid metadata, revisions, UUIDs, duplicate IDs and invalid player rows cannot erase good data; explicit publish recovers');
+
+// ==========================================
+// TEST 30: Read-only shared rosters guard controls AND every roster/team mutator
+// ==========================================
+const readOnlySnapshot = { ...advance(readRoster()), readOnly: true };
+incoming(readOnlySnapshot, 'storage');
+assert.strictEqual(AppState.readOnly, true);
+assert.strictEqual(AppState.teams.find(t => t.id === readOnlySnapshot.teamId).readOnly, true);
+assert.strictEqual(dom['inputCurrentTeamName'].disabled, true);
+assert.strictEqual(dom['inputPlayerName'].disabled, true);
+assert.strictEqual(dom['backupFileInput'].disabled, true);
+assert(!dom['sharedRosterStatus'].classList.contains('hidden'));
+assert(dom['sharedRosterStatus'].innerText.includes('read-only'));
+const readOnlyState = JSON.stringify(AppState);
+const readOnlyBytes = storage[rosterKey];
+const readOnlyWritesBefore = storageWrites.length;
+const mutators = [
+  () => App.openAddPlayerModal(), () => App.openEditPlayerModal('lite-cloud-id'), () => App.saveNewPlayer(),
+  () => App.deletePlayer('lite-cloud-id'), () => App.updatePlayerPosition('lite-cloud-id', 'GK'),
+  () => App.toggleAvailability('lite-cloud-id'), () => App.setAllAvailability(false),
+  () => App.saveActiveTeam(), () => App.createNewTeamPrompt(), () => App.deleteTeam(readOnlySnapshot.teamId),
+  () => App.setTeamThemeColor('#ffffff'), () => App.setTeamThemeStyle('solid'), () => App.setKitColor('#ffffff'),
+  () => App.handleLogoUpload({ target: { files: [{}] } }),
+  () => App.handleTeamLogoUpload({ target: { files: [{}] } }),
+  () => App.importBackup({ target: { files: [{}] } })
+];
+App.toast = msg => { toastMsg = msg; };
+for (const mutate of mutators) {
+  mutate();
+  assert.strictEqual(JSON.stringify(AppState), readOnlyState);
+  assert.strictEqual(storageWrites.length, readOnlyWritesBefore);
+  assert(toastMsg.includes('read-only'), 'Blocked mutations must show a visible explanation');
+}
+App.saveStorage();
+assert.strictEqual(storage[rosterKey], readOnlyBytes, 'Read-only match/local saves cannot republish the source');
+AppState.squad[0].name = 'Internal bypass attempt';
+assert.strictEqual(App.publishLiteRoster(), false, 'Publishing must also guard an internally changed read-only roster');
+assert.strictEqual(storage[rosterKey], readOnlyBytes);
+AppState.squad[0].name = readOnlySnapshot.players[0].name;
+const writableSnapshot = { ...advance(readOnlySnapshot), readOnly: false };
+incoming(writableSnapshot);
+assert.strictEqual(dom['inputCurrentTeamName'].disabled, false);
+assert.strictEqual(dom['inputPlayerName'].disabled, false);
+assert(dom['sharedRosterStatus'].classList.contains('hidden'));
+App.openEditPlayerModal('lite-cloud-id');
+dom['inputPlayerName'].value = 'Writable Again';
+dom['inputPlayerNumber'].value = '10';
+dom['inputPlayerPosition'].value = 'CM';
+App.saveNewPlayer();
+assert.strictEqual(readRoster().players[0].name, 'Writable Again');
+assert.strictEqual(readRoster().players[0].proId, uuidA);
+assert.strictEqual(readRoster().readOnly, false);
+assert.strictEqual(cacheVersion[1], 'Clubstride Lite-v17', 'Do not bump the pending publication version');
+console.log('✓ Read-only controls/mutators block edits without writes, auth or credentials, and restore editing when permission changes');
+
+// ==========================================
+// TEST 31: Lite publishes its live match and finished archive for Pro
+// ==========================================
+const keyWrites = key => storageWrites.filter(k => k === key).length;
+const cloudTeam = AppState.currentTeamId;
+AppState.matchHistory = [{ id: 'm_archived', title: 'Season Opener', teamName: 'Shared Cloud Team', opponent: 'Rivals',
+  date: '2026-10-20', format: '7', formation: '2-1-2', ourGoals: 4, opponentGoals: 1, durationSeconds: 1200,
+  period: '2nd Half', status: 'completed', endedAt: '2026-10-20T11:00:00.000Z',
+  playerTimers: { 'lite-cloud-id': 1200 }, starters: ['lite-cloud-id'], bench: [], teamId: cloudTeam,
+  players: [{ id: 'lite-cloud-id', name: 'Writable Again', number: 10, position: 'CM', proId: uuidA }],
+  events: [{ id: 'ev_archived', type: 'Goal', playerId: 'lite-cloud-id', playerName: 'Writable Again', playerNumber: 10,
+    matchTimeSeconds: 45, period: '1st Half', timestamp: 1761548400000 }] }];
+AppState.match = { id: 'm_live_test', title: 'Fixture Two', teamName: 'Shared Cloud Team', opponent: 'Rovers',
+  date: '2026-10-27', format: '7', formation: '2-1-2', status: 'scheduled', availability: {}, fieldPositions: {},
+  starters: ['lite-cloud-id'], bench: [], ourGoals: 1, opponentGoals: 0, initialStarters: ['lite-cloud-id'] };
+AppState.events = [{ id: 'ev_live_goal', type: 'Goal', playerId: 'lite-cloud-id', playerName: 'Writable Again', playerNumber: 10,
+  matchTimeSeconds: 45, period: '1st Half', timestamp: 1761548400000 }];
+AppState.playerTimers = { 'lite-cloud-id': 127 };
+AppState.clock.seconds = 127;
+AppState.clock.period = '1st Half';
+AppState.clock.running = true;
+AppState.clock.startedAt = Date.now();
+AppState.clock.intervalId = null;
+const cloudKey = App.matchScope().key;
+assert.strictEqual(cloudKey, `cs.lite.matches.v1.${readRoster().installationId}.${cloudTeam}`);
+delete storage[cloudKey]; // Earlier groups already proved publishing; start this team's file clean.
+const firstPublish = keyWrites(cloudKey);
+App.saveStorage();
+assert.strictEqual(keyWrites(cloudKey), firstPublish + 1, 'One save must write the match file exactly once');
+const published = JSON.parse(storage[cloudKey]);
+assert.strictEqual(published.version, 1);
+assert.strictEqual(published.installationId, readRoster().installationId, 'The match file must use the roster installation identity');
+assert.strictEqual(published.teamId, cloudTeam);
+assert.strictEqual(new Date(published.revision).toISOString(), published.revision);
+assert.strictEqual(published.removed.length, 0);
+assert.strictEqual(published.matches.length, 1);
+assert.strictEqual(published.matches[0].id, 'm_archived');
+assert.strictEqual(published.matches[0].status, 'completed');
+assert.strictEqual(published.matches[0].endedAt, '2026-10-20T11:00:00.000Z');
+assert.strictEqual(published.matches[0].players[0].proId, uuidA, 'Archived players keep their cloud identity');
+assert.strictEqual(published.live.id, 'm_live_test');
+assert.strictEqual(published.live.status, 'in_progress');
+assert.strictEqual(published.live.durationSeconds, 127);
+assert.strictEqual(published.live.playerTimers['lite-cloud-id'], 127);
+assert.deepStrictEqual(published.live.starters, ['lite-cloud-id']);
+assert.strictEqual(published.live.availability, undefined, 'Pitch-only fields never cross to Pro');
+assert.strictEqual(published.live.fieldPositions, undefined);
+assert.strictEqual(published.live.initialStarters, undefined);
+// Pro's parser only accepts ISO event stamps, so the wire format converts Lite's epoch milliseconds.
+for (const record of [...published.matches, published.live]) {
+  for (const occurrence of record.events) {
+    assert.match(occurrence.timestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, 'Event timestamps must travel as ISO');
+  }
+}
+assert.strictEqual(AppState.match.recordedAt, published.live.recordedAt, 'The live match keeps the version it published');
+assert.strictEqual(JSON.parse(storage['Clubstride Mobile_history']).some(m => m.id === 'm_archived'), true);
+const publishedBytes = storage[cloudKey];
+const publishedWrites = keyWrites(cloudKey);
+assert.strictEqual(App.publishLiteMatches(), true);
+assert.strictEqual(storage[cloudKey], publishedBytes, 'Re-saving unchanged matches must not advance the shared revision');
+assert.strictEqual(keyWrites(cloudKey), publishedWrites, 'Publishing identical content writes nothing');
+assert.strictEqual(App.matchFingerprint({ b: 1, a: { d: 2, c: 3 } }), App.matchFingerprint({ a: { c: 3, d: 2 }, b: 1 }),
+  'The publish guard compares content, not key order');
+console.log('✓ Lite writes its live match, archive and cloud identities into the shared match file without a write loop');
+
+// ==========================================
+// TEST 32: Pro match edits land in Lite, and Lite keeps (or deletes) club rows correctly
+// ==========================================
+const uuidMatch = 'e5555555-5555-4555-8555-555555555555';
+const uuidLineup = 'f6666666-6666-4666-8666-666666666666';
+const clubRecord = { ...clone(published.matches[0]), id: uuidMatch, proId: uuidMatch, title: 'Club Fixture',
+  opponent: 'Club Rivals', lineupIds: { 'lite-cloud-id': uuidLineup }, recordedAt: published.revision };
+const editedArchive = { ...clone(published.matches[0]), opponent: 'Renamed By Pro',
+  recordedAt: new Date(Date.parse(published.matches[0].recordedAt) + 2000).toISOString() };
+const fromPro = { ...advance(clone(published)), matches: [editedArchive, clubRecord] };
+storage[cloudKey] = JSON.stringify(fromPro);
+const proApplyWrites = keyWrites(cloudKey);
+window.dispatchEvent({ type: 'storage', key: cloudKey });
+assert.strictEqual(AppState.matchHistory.find(m => m.id === 'm_archived').opponent, 'Renamed By Pro',
+  'A Pro edit to a shared match lands in Lite history');
+assert.strictEqual(AppState.matchHistory.find(m => m.id === uuidMatch).proId, uuidMatch,
+  'A match created in Pro becomes part of the same Lite dataset');
+assert.strictEqual(AppState.match.id, 'm_live_test', 'Another document must not hijack the running match');
+assert.strictEqual(AppState.clock.seconds, 127);
+assert.strictEqual(AppState.events.length, 1);
+assert.strictEqual(keyWrites(cloudKey), proApplyWrites, 'Applying Pro must not republish the match file');
+assert.deepStrictEqual(JSON.parse(storage['Clubstride Mobile_history']).map(m => m.id).sort(),
+  AppState.matchHistory.map(m => m.id).sort());
+AppState.clock.running = false;
+AppState.playerTimers = { 'lite-cloud-id': 200 };
+AppState.clock.seconds = 200;
+App.saveStorage();
+const republished = JSON.parse(storage[cloudKey]);
+assert.strictEqual(republished.matches.some(m => m.id === uuidMatch && m.proId === uuidMatch), true,
+  'Lite must carry a club match forward, not tombstone its own copy of it');
+assert.strictEqual(republished.removed.length, 0);
+assert.strictEqual(republished.matches.find(m => m.id === uuidMatch).lineupIds['lite-cloud-id'], uuidLineup,
+  'Server line-up row ids survive a Lite save');
+assert.strictEqual(republished.live.proId, undefined, 'A Lite-authored match gains no false cloud identity');
+const tombstoned = { ...advance(clone(republished)), matches: republished.matches.filter(m => m.id !== uuidMatch),
+  removed: [{ id: uuidMatch, proId: uuidMatch, recordedAt: new Date(Date.parse(republished.revision) + 1000).toISOString() }] };
+storage[cloudKey] = JSON.stringify(tombstoned);
+window.dispatchEvent({ type: 'storage', key: cloudKey });
+assert.strictEqual(AppState.matchHistory.some(m => m.id === uuidMatch), false, 'A Pro deletion clears the Lite archive');
+App.saveStorage();
+const afterDelete = JSON.parse(storage[cloudKey]);
+assert.strictEqual(afterDelete.matches.some(m => m.id === uuidMatch), false, 'Lite must not resurrect a deleted match');
+assert.strictEqual(afterDelete.removed.length, 1);
+assert.strictEqual(afterDelete.removed[0].proId, uuidMatch, 'The tombstone keeps the cloud identity for the club');
+assert.strictEqual(afterDelete.removed[0].id, uuidMatch);
+console.log('✓ Pro edits, additions and deletions flow into Lite, and Lite never loses or revives a club match');
+
+// ==========================================
+// TEST 33: Every saved team owns its match file, and read-only staff block all match tools
+// ==========================================
+const scopedBytes = storage[cloudKey];
+const scopedWrites = keyWrites(cloudKey);
+App.loadTeam('lite-default');
+const localKey = App.matchScope().key;
+assert.notStrictEqual(localKey, cloudKey, 'Two teams cannot share one match file');
+const localMatches = JSON.parse(storage[localKey]);
+assert.strictEqual(localMatches.teamId, 'lite-default');
+assert.notStrictEqual(localMatches.live.id, 'm_live_test', 'Team B has its own live match');
+assert.strictEqual(localMatches.matches.some(m => m.id === 'm_archived' || m.id === uuidMatch), false,
+  'Team B must not inherit team A archives');
+assert.strictEqual(storage[cloudKey], scopedBytes, 'Saving another team must not touch this team file');
+assert.strictEqual(keyWrites(cloudKey), scopedWrites);
+const localBytes = storage[localKey];
+App.loadTeam(cloudTeam);
+App.saveStorage();
+assert.strictEqual(App.matchScope().key, cloudKey);
+assert.strictEqual(AppState.match.id, 'm_live_test', 'The captured live match returns with its team');
+assert.strictEqual(AppState.events.length, 1);
+assert.strictEqual(AppState.clock.seconds, 200);
+assert.strictEqual(AppState.matchHistory.some(m => m.id === 'm_archived'), true);
+const rescoped = JSON.parse(storage[cloudKey]);
+assert.strictEqual(storage[localKey], localBytes, 'Switching back must not rewrite team B matches');
+assert.strictEqual(rescoped.matches.some(m => localMatches.matches.some(row => row.id === m.id)), false,
+  'Team B archives stay out of the team A file');
+assert.strictEqual(keyWrites(cloudKey), scopedWrites, 'A restored team with unchanged matches writes nothing');
+incoming({ ...advance(readRoster()), readOnly: true }, 'storage');
+assert.strictEqual(AppState.readOnly, true);
+assert.strictEqual(App.publishLiteMatches(), false);
+assert.strictEqual(App.applySharedMatches(), false);
+const guardedState = () => JSON.stringify({ squad: AppState.squad, match: AppState.match, events: AppState.events,
+  timers: AppState.playerTimers, history: AppState.matchHistory, clock: { seconds: AppState.clock.seconds, running: AppState.clock.running } });
+const guardedBytes = storage[cloudKey];
+const guardedWrites = keyWrites(cloudKey);
+const guardedSnapshot = guardedState();
+const matchTools = [() => App.adjustScore('our', 1), () => App.openEventModal('Goal'), () => App.saveEvent(),
+  () => App.endMatch(), () => App.confirmEndMatch(), () => App.deleteMatchHistory('m_archived'),
+  () => App.toggleStarter('lite-cloud-id'), () => App.setPeriod('2nd Half'), () => App.resetTimer(),
+  () => App.saveMatchSetup(), () => App.selectAllGames(), () => App.toggleGameSelection('m_archived'),
+  () => App.openPdfReportModal(), () => App.printLedger(), () => App.exportBackup()];
+for (const tool of matchTools) {
+  assert.strictEqual(tool(), false, 'Read-only match tools must report the block, not run');
+  assert.strictEqual(guardedState(), guardedSnapshot);
+}
+assert.strictEqual(storage[cloudKey], guardedBytes, 'A parent view cannot rewrite shared matches');
+assert.strictEqual(keyWrites(cloudKey), guardedWrites);
+assert(toastMsg.includes('read-only'), 'Blocked match tools must explain why');
+App.saveStorage();
+assert.strictEqual(storage[cloudKey], guardedBytes, 'Local saving while read-only cannot republish matches');
+incoming({ ...advance(readRoster()), readOnly: false }, 'storage');
+assert.strictEqual(AppState.readOnly, false);
+assert.strictEqual(AppState.matchHistory.some(m => m.id === 'm_archived'), true, 'Staff history returns with permission');
+App.setPeriod('2nd Half');
+assert.strictEqual(AppState.clock.period, '2nd Half');
+console.log('✓ Match files stay per-team, live matches are captured and restored, and read-only blocks every match tool');
+
+// ==========================================
+// TEST 34: An unreadable shared match file never costs the coach their data
+// ==========================================
+const healthy = JSON.parse(storage[cloudKey]);
+const healthyHistory = clone(AppState.matchHistory);
+const healthyLive = clone(AppState.match);
+const brokenMatches = [
+  '{{{ not json',
+  JSON.stringify(null),
+  JSON.stringify({ ...clone(healthy), installationId: 'not-a-uuid' }),
+  JSON.stringify({ ...clone(healthy), teamId: 'someone-elses-team' }),
+  JSON.stringify({ ...clone(healthy), revision: 'tomorrow' }),
+  JSON.stringify({ ...clone(healthy), matches: [clone(healthy.live), clone(healthy.live)] }),
+  JSON.stringify({ ...clone(healthy), live: { ...clone(healthy.live), status: 'completed' } }),
+  JSON.stringify({ ...clone(healthy), matches: [{ ...clone(healthy.matches[0]), opponent: '<script>alert(1)</script>' }] }),
+  JSON.stringify({ ...clone(healthy), matches: [{ ...clone(healthy.matches[0]), format: '6' }] }),
+  JSON.stringify({ ...clone(healthy), matches: [{ ...clone(healthy.matches[0]), ourGoals: -1 }] }),
+  JSON.stringify({ ...clone(healthy), matches: [{ ...clone(healthy.matches[0]), date: '2026-02-30' }] }),
+  JSON.stringify({ ...clone(healthy), matches: [{ ...clone(healthy.matches[0]), lineupIds: { 'lite-cloud-id': 'nope' } }] }),
+  JSON.stringify({ ...clone(healthy), matches: [{ ...clone(healthy.matches[0]), bench: ['lite-cloud-id'] }] }),
+  JSON.stringify({ ...clone(healthy), matches: [{ ...clone(healthy.matches[0]),
+    events: [{ ...clone(healthy.matches[0].events[0]), type: 'Penalty' }] }] }),
+  JSON.stringify({ ...clone(healthy), matches: [{ ...clone(healthy.matches[0]),
+    events: [{ ...clone(healthy.matches[0].events[0]), timestamp: 'tomorrow' }] }] }),
+  JSON.stringify({ ...clone(healthy), removed: [{ id: 'm_archived' }] })
+];
+const brokenWrites = keyWrites(cloudKey);
+for (const bytes of brokenMatches) {
+  storage[cloudKey] = bytes;
+  window.dispatchEvent({ type: 'storage', key: cloudKey });
+  assert.strictEqual(storage[cloudKey], bytes, 'A rejected snapshot is left for the other document to repair');
+  assert.deepStrictEqual(AppState.matchHistory, healthyHistory, 'Rejected matches must not edit the archive');
+  assert.strictEqual(AppState.match.id, healthyLive.id, 'Rejected matches must not hijack the live match');
+  assert(dom['storageFailureStatus'].innerText.includes('match'), 'Match sharing failures must stay visible');
+  assert(!dom['storageFailureStatus'].classList.contains('hidden'));
+  assert.strictEqual(App.publishLiteMatches(), false, 'Publishing stays paused while the shared file is unreadable');
+  assert.strictEqual(App.saveStorage(), false, 'Saving reports the sharing failure');
+  assert.strictEqual(keyWrites(cloudKey), brokenWrites, 'A broken file must not be overwritten from half-read state');
+}
+const recovered = advance(clone(healthy));
+storage[cloudKey] = JSON.stringify(recovered);
+window.dispatchEvent({ type: 'storage', key: cloudKey });
+assert.strictEqual(dom['storageFailureStatus'].innerText.includes('Incoming match'), false, 'Recovery clears the warning');
+assert.strictEqual(App.publishLiteMatches(), true);
+assert.strictEqual(storage[cloudKey], JSON.stringify(recovered), 'A valid, unchanged snapshot is not republished');
+assert.strictEqual(keyWrites(cloudKey), brokenWrites);
+assert.strictEqual(App.saveStorage(), true);
+console.log('✓ Malformed shared match data is refused visibly and non-destructively, and recovers without a rewrite');
+
 console.log('\n=========================================');
-console.log('ALL 21 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
+console.log('ALL 34 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 

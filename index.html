@@ -196,6 +196,10 @@
   <!-- MAIN VIEWPORT -->
   <main class="flex-1 max-w-lg w-full mx-auto p-3.5 space-y-4">
 
+    <p id="storageFailureStatus" role="alert" class="hidden text-xs text-amber-400"></p>
+    <p id="sharedRosterStatus" role="status" aria-live="polite" class="hidden text-xs text-amber-400"></p>
+    <button id="recoverSharedRosterBtn" type="button" onclick="App.publishLiteRoster()" class="hidden text-xs text-amber-400 underline">Publish retained Lite roster</button>
+
     <!-- VIEW SWITCH — this page is Lite; Pro is the coach app and opens in the in-app shell below -->
     <div class="glass-card rounded-lite px-3 py-2 flex items-center justify-between">
       <span class="text-[9px] font-black uppercase tracking-wider text-slate-400">View</span>
@@ -971,6 +975,10 @@
       activeTab: 'pitch',
       kitColor: '#22D3EE',
       isCustomKit: false,
+      cloudTeamId: undefined,
+      ownerId: undefined,
+      readOnly: undefined,
+      sharedInstallationId: undefined,
       
       match: {
         id: 'm_' + Date.now(),
@@ -1291,10 +1299,18 @@
     };
     const App = {
       init() {
+        this._initializingMatches = true;
         this.loadStorage();
+        // The canonical roster wins over stale legacy data, before any defaults can save.
+        const sharedLoaded = this.applySharedRoster(true);
+        this.setupSharedRosterListeners();
         this.setupIcons();
         this.initKitColors();
-        this.applyFormatDefaults();
+        if (!sharedLoaded) this.applyFormatDefaults();
+        if (AppState.readOnly) this.clearActiveTeamMatch(true);
+        else this.applySharedMatches(true);
+        this._initializingMatches = false;
+        this.setupSharedMatchListeners();
         this.renderAll();
         this.setupDragging();
         this.registerServiceWorker();
@@ -1314,6 +1330,8 @@
             if (AppState.activeTab === 'stats') App.renderStats();
           }
         });
+        this.publishLiteRoster(false);
+        this.publishLiteMatches();
       },
       registerServiceWorker() {
         if (!('serviceWorker' in navigator)) {
@@ -1398,7 +1416,13 @@
         }
       },
       setupIcons() {
-        const customLogo = localStorage.getItem('Clubstride Mobile_custom_logo');
+        let customLogo = null;
+        try {
+          customLogo = localStorage.getItem('Clubstride Mobile_custom_logo');
+          this.reportStorageFailure('logo', '');
+        } catch (e) {
+          this.reportStorageFailure('logo', 'Team logo storage is unavailable.');
+        }
         const headerIcon = document.getElementById('appHeaderIcon');
         const pdfIcon = document.getElementById('pdfIcon');
         // Clubstride CI: header uses the L1 lockup, PDF letterhead the light symbol.
@@ -1420,10 +1444,13 @@
         }
       },
       handleLogoUpload(event) {
+        if (!this.rosterMutationAllowed()) return;
         const file = event.target.files && event.target.files[0];
         if (!file) return;
+        const teamId = AppState.currentTeamId;
         const reader = new FileReader();
         reader.onload = (e) => {
+          if (!this.rosterMutationAllowed() || AppState.currentTeamId !== teamId) return;
           const b64 = e.target.result;
           try {
             localStorage.setItem('Clubstride Mobile_custom_logo', b64);
@@ -1459,6 +1486,7 @@
         }
         this.setupTeamModalThemeControls();
         this.renderSavedTeamsList();
+        this.updateRosterReadOnlyControls();
         const _mTeams = document.getElementById('modalTeams'); _mTeams.classList.remove('hidden'); _mTeams.classList.add('flex');
       },
       setupTeamModalThemeControls() {
@@ -1493,6 +1521,7 @@
         });
       },
       setTeamThemeColor(color) {
+        if (!this.rosterMutationAllowed()) return;
         AppState.kitColor = color;
         const picker = document.getElementById('teamModalColorPicker');
         if (picker) picker.value = color;
@@ -1504,6 +1533,7 @@
         this.saveStorage();
       },
       setTeamThemeStyle(style) {
+        if (!this.rosterMutationAllowed()) return;
         AppState.themeStyle = style;
         this.applyTheme();
         this.setupTeamModalThemeControls();
@@ -1513,7 +1543,7 @@
       renderSavedTeamsList() {
         const list = document.getElementById('savedTeamsList');
         const countBadge = document.getElementById('savedTeamsCount');
-        const teams = AppState.teams || [];
+        const teams = (AppState.teams || []).filter(team => !AppState.readOnly || (team.readOnly && team.ownerId === AppState.ownerId));
         countBadge.innerText = teams.length;
         if (teams.length === 0) {
           list.innerHTML = `<div class="text-slate-500 text-xs italic text-center py-4 bg-obsidian-950 rounded-2xl border border-white/5">No additional teams saved yet.<br>Click "<svg class="ci ci-16" aria-hidden="true"><use href="#ci-add"></use></svg> Save Team" above to store this squad!</div>`;
@@ -1550,7 +1580,7 @@
               } transition active:scale-95" title="Switch to this team">
                 ${isActive ? 'Loaded' : 'Load'}
               </button>
-              <button type="button" onclick="App.deleteTeam('${t.id}')" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete Team">
+              <button type="button" onclick="App.deleteTeam('${t.id}')" ${AppState.readOnly || t.readOnly ? 'disabled title="Shared roster is read-only"' : ''} class="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center text-xs" title="Delete Team">
                 <svg class="ci ci-16 ci-danger" aria-hidden="true"><use href="#ci-delete"></use></svg>
               </button>
             </div>
@@ -1559,7 +1589,12 @@
         });
       },
       saveActiveTeam() {
+        if (!this.rosterMutationAllowed()) return;
         const teamName = document.getElementById('inputCurrentTeamName').value.trim() || 'My Football Club';
+        if (!teamName || teamName.length > 200 || /[<>\u0000-\u001f\u007f]/.test(teamName)) {
+          this.toast('Please provide a valid team name');
+          return;
+        }
         const teamLogo = localStorage.getItem('Clubstride Mobile_custom_logo') || EMBEDDED_ICON_B64 || './icon-192.png';
         if (!AppState.teams) AppState.teams = [];
         let team = AppState.teams.find(t => t.id === AppState.currentTeamId);
@@ -1592,9 +1627,14 @@
         this.toast(`Team "${teamName}" saved with theme! `);
       },
       createNewTeamPrompt() {
+        if (!this.rosterMutationAllowed()) return;
         const defaultName = `Team ${ (AppState.teams ? AppState.teams.length : 0) + 1 }`;
         const newTeamName = prompt('Enter name for the new team:', defaultName);
         if (!newTeamName) return;
+        if (!newTeamName.trim() || newTeamName.length > 200 || /[<>\u0000-\u001f\u007f]/.test(newTeamName)) {
+          this.toast('Please provide a valid team name');
+          return;
+        }
         const newTeam = {
           id: 'team_' + Date.now(),
           name: newTeamName.trim(),
@@ -1618,12 +1658,21 @@
         this.loadTeam(newTeam.id);
         this.toast(`Created new team "${newTeam.name}"! `);
       },
-      loadTeam(teamId) {
+      loadTeam(teamId, incomingShared = false) {
         if (!AppState.teams) return;
         const team = AppState.teams.find(t => t.id === teamId);
         if (!team) return;
+        if (!incomingShared && AppState.readOnly && (!team.readOnly || team.ownerId !== AppState.ownerId)) {
+          this.toast('Use your authorized team selector in Pro to change squads.');
+          return;
+        }
+        if (!incomingShared && (!AppState.currentTeamId || AppState.teams.some(t => t.id === AppState.currentTeamId))) {
+          this.syncActiveTeamSquad(true);
+        }
+        if (!incomingShared) this.captureActiveTeamMatch();
         AppState.currentTeamId = team.id;
         AppState.currentTeamName = team.name;
+        this.setSharedTeamMetadata(team);
         AppState.squad = JSON.parse(JSON.stringify(team.squad || []));
         AppState.kitColor = team.kitColor || '#22D3EE';
         AppState.themeStyle = team.themeStyle || 'glass';
@@ -1634,33 +1683,50 @@
           this.populateFormationSelect(team.formation);
         }
         this.applyTheme();
-        // Reset match active starters / timers for fresh team load
+        // Capture outgoing before resetting; never publish this reset over the target's match.
+        this.clearActiveTeamMatch(AppState.readOnly === true);
         const quota = parseInt(AppState.match.format) || 7;
         AppState.match.availability = {};
-        AppState.squad.forEach(p => { AppState.match.availability[p.id] = true; });
-        AppState.match.starters = AppState.squad.slice(0, quota).map(p => p.id);
-        AppState.match.bench = AppState.squad.slice(quota).map(p => p.id);
+        AppState.squad.forEach(p => { AppState.match.availability[p.id] = p.available ?? true; });
+        const available = AppState.squad.filter(p => AppState.match.availability[p.id]);
+        AppState.match.starters = available.slice(0, quota).map(p => p.id);
+        AppState.match.bench = available.slice(quota).map(p => p.id);
         AppState.playerTimers = {};
         AppState.events = [];
+        AppState.subOutPlayerId = null;
+        AppState.editingPlayerId = null;
         AppState.clock.seconds = 0;
         AppState.clock.running = false;
+        AppState.clock.startedAt = 0;
+        AppState.clock.sinceSync = 0;
         clearInterval(AppState.clock.intervalId);
-        // Update logo
-        if (team.logo) {
-          localStorage.setItem('Clubstride Mobile_custom_logo', team.logo);
-        } else {
-          localStorage.removeItem('Clubstride Mobile_custom_logo');
+        AppState.clock.intervalId = null;
+        // A logo storage failure must not interrupt saving the selected team's roster.
+        try {
+          if (team.logo) {
+            localStorage.setItem('Clubstride Mobile_custom_logo', team.logo);
+          } else {
+            localStorage.removeItem('Clubstride Mobile_custom_logo');
+          }
+          this.reportStorageFailure('teamLogo', '');
+        } catch (e) {
+          this.reportStorageFailure('teamLogo', 'Team logo could not be saved.');
         }
         document.getElementById('headerTeamNameBadge').innerText = team.name.length > 8 ? team.name.substring(0, 8) + '…' : team.name;
         document.getElementById('inputCurrentTeamName').value = team.name;
         this.setupIcons();
+        const wasInitializing = this._initializingMatches;
+        this._initializingMatches = true;
         this.applyFormatDefaults();
+        this.restoreSelectedTeamMatch();
+        this._initializingMatches = wasInitializing;
         this.saveStorage();
         this.renderAll();
         this.renderSavedTeamsList();
         this.toast(`Switched to team: ${team.name} `);
       },
       deleteTeam(teamId) {
+        if (!this.rosterMutationAllowed(teamId)) return;
         if (!confirm('Are you sure you want to delete this team?')) return;
         AppState.teams = (AppState.teams || []).filter(t => t.id !== teamId);
         if (AppState.currentTeamId === teamId) {
@@ -1713,7 +1779,8 @@
           if (sTeams) AppState.teams = JSON.parse(sTeams);
           else AppState.teams = [];
           const curId = localStorage.getItem('Clubstride Mobile_current_team_id');
-          if (curId) AppState.currentTeamId = curId;
+          AppState.currentTeamId = curId || null;
+          this.setSharedTeamMetadata(AppState.teams.find(t => t.id === (curId || 'lite-default')) || {});
           const curName = localStorage.getItem('Clubstride Mobile_current_team_name');
           if (curName) {
             AppState.currentTeamName = curName;
@@ -1721,33 +1788,681 @@
             if (badge) badge.innerText = curName.length > 8 ? curName.substring(0, 8) + '…' : curName;
           }
           this.applyTheme();
+          this._storageLoadFailed = false;
+          this.reportStorageFailure('load', '');
         } catch (e) {
           console.error('loadStorage error:', e);
+          this._storageLoadFailed = true;
+          this.reportStorageFailure('load', 'Lite data could not be loaded. Saving is paused to protect stored data; export a backup before reloading.');
+        }
+      },
+      reportStorageFailure(source, message) {
+        if (!this._storageFailures) this._storageFailures = {};
+        if (message) this._storageFailures[source] = message;
+        else delete this._storageFailures[source];
+        if (source === 'incomingRoster') {
+          const recover = document.getElementById('recoverSharedRosterBtn');
+          if (recover) recover.classList[message ? 'remove' : 'add']('hidden');
+        }
+        const status = document.getElementById('storageFailureStatus');
+        if (!status) return;
+        status.innerText = Object.values(this._storageFailures).join(' ');
+        if (status.innerText) status.classList.remove('hidden');
+        else status.classList.add('hidden');
+      },
+      syncActiveTeamSquad(ensureSaved = false) {
+        if (!AppState.teams) AppState.teams = [];
+        const id = AppState.currentTeamId || 'lite-default';
+        let team = AppState.teams.find(t => t.id === id);
+        if (!team && ensureSaved) {
+          team = { id };
+          AppState.teams.push(team);
+          try { team.logo = localStorage.getItem('Clubstride Mobile_custom_logo') || undefined; } catch (_) {}
+        }
+        if (!team) return;
+        Object.assign(team, {
+          name: AppState.currentTeamName || 'Clubstride FC',
+          squad: JSON.parse(JSON.stringify(AppState.squad)),
+          kitColor: AppState.kitColor,
+          themeStyle: AppState.themeStyle,
+          format: AppState.match.format,
+          formation: AppState.match.formation,
+          fieldPositions: JSON.parse(JSON.stringify(AppState.match.fieldPositions || {})),
+          cloudTeamId: AppState.cloudTeamId,
+          ownerId: AppState.ownerId,
+          readOnly: AppState.readOnly,
+          sharedInstallationId: AppState.sharedInstallationId
+        });
+      },
+      setSharedTeamMetadata(team) {
+        AppState.cloudTeamId = team.cloudTeamId;
+        AppState.ownerId = team.ownerId;
+        AppState.readOnly = team.readOnly;
+        AppState.sharedInstallationId = team.sharedInstallationId;
+      },
+      rosterMutationAllowed(teamId) {
+        const team = (AppState.teams || []).find(t => t.id === teamId);
+        if (AppState.readOnly !== true && team?.readOnly !== true) return true;
+        this.updateRosterReadOnlyControls();
+        this.toast('This shared roster is read-only. Only the team owner or staff can edit it.');
+        return false;
+      },
+      updateRosterReadOnlyControls() {
+        const readOnly = AppState.readOnly === true;
+        if (readOnly && AppState.activeTab !== 'roster') this.switchTab('roster');
+        ['pitch', 'live', 'stats'].forEach(tab => {
+          const button = document.getElementById('tabBtn_' + tab);
+          const dock = document.querySelector(`.dock-btn[data-dock="${tab}"]`);
+          if (button) button.disabled = readOnly;
+          if (dock) dock.disabled = readOnly;
+        });
+        const status = document.getElementById('sharedRosterStatus');
+        if (status) {
+          status.innerText = readOnly ? 'Shared roster is read-only. Only the team owner or staff can change players or team details.' : '';
+          status.classList[readOnly ? 'remove' : 'add']('hidden');
+        }
+        const actions = [...MATCH_TOOLS, 'openAddPlayerModal', 'openEditPlayerModal', 'saveNewPlayer', 'deletePlayer',
+          'updatePlayerPosition', 'toggleAvailability', 'setAllAvailability', 'saveActiveTeam',
+          'createNewTeamPrompt', 'setTeamThemeColor', 'setTeamThemeStyle', 'setKitColor'];
+        const selectors = actions.map(action => `[onclick^="App.${action}("], [onchange^="App.${action}("]`);
+        selectors.push('#inputCurrentTeamName', '#inputPlayerName', '#inputPlayerNumber', '#inputPlayerPosition',
+          '#teamModalLogoInput', '#teamModalColorPicker', '#teamModalColorSwatches button',
+          '#customKitPicker', '#kitColorSwatches button', '#backupFileInput', '[onclick*="backupFileInput"]', '#recoverSharedRosterBtn');
+        document.querySelectorAll(selectors.join(',')).forEach(control => {
+          control.disabled = readOnly;
+          if (readOnly) control.setAttribute('title', 'Shared roster is read-only');
+          else if (control.getAttribute('title') === 'Shared roster is read-only') control.removeAttribute('title');
+        });
+      },
+      setupSharedRosterListeners() {
+        if (this._sharedRosterListenersReady) return;
+        this._sharedRosterListenersReady = true;
+        window.addEventListener('storage', event => {
+          if (event.key === 'cs.lite.roster.v1' || event.key === null) this.applySharedRoster();
+          if (!AppState.readOnly && (event.key === null || event.key?.startsWith('cs.lite.matches.v1.'))) this.applySharedMatches();
+        });
+        window.addEventListener('cs-lite-roster-change', () => this.applySharedRoster());
+        window.addEventListener('focus', () => { this.applySharedRoster(); this.applySharedMatches(); });
+      },
+      validateSharedRoster(snapshot) {
+        const object = value => value && typeof value === 'object' && !Array.isArray(value);
+        const uuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+        const text = (value, limit) => typeof value === 'string' && value.trim().length > 0 &&
+          value.length <= limit && !/[<>\u0000-\u001f\u007f]/.test(value);
+        const id = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,200}$/.test(value);
+        if (!object(snapshot) || snapshot.version !== 1 || !uuid(snapshot.installationId) ||
+          !id(snapshot.teamId) || !text(snapshot.teamName, 200) || !Array.isArray(snapshot.players) ||
+          typeof snapshot.revision !== 'string' || !Number.isFinite(Date.parse(snapshot.revision)) ||
+          new Date(snapshot.revision).toISOString() !== snapshot.revision ||
+          (snapshot.cloudTeamId !== undefined && !uuid(snapshot.cloudTeamId)) ||
+          (snapshot.teamId.startsWith('cloud-') && !uuid(snapshot.teamId.slice(6))) ||
+          (snapshot.ownerId !== undefined && !text(snapshot.ownerId, 200)) ||
+          (snapshot.readOnly !== undefined && typeof snapshot.readOnly !== 'boolean')) {
+          throw new Error('Invalid shared team metadata or revision');
+        }
+        const ids = new Set();
+        const proIds = new Set();
+        snapshot.players.forEach(player => {
+          if (!object(player) || !id(player.id) || ids.has(player.id) || !text(player.name, 200) ||
+            !Number.isInteger(player.number) || player.number < 0 || player.number > 99 ||
+            !text(player.position, 40) || (player.proId !== undefined && (!uuid(player.proId) || proIds.has(player.proId.toLowerCase()))) ||
+            (player.available !== undefined && typeof player.available !== 'boolean')) {
+            throw new Error('Invalid or duplicate shared player');
+          }
+          ids.add(player.id);
+          if (player.proId !== undefined) proIds.add(player.proId.toLowerCase());
+        });
+        return this.sharedRosterContent(snapshot);
+      },
+      sharedRosterContent(roster) {
+        // Whitelist only the public contract; do not copy credentials or other Pro state.
+        const content = {
+          version: 1, installationId: roster.installationId, teamId: roster.teamId, teamName: roster.teamName,
+          players: roster.players.map(player => {
+            const p = { id: player.id, name: player.name, number: player.number, position: player.position };
+            if (player.proId !== undefined) p.proId = player.proId;
+            if (player.available !== undefined) p.available = player.available;
+            return p;
+          })
+        };
+        ['cloudTeamId', 'ownerId', 'readOnly'].forEach(key => {
+          if (roster[key] !== undefined) content[key] = roster[key];
+        });
+        return content;
+      },
+      currentSharedRosterContent(installationId) {
+        return this.sharedRosterContent({
+          installationId: AppState.sharedInstallationId || installationId,
+          teamId: String(AppState.currentTeamId || 'lite-default'),
+          teamName: String(AppState.currentTeamName || document.getElementById('inputCurrentTeamName')?.value || 'Clubstride FC'),
+          players: AppState.squad,
+          cloudTeamId: AppState.cloudTeamId, ownerId: AppState.ownerId, readOnly: AppState.readOnly
+        });
+      },
+      applySharedRoster(force = false) {
+        if (this._applyingSharedRoster) return false;
+        let snapshot, content;
+        try {
+          const source = localStorage.getItem('cs.lite.roster.v1');
+          if (!source) return false;
+          snapshot = JSON.parse(source);
+          // Validate every row before touching good local data, including repeat revisions.
+          content = this.validateSharedRoster(snapshot);
+          this._sharedRosterInvalid = false;
+          this.reportStorageFailure('incomingRoster', '');
+        } catch (e) {
+          this._sharedRosterInvalid = true;
+          this.reportStorageFailure('incomingRoster', 'Shared roster is invalid or unavailable. Your Lite roster is retained; save your roster explicitly to recover sharing.');
+          return false;
+        }
+        const fingerprint = JSON.stringify(content);
+        if (!force && fingerprint === JSON.stringify(this.currentSharedRosterContent(snapshot.installationId))) {
+          this._sharedRosterRevision = snapshot.revision;
+          this.updateRosterReadOnlyControls();
+          return true;
+        }
+        this._applyingSharedRoster = true;
+        try {
+          const teamChanged = (AppState.currentTeamId || 'lite-default') !== content.teamId ||
+            (AppState.sharedInstallationId && AppState.sharedInstallationId !== content.installationId);
+          const permissionChanged = (AppState.readOnly === true) !== (content.readOnly === true);
+          if (teamChanged || permissionChanged) this.captureActiveTeamMatch();
+          if (teamChanged) this.syncActiveTeamSquad(true);
+          if (!AppState.teams) AppState.teams = [];
+          let team = AppState.teams.find(t => t.id === content.teamId);
+          if (!team) {
+            team = { id: content.teamId, kitColor: '#22D3EE', themeStyle: 'glass', format: '7', fieldPositions: {} };
+            AppState.teams.push(team);
+          }
+          Object.assign(team, {
+            name: content.teamName, squad: content.players,
+            cloudTeamId: content.cloudTeamId, ownerId: content.ownerId, readOnly: content.readOnly,
+            sharedInstallationId: content.installationId
+          });
+          if (teamChanged) {
+            this.loadTeam(team.id, true);
+          } else {
+            AppState.currentTeamId = team.id;
+            AppState.currentTeamName = team.name;
+            AppState.squad = JSON.parse(JSON.stringify(content.players));
+            this.setSharedTeamMetadata(team);
+            if (permissionChanged) {
+              this.clearActiveTeamMatch(AppState.readOnly === true);
+              if (!AppState.readOnly) this.restoreSelectedTeamMatch();
+            }
+            const ids = new Set(AppState.squad.map(p => p.id));
+            AppState.match.starters = AppState.match.starters.filter(id => ids.has(id));
+            AppState.match.bench = AppState.match.bench.filter(id => ids.has(id));
+            Object.keys(AppState.match.availability).forEach(id => {
+              if (!ids.has(id)) delete AppState.match.availability[id];
+            });
+            Object.keys(AppState.match.fieldPositions || {}).forEach(id => {
+              if (!ids.has(id)) delete AppState.match.fieldPositions[id];
+            });
+            AppState.squad.forEach(p => {
+              AppState.match.availability[p.id] = p.available ?? AppState.match.availability[p.id] ?? true;
+              if (AppState.match.availability[p.id] && !AppState.match.starters.includes(p.id) && !AppState.match.bench.includes(p.id)) {
+                AppState.match.bench.push(p.id);
+              }
+            });
+            if (!ids.has(AppState.subOutPlayerId)) AppState.subOutPlayerId = null;
+            if (!ids.has(AppState.editingPlayerId)) AppState.editingPlayerId = null;
+            document.getElementById('inputCurrentTeamName').value = team.name;
+            document.getElementById('headerTeamNameBadge').innerText = team.name.length > 8 ? team.name.substring(0, 8) + '…' : team.name;
+          }
+          this._sharedRosterRevision = snapshot.revision;
+          this._sharedRosterContent = fingerprint;
+        } finally {
+          this._applyingSharedRoster = false;
+        }
+        // Retain history and deleted players' accrued timers. Publishing compares against source and is a no-op.
+        this.saveStorage();
+        this.renderAll();
+        this.renderSavedTeamsList();
+        this.updateRosterReadOnlyControls();
+        return true;
+      },
+      matchMutationAllowed() {
+        if (!AppState.readOnly) return true;
+        this.toast('Shared match tools are read-only. Only team staff can change matches.');
+        return false;
+      },
+      matchScope() {
+        const installationId = AppState.sharedInstallationId || this.getLiteInstallationId();
+        const teamId = String(AppState.currentTeamId || 'lite-default');
+        return { installationId, teamId, key: `cs.lite.matches.v1.${installationId}.${teamId}` };
+      },
+      matchFingerprint(value) {
+        const sort = item => Array.isArray(item) ? item.map(sort) : item && typeof item === 'object'
+          ? Object.fromEntries(Object.keys(item).sort().map(key => [key, sort(item[key])])) : item;
+        return JSON.stringify(sort(value));
+      },
+      matchRecordContent(record) {
+        const content = {};
+        ['id', 'proId', 'title', 'teamName', 'opponent', 'date', 'format', 'formation', 'ourGoals',
+          'opponentGoals', 'durationSeconds', 'period', 'status', 'endedAt', 'playerTimers',
+          'starters', 'bench', 'players', 'lineupIds', 'events'].forEach(key => {
+          if (record[key] !== undefined) content[key] = record[key];
+        });
+        content.formation = record.formation || 'Unassigned';
+        content.players = (record.players || []).map(player => {
+          const p = { id: player.id, name: player.name, number: player.number, position: player.position };
+          if (player.proId !== undefined) p.proId = player.proId;
+          return p;
+        });
+        content.events = (record.events || []).map(event => {
+          const e = {};
+          ['id', 'proId', 'type', 'playerId', 'playerInId', 'playerOutId', 'playerName', 'playerNumber',
+            'playerIn', 'playerInNum', 'playerOut', 'playerOutNum', 'goalId', 'matchTimeSeconds',
+            'period', 'timestamp'].forEach(key => { if (event[key] !== undefined) e[key] = event[key]; });
+          // Lite stamps events with epoch ms; Pro's parser only accepts ISO, so the wire format
+          // is normalised here rather than by loosening the receiving validation.
+          if (typeof e.timestamp === 'number') {
+            if (!Number.isFinite(e.timestamp) || e.timestamp < 0) throw new Error('Invalid event timestamp');
+            e.timestamp = new Date(e.timestamp).toISOString();
+          }
+          return e;
+        });
+        return content;
+      },
+      validateSharedMatches(snapshot, scope = this.matchScope()) {
+        const object = value => value && typeof value === 'object' && !Array.isArray(value);
+        const id = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,200}$/.test(value) &&
+          !['__proto__', 'constructor', 'prototype'].includes(value);
+        const uuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+        const iso = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+        const text = (value, limit) => typeof value === 'string' && value.length <= limit && !/[<>\u0000-\u001f\u007f]/.test(value);
+        const integer = value => Number.isSafeInteger(value) && value >= 0;
+        const period = value => ['1st Half', '2nd Half'].includes(value);
+        const list = value => Array.isArray(value) && value.every(id) && new Set(value).size === value.length;
+        const optional = (value, check) => value === undefined || check(value);
+        if (!object(snapshot) || snapshot.version !== 1 || !uuid(snapshot.installationId) || !id(snapshot.teamId) ||
+          snapshot.installationId !== scope.installationId || snapshot.teamId !== scope.teamId || !iso(snapshot.revision) ||
+          !Array.isArray(snapshot.matches) || !Array.isArray(snapshot.removed) || !(snapshot.live === null || object(snapshot.live))) {
+          throw new Error('Invalid match snapshot scope or envelope');
+        }
+        const ids = new Set(), proIds = new Set();
+        const record = raw => {
+          if (!object(raw) || !id(raw.id) || ids.has(raw.id) || !optional(raw.proId, uuid) ||
+            !text(raw.title, 200) || !text(raw.teamName, 200) || !text(raw.opponent, 200) ||
+            typeof raw.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw.date) ||
+            !Number.isFinite(Date.parse(raw.date)) || new Date(raw.date).toISOString().slice(0, 10) !== raw.date ||
+            !['5', '7', '9', '11'].includes(raw.format) || !optional(raw.formation, v => text(v, 40)) ||
+            !integer(raw.ourGoals) || !integer(raw.opponentGoals) || !integer(raw.durationSeconds) || !period(raw.period) ||
+            !['scheduled', 'in_progress', 'paused', 'completed'].includes(raw.status) ||
+            !(raw.endedAt === null || iso(raw.endedAt)) || !iso(raw.recordedAt) || !object(raw.playerTimers) ||
+            !Object.entries(raw.playerTimers).every(([key, value]) => id(key) && integer(value)) ||
+            !list(raw.starters) || !list(raw.bench) || raw.starters.some(key => raw.bench.includes(key)) ||
+            !Array.isArray(raw.players) || !Array.isArray(raw.events) ||
+            !optional(raw.lineupIds, v => object(v) && Object.entries(v).every(([key, value]) => id(key) && uuid(value)))) {
+            throw new Error('Invalid match record');
+          }
+          ids.add(raw.id);
+          if (raw.proId) {
+            if (proIds.has(raw.proId.toLowerCase())) throw new Error('Duplicate match identity');
+            proIds.add(raw.proId.toLowerCase());
+          }
+          const playerIds = new Set(), playerProIds = new Set();
+          raw.players.forEach(p => {
+            if (!object(p) || !id(p.id) || playerIds.has(p.id) || !text(p.name, 200) || !p.name.trim() ||
+              !integer(p.number) || p.number > 99 || !text(p.position, 40) || !optional(p.proId, uuid) ||
+              (p.proId && playerProIds.has(p.proId.toLowerCase()))) throw new Error('Invalid archived player');
+            playerIds.add(p.id);
+            if (p.proId) playerProIds.add(p.proId.toLowerCase());
+          });
+          const eventIds = new Set(), eventProIds = new Set();
+          raw.events.forEach(e => {
+            if (!object(e) || !id(e.id) || eventIds.has(e.id) || !optional(e.proId, uuid) ||
+              (e.proId && eventProIds.has(e.proId.toLowerCase())) || !['Goal', 'Assist', 'Sub', 'Yellow', 'Red'].includes(e.type) ||
+              !['playerId', 'playerInId', 'playerOutId', 'goalId'].every(key => optional(e[key], id)) ||
+              !['playerName', 'playerIn', 'playerOut'].every(key => optional(e[key], v => text(v, 200))) ||
+              !['playerNumber', 'playerInNum', 'playerOutNum'].every(key => optional(e[key], integer)) ||
+              !integer(e.matchTimeSeconds) || !period(e.period) || !(integer(e.timestamp) || iso(e.timestamp))) {
+              throw new Error('Invalid match event');
+            }
+            eventIds.add(e.id);
+            if (e.proId) eventProIds.add(e.proId.toLowerCase());
+          });
+          return { ...this.matchRecordContent(raw), recordedAt: raw.recordedAt };
+        };
+        // Validate the FULL envelope before allowing any state or storage mutations.
+        const matches = snapshot.matches.map(record);
+        const live = snapshot.live === null ? null : record(snapshot.live);
+        if (live?.status === 'completed') throw new Error('Completed match cannot be live');
+        const removedIds = new Set();
+        const removed = snapshot.removed.map(raw => {
+          if (!object(raw) || !id(raw.id) || removedIds.has(raw.id) || !optional(raw.proId, uuid) || !iso(raw.recordedAt)) {
+            throw new Error('Invalid match removal');
+          }
+          removedIds.add(raw.id);
+          const row = { id: raw.id, recordedAt: raw.recordedAt };
+          if (raw.proId !== undefined) row.proId = raw.proId;
+          return row;
+        });
+        return { version: 1, installationId: snapshot.installationId, teamId: snapshot.teamId,
+          revision: snapshot.revision, matches, live, removed };
+      },
+      historyTeamId(record) {
+        if (record.teamId) return record.teamId;
+        const teams = new Map((AppState.teams || []).map(t => [t.id, t.name]));
+        teams.set(AppState.currentTeamId || 'lite-default', AppState.currentTeamName || 'Clubstride FC');
+        const candidates = [...teams].filter(([, name]) => name === record.teamName);
+        return candidates.length === 1 ? candidates[0][0] : null;
+      },
+      selectedTeamHistory() {
+        if (AppState.readOnly) return [];
+        const teamId = AppState.currentTeamId || 'lite-default';
+        const retained = AppState.matchHistory || [];
+        const ambiguous = retained.filter(m => !this.historyTeamId(m));
+        this.reportStorageFailure('legacyMatches', ambiguous.length
+          ? `${ambiguous.length} unscoped legacy match(es) retained in backup, excluded from team stats and Pro sharing: ${ambiguous.map(m => String(m.title || 'Match')).join(', ')}` : '');
+        return retained.filter(m => this.historyTeamId(m) === teamId);
+      },
+      matchStatsPlayers(matches, includeLive = false) {
+        const players = new Map();
+        matches.forEach(m => (m.players || []).forEach(p => players.set(p.id, p)));
+        if (includeLive) (AppState.match.players || []).forEach(p => players.set(p.id, p));
+        AppState.squad.forEach(p => players.set(p.id, p));
+        return [...players.values()];
+      },
+      liveMatchPlayers() {
+        const players = new Map((AppState.match.players || []).map(p => [p.id, p]));
+        AppState.squad.forEach(p => { if (!players.has(p.id)) players.set(p.id, p); });
+        return AppState.match.players ? [...players.values()] : AppState.squad;
+      },
+      liveMatchRecord() {
+        return { ...AppState.match, players: this.liveMatchPlayers(),
+          playerTimers: AppState.playerTimers, events: AppState.events,
+          durationSeconds: AppState.clock.seconds, period: AppState.clock.period,
+          status: AppState.clock.running ? 'in_progress' : AppState.match.status === 'scheduled' ||
+            (!AppState.match.initialStarters && !AppState.clock.seconds && !AppState.events.length) ? 'scheduled' : 'paused', endedAt: null };
+      },
+      nextMatchTime(...times) {
+        return new Date(Math.max(Date.now(), ...times.map(t => (Date.parse(t) || 0) + 1))).toISOString();
+      },
+      publishLiteMatches() {
+        if (AppState.readOnly || this._initializingMatches || this._applyingSharedMatches || this._storageLoadFailed || this._matchRestoreBlocked) return false;
+        try {
+          const scope = this.matchScope();
+          const source = localStorage.getItem(scope.key);
+          const previous = source ? this.validateSharedMatches(JSON.parse(source), scope) : null;
+          const prior = new Map([...(previous?.matches || []), ...(previous?.live ? [previous.live] : [])].map(r => [r.id, r]));
+          const records = this.selectedTeamHistory();
+          const liveRaw = this.liveMatchRecord();
+          const emptyLive = this._emptyLiveFingerprints?.get(scope.key) === this.matchFingerprint(this.matchRecordContent(liveRaw));
+          const make = raw => {
+            const old = prior.get(raw.id);
+            const content = this.matchRecordContent({ ...raw, status: raw.status || 'completed', endedAt: raw.endedAt || null,
+              players: raw.players || (AppState.teams || []).find(t => t.id === scope.teamId)?.squad || AppState.squad });
+            // Canonical IDs are enrichment, not a new match edit. Retain them on local saves.
+            ['proId', 'lineupIds'].forEach(key => { if (content[key] === undefined && old?.[key] !== undefined) content[key] = old[key]; });
+            content.events.forEach(e => {
+              const previousEvent = old?.events.find(p => p.id === e.id);
+              if (e.proId === undefined && previousEvent?.proId) e.proId = previousEvent.proId;
+            });
+            content.players.forEach(p => {
+              const previousPlayer = old?.players.find(row => row.id === p.id);
+              if (p.proId === undefined && previousPlayer?.proId) p.proId = previousPlayer.proId;
+            });
+            const equal = old && this.matchFingerprint(content) === this.matchFingerprint(this.matchRecordContent(old));
+            const recordedAt = equal ? old.recordedAt : this.nextMatchTime(old?.recordedAt, raw.recordedAt);
+            return { ...content, recordedAt };
+          };
+          const matches = records.map(make);
+          const live = emptyLive ? null : make(liveRaw);
+          const present = new Set([...matches, ...(live ? [live] : [])].map(r => r.id));
+          const removed = new Map((previous?.removed || []).map(r => [r.id, r]));
+          (previous?.matches || []).forEach(old => {
+            if (!present.has(old.id)) removed.set(old.id, { id: old.id, ...(old.proId ? { proId: old.proId } : {}),
+              recordedAt: this.nextMatchTime(old.recordedAt, previous.revision, removed.get(old.id)?.recordedAt) });
+          });
+          present.forEach(id => removed.delete(id));
+          const content = { version: 1, installationId: scope.installationId, teamId: scope.teamId, matches, live, removed: [...removed.values()] };
+          const oldContent = previous && { ...previous };
+          if (oldContent) delete oldContent.revision;
+          if (this.matchFingerprint(content) !== this.matchFingerprint(oldContent)) {
+            const revision = this.nextMatchTime(previous?.revision, ...matches.map(r => r.recordedAt), live?.recordedAt, ...content.removed.map(r => r.recordedAt));
+            const snapshot = this.validateSharedMatches({ ...content, revision }, scope);
+            localStorage.setItem(scope.key, JSON.stringify(snapshot));
+            // Assign timestamps only after a successful, fully validated durable write.
+            records.forEach((raw, index) => Object.assign(raw, matches[index], { teamId: scope.teamId }));
+            if (live) {
+              AppState.match.recordedAt = live.recordedAt;
+              ['proId', 'lineupIds'].forEach(key => { if (live[key] !== undefined) AppState.match[key] = live[key]; });
+            }
+            this._matchSnapshots ||= new Map();
+            this._matchSnapshots.set(scope.key, snapshot);
+            window.dispatchEvent(new CustomEvent('cs-lite-matches-change'));
+          } else {
+            this._matchSnapshots ||= new Map();
+            this._matchSnapshots.set(scope.key, previous);
+          }
+          this.reportStorageFailure('matches', '');
+          return true;
+        } catch (e) {
+          this.reportStorageFailure('matches', 'Match sharing is invalid or unavailable. Existing shared and legacy match data is retained; keep this page open and export a backup.');
+          return false;
+        }
+      },
+      captureActiveTeamMatch() {
+        if (AppState.readOnly || this._initializingMatches) return;
+        if (AppState.clock.running) this.tickClock();
+        this.publishLiteMatches();
+        try {
+          this._teamMatchStates ||= new Map();
+          this._teamMatchStates.set(this.matchScope().key, JSON.parse(JSON.stringify({ match: AppState.match,
+            events: AppState.events, playerTimers: AppState.playerTimers, seconds: AppState.clock.seconds,
+            period: AppState.clock.period, running: AppState.clock.running, selectedGameIds: AppState.selectedGameIds })));
+        } catch (_) { this.reportStorageFailure('matches', 'Active match could not be captured; export a backup before switching teams.'); }
+      },
+      clearActiveTeamMatch(parent = false) {
+        clearInterval(AppState.clock.intervalId);
+        Object.assign(AppState.clock, { seconds: 0, period: '1st Half', running: false, startedAt: 0, intervalId: null, sinceSync: 0 });
+        AppState.match = { id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), title: 'Match 1',
+          teamName: AppState.currentTeamName || 'Clubstride FC', opponent: 'Opponent', date: new Date().toISOString().slice(0, 10),
+          format: AppState.match.format || '7', formation: AppState.match.formation || 'Unassigned', status: 'scheduled',
+          availability: {}, fieldPositions: {}, starters: [], bench: [], ourGoals: 0, opponentGoals: 0 };
+        AppState.events = []; AppState.playerTimers = {}; AppState.subOutPlayerId = null;
+        AppState.selectedGameIds = null; AppState.expandedGameIds = {};
+        if (parent) {
+          if (!this._staffHistory) this._staffHistory = AppState.matchHistory;
+          AppState.matchHistory = [];
+          this.closeModals();
+        } else if (this._staffHistory) {
+          AppState.matchHistory = this._staffHistory;
+          this._staffHistory = null;
+        }
+      },
+      restoreSelectedTeamMatch() {
+        this._matchRestoreBlocked = false;
+        if (AppState.readOnly) { this.clearActiveTeamMatch(true); return false; }
+        try {
+          const saved = this._teamMatchStates?.get(this.matchScope().key);
+          if (saved) {
+            AppState.match = saved.match; AppState.events = saved.events; AppState.playerTimers = saved.playerTimers;
+            AppState.selectedGameIds = saved.selectedGameIds;
+            Object.assign(AppState.clock, { seconds: saved.seconds, period: saved.period, running: saved.running,
+              startedAt: saved.running ? Date.now() : 0, intervalId: null, sinceSync: 0 });
+            if (saved.running) AppState.clock.intervalId = setInterval(() => App.tickClock(), 1000);
+          }
+          return this.applySharedMatches(true);
+        } catch (_) { this._matchRestoreBlocked = true; return false; }
+      },
+      applySharedMatches(force = false) {
+        if (AppState.readOnly || this._applyingSharedMatches) return false; // Parent scope is deliberately never read.
+        let scope, snapshot;
+        try {
+          scope = this.matchScope();
+          const source = localStorage.getItem(scope.key);
+          if (!source) return false;
+          snapshot = this.validateSharedMatches(JSON.parse(source), scope);
+          this.reportStorageFailure('incomingMatches', '');
+          this._matchRestoreBlocked = false;
+        } catch (e) {
+          this._matchRestoreBlocked = true;
+          this.reportStorageFailure('incomingMatches', 'Incoming match snapshot is invalid or unavailable. Current matches and legacy history are retained.');
+          return false;
+        }
+        const previous = this._matchSnapshots?.get(scope.key);
+        if (!force && previous && snapshot.revision < previous.revision) return false;
+        if (!force && previous && this.matchFingerprint(snapshot) === this.matchFingerprint(previous)) return true;
+        this._applyingSharedMatches = true;
+        try {
+          const current = this.selectedTeamHistory();
+          const local = new Map(current.map(m => [m.id, m]));
+          const removed = new Map(snapshot.removed.map(m => [m.id, m]));
+          const matches = snapshot.matches.filter(m => !removed.has(m.id) || removed.get(m.id).recordedAt < m.recordedAt).map(m => {
+            const old = local.get(m.id);
+            return old?.recordedAt > m.recordedAt ? old : { ...m, teamId: scope.teamId };
+          });
+          // Full snapshots, including empty ones, replace this team's archives only. Newer local edits survive stale responses.
+          current.forEach(m => {
+            if (!matches.some(row => row.id === m.id) && m.recordedAt > snapshot.revision &&
+              (!removed.has(m.id) || m.recordedAt > removed.get(m.id).recordedAt)) matches.push(m);
+          });
+          AppState.matchHistory = (AppState.matchHistory || []).filter(m => this.historyTeamId(m) !== scope.teamId).concat(matches);
+          const live = snapshot.live;
+          const localTime = AppState.match.recordedAt || previous?.live?.recordedAt || '';
+          const keepRunning = AppState.clock.running && ((live?.id === AppState.match.id && live.recordedAt <= localTime) ||
+            (live?.id !== AppState.match.id && snapshot.revision <= (previous?.revision || localTime)));
+          if (!keepRunning && (live || !AppState.clock.running || snapshot.revision > localTime)) {
+            if (live) {
+              const positions = AppState.match.id === live.id ? AppState.match.fieldPositions : {};
+              clearInterval(AppState.clock.intervalId);
+              AppState.match = { ...live, teamId: scope.teamId, availability: Object.fromEntries(AppState.squad.map(p => [p.id, p.available !== false])),
+                fieldPositions: positions || {}, initialStarters: live.status === 'scheduled' ? undefined : this.initialMatchStarters(live.starters, live.events) };
+              AppState.events = live.events; AppState.playerTimers = live.playerTimers;
+              const running = live.status === 'in_progress';
+              Object.assign(AppState.clock, { seconds: live.durationSeconds, period: live.period, running,
+                startedAt: running ? Date.now() : 0, intervalId: null, sinceSync: 0 });
+              if (running) AppState.clock.intervalId = setInterval(() => App.tickClock(), 1000);
+            } else {
+              this.clearActiveTeamMatch();
+              this._emptyLiveFingerprints ||= new Map();
+              this._emptyLiveFingerprints.set(scope.key, this.matchFingerprint(this.matchRecordContent(this.liveMatchRecord())));
+            }
+          }
+          this._matchSnapshots ||= new Map();
+          this._matchSnapshots.set(scope.key, snapshot);
+          if (!AppState.readOnly && !this._storageLoadFailed) {
+            try {
+              localStorage.setItem('Clubstride Mobile_history', JSON.stringify(AppState.matchHistory));
+              localStorage.setItem('Clubstride Mobile_match', JSON.stringify(AppState.match));
+              localStorage.setItem('Clubstride Mobile_events', JSON.stringify(AppState.events));
+              localStorage.setItem('Clubstride Mobile_timers', JSON.stringify(AppState.playerTimers));
+              localStorage.setItem('Clubstride Mobile_clock', JSON.stringify({ seconds: AppState.clock.seconds, period: AppState.clock.period }));
+              this.reportStorageFailure('matchSave', '');
+            } catch (_) { this.reportStorageFailure('matchSave', 'Incoming matches are in memory but could not be saved locally; export a backup.'); }
+          }
+        } finally { this._applyingSharedMatches = false; }
+        if (!this._initializingMatches) this.renderAll();
+        return true;
+      },
+      initialMatchStarters(starters = AppState.match.starters, events = AppState.events) {
+        const initial = [...starters];
+        [...events].reverse().filter(e => e.type === 'Sub').forEach(e => {
+          const index = initial.indexOf(e.playerInId);
+          if (index >= 0 && e.playerOutId) initial[index] = e.playerOutId;
+        });
+        return [...new Set(initial)];
+      },
+      setupSharedMatchListeners() {
+        if (this._sharedMatchListenersReady) return;
+        this._sharedMatchListenersReady = true;
+        window.addEventListener('cs-lite-matches-change', () => this.applySharedMatches());
+        // Storage and focus are ordered through the roster listener so scope always hydrates first.
+      },
+      getLiteInstallationId() {
+        const key = 'cs.lite.installation.v1';
+        let id = localStorage.getItem(key);
+        if (id) return id;
+        const secureCrypto = window.crypto;
+        if (secureCrypto && typeof secureCrypto.randomUUID === 'function') {
+          id = secureCrypto.randomUUID();
+        } else if (secureCrypto && typeof secureCrypto.getRandomValues === 'function') {
+          const bytes = secureCrypto.getRandomValues(new Uint8Array(16));
+          bytes[6] = (bytes[6] & 0x0f) | 0x40;
+          bytes[8] = (bytes[8] & 0x3f) | 0x80;
+          const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+          id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        } else {
+          throw new Error('Secure UUID generation is unavailable');
+        }
+        localStorage.setItem(key, id);
+        return id;
+      },
+      publishLiteRoster(recoverInvalid = true) {
+        if (this._storageLoadFailed) return false;
+        if (this._applyingSharedRoster) return true;
+        try {
+          const content = this.currentSharedRosterContent(this.getLiteInstallationId());
+          const key = 'cs.lite.roster.v1';
+          const stored = localStorage.getItem(key);
+          let previous = null, previousContent = null;
+          try {
+            if (stored) {
+              previous = JSON.parse(stored);
+              previousContent = this.validateSharedRoster(previous);
+            }
+          } catch (_) {
+            this._sharedRosterInvalid = true;
+            this.reportStorageFailure('incomingRoster', 'Shared roster is invalid. Your Lite roster is retained; save your roster explicitly to recover sharing.');
+          }
+          if (!recoverInvalid && this._sharedRosterInvalid) return false;
+          if (JSON.stringify(content) !== JSON.stringify(previousContent)) {
+            if (!this.rosterMutationAllowed()) return false;
+            const previousTime = Date.parse(previous?.revision);
+            const revision = new Date(Math.max(Date.now(), (Number.isFinite(previousTime) ? previousTime : 0) + 1)).toISOString();
+            this.validateSharedRoster({ ...content, revision });
+            localStorage.setItem(key, JSON.stringify({ ...content, revision }));
+            this._sharedRosterContent = JSON.stringify(content);
+            this._sharedRosterRevision = revision;
+            this._sharedRosterInvalid = false;
+            this.reportStorageFailure('incomingRoster', '');
+            window.dispatchEvent(new CustomEvent('cs-lite-roster-change'));
+          }
+          this.reportStorageFailure('roster', '');
+          return true;
+        } catch (e) {
+          console.error('publishLiteRoster error:', e);
+          this.reportStorageFailure('roster', 'Roster sharing with Pro could not be saved. Lite data is retained; retry or export a backup.');
+          return false;
         }
       },
       saveStorage() {
+        if (this._applyingSharedRoster) return true;
+        if (this._storageLoadFailed) return false;
         try {
+          this.syncActiveTeamSquad();
           localStorage.setItem('Clubstride Mobile_squad', JSON.stringify(AppState.squad));
-          localStorage.setItem('Clubstride Mobile_match', JSON.stringify(AppState.match));
-          localStorage.setItem('Clubstride Mobile_events', JSON.stringify(AppState.events));
-          localStorage.setItem('Clubstride Mobile_timers', JSON.stringify(AppState.playerTimers));
-          localStorage.setItem('Clubstride Mobile_history', JSON.stringify(AppState.matchHistory || []));
-          localStorage.setItem('Clubstride Mobile_clock', JSON.stringify({
-            seconds: AppState.clock.seconds,
-            period: AppState.clock.period,
-            savedAt: Date.now()
-          }));
+          if (!AppState.readOnly) {
+            localStorage.setItem('Clubstride Mobile_match', JSON.stringify(AppState.match));
+            localStorage.setItem('Clubstride Mobile_events', JSON.stringify(AppState.events));
+            localStorage.setItem('Clubstride Mobile_timers', JSON.stringify(AppState.playerTimers));
+            localStorage.setItem('Clubstride Mobile_history', JSON.stringify(AppState.matchHistory || []));
+            localStorage.setItem('Clubstride Mobile_clock', JSON.stringify({
+              seconds: AppState.clock.seconds,
+              period: AppState.clock.period,
+              savedAt: Date.now()
+            }));
+          }
           localStorage.setItem('Clubstride Mobile_kit', AppState.kitColor);
           localStorage.setItem('Clubstride Mobile_theme', AppState.theme);
           if (AppState.themeStyle) localStorage.setItem('Clubstride Mobile_theme_style', AppState.themeStyle);
           if (AppState.teams) localStorage.setItem('Clubstride Mobile_teams', JSON.stringify(AppState.teams));
-          if (AppState.currentTeamId) localStorage.setItem('Clubstride Mobile_current_team_id', AppState.currentTeamId);
+          localStorage.setItem('Clubstride Mobile_current_team_id', AppState.currentTeamId || '');
           if (AppState.currentTeamName) localStorage.setItem('Clubstride Mobile_current_team_name', AppState.currentTeamName);
           if (AppState.customFormations) localStorage.setItem('Clubstride Mobile_custom_formations', JSON.stringify(AppState.customFormations));
           if (AppState.selectedGameIds) localStorage.setItem('Clubstride Mobile_selected_games', JSON.stringify(AppState.selectedGameIds));
+          this.reportStorageFailure('save', '');
         } catch (e) {
           console.error('saveStorage error:', e);
+          this.reportStorageFailure('save', 'Lite changes could not be saved. Keep this page open and export a backup before reloading.');
+          return false;
         }
+        const rosterSaved = this.publishLiteRoster(false);
+        const matchesSaved = this.publishLiteMatches();
+        return rosterSaved && (AppState.readOnly || matchesSaved);
       },
       toggleDayNight() {
         AppState.theme = AppState.theme === 'night' ? 'day' : 'night';
@@ -1787,6 +2502,10 @@
         }
       },
       switchTab(tab) {
+        if (AppState.readOnly && tab !== 'roster') {
+          this.toast('Match tools are available to the team staff.');
+          return;
+        }
         AppState.activeTab = tab;
         ['pitch', 'live', 'roster', 'stats'].forEach(t => {
           const sec = document.getElementById('section_' + t);
@@ -1826,6 +2545,7 @@
         document.getElementById('customKitPicker').value = AppState.kitColor;
       },
       setKitColor(color) {
+        if (!this.rosterMutationAllowed()) return;
         AppState.kitColor = color;
         document.getElementById('customKitPicker').value = color;
         this.saveStorage();
@@ -2051,6 +2771,9 @@
         this.toast(`Formation "${name}" saved! `);
       },
       saveCustomFormation(name, customSlots = null) {
+        if (typeof name !== 'string' || !name.trim() || name.length > 40 || /[<>\u0000-\u001f\u007f]/.test(name)) {
+          this.toast('Formation names must be plain text, up to 40 characters.'); return false;
+        }
         const fmt = AppState.match.format;
         const slots = customSlots || AppState.match.starters.map(pid => {
           return { ...(AppState.match.fieldPositions[pid] || { x: 50, y: 50 }) };
@@ -2203,6 +2926,7 @@
         const field = document.getElementById('pitchTokensLayer');
         let activeEl = null;
         const onPointerDown = (e) => {
+          if (!App.matchMutationAllowed()) return;
           const token = e.target.closest('.player-token');
           if (!token) return;
           activeEl = token;
@@ -2210,6 +2934,7 @@
           activeEl.style.zIndex = 100;
         };
         const onPointerMove = (e) => {
+          if (AppState.readOnly) { activeEl = null; return; }
           if (!activeEl) return;
           const rect = field.getBoundingClientRect();
           let x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -2299,8 +3024,11 @@
           `;
           container.appendChild(card);
         });
+        this.updateRosterReadOnlyControls();
       },
       updatePlayerPosition(pid, pos) {
+        if (!this.rosterMutationAllowed()) return;
+        if (typeof pos !== 'string' || !pos.trim() || pos.length > 40 || /[<>\u0000-\u001f\u007f]/.test(pos)) return;
         const p = AppState.squad.find(i => i.id === pid);
         if (p) {
           p.position = pos;
@@ -2309,7 +3037,11 @@
         }
       },
       toggleAvailability(pid) {
+        if (!this.rosterMutationAllowed()) return;
+        const player = AppState.squad.find(p => p.id === pid);
+        if (!player) return;
         AppState.match.availability[pid] = !AppState.match.availability[pid];
+        player.available = AppState.match.availability[pid];
         if (!AppState.match.availability[pid]) {
           AppState.match.starters = AppState.match.starters.filter(id => id !== pid);
           AppState.match.bench = AppState.match.bench.filter(id => id !== pid);
@@ -2323,8 +3055,11 @@
         this.renderPitchTokens();
       },
       setAllAvailability(status) {
+        if (!this.rosterMutationAllowed()) return;
+        if (typeof status !== 'boolean') return;
         AppState.squad.forEach(p => {
           AppState.match.availability[p.id] = status;
+          p.available = status;
         });
         const quota = parseInt(AppState.match.format);
         if (status) {
@@ -2340,9 +3075,12 @@
         this.toast(status ? 'All squad members marked Available' : 'Availability reset');
       },
       deletePlayer(pid) {
+        if (!this.rosterMutationAllowed()) return;
         AppState.squad = AppState.squad.filter(p => p.id !== pid);
         AppState.match.starters = AppState.match.starters.filter(id => id !== pid);
         AppState.match.bench = AppState.match.bench.filter(id => id !== pid);
+        delete AppState.match.availability[pid];
+        delete AppState.match.fieldPositions[pid];
         this.saveStorage();
         this.renderRoster();
         this.renderPitchTokens();
@@ -2350,6 +3088,7 @@
       },
       toggleTimer() {
         if (AppState.clock.running) {
+          this.tickClock();
           clearInterval(AppState.clock.intervalId);
           AppState.clock.running = false;
           AppState.clock.intervalId = null;
@@ -2360,6 +3099,12 @@
           document.getElementById('clockStatusSubtext').innerText = 'Clock Paused';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-amber-400 font-medium mt-1';
         } else {
+          if (!AppState.match.initialStarters) {
+            AppState.match.initialStarters = this.initialMatchStarters();
+            AppState.match.initialBench = [...AppState.match.bench];
+            AppState.match.players = JSON.parse(JSON.stringify(AppState.squad));
+          }
+          AppState.match.status = 'in_progress';
           AppState.clock.running = true;
           AppState.clock.startedAt = Date.now();
           AppState.clock.sinceSync = 0;
@@ -2369,6 +3114,7 @@
           document.getElementById('clockToggleBtn').className = 'flex-1 max-w-[140px] py-2.5 rounded-2xl bg-amber-500 text-obsidian-950 font-black text-sm tracking-wide shadow-lg active:scale-95 transition';
           document.getElementById('clockStatusSubtext').innerText = '● Live Match In Progress — Accumulating Playing Seconds';
           document.getElementById('clockStatusSubtext').className = 'text-xs text-cyber-mint font-medium mt-1 glow-pulse';
+          this.saveStorage();
         }
       },
       tickClock() {
@@ -2382,7 +3128,7 @@
         });
         this.updateClockDisplay();
         AppState.clock.sinceSync += elapsed;
-        if (AppState.clock.sinceSync >= 5) {
+        if (AppState.clock.sinceSync >= 1) {
           AppState.clock.sinceSync = 0;
           this.saveStorage();
           if (AppState.activeTab === 'stats') this.renderStats();
@@ -2404,9 +3150,11 @@
         document.getElementById('clockToggleBtn').innerText = 'START';
         document.getElementById('clockStatusSubtext').innerText = 'Clock Reset — Ready to Kickoff';
         document.getElementById('clockStatusSubtext').className = 'text-xs text-cyber-cyan font-medium mt-1';
+        this.saveStorage();
         this.toast('Stopwatch reset to 00:00');
       },
       setPeriod(period) {
+        if (!['1st Half', '2nd Half'].includes(period)) return;
         AppState.clock.period = period;
         const b1 = document.getElementById('periodBtn_1');
         const b2 = document.getElementById('periodBtn_2');
@@ -2417,6 +3165,7 @@
           b2.className = 'px-2.5 py-1 rounded-lg font-bold bg-cyber-cyan text-obsidian-950';
           b1.className = 'px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white';
         }
+        this.saveStorage();
         this.toast('Period set to ' + period);
       },
       updateClockDisplay() {
@@ -2509,6 +3258,7 @@
       selectSubOut(pid) {
         AppState.subOutPlayerId = pid;
         const p = AppState.squad.find(i => i.id === pid);
+        if (!p || !AppState.match.starters.includes(pid)) { AppState.subOutPlayerId = null; return; }
         document.getElementById('subInstructionText').innerText = `Step 2: Subbing OUT #${p.number} ${p.name}. Tap bench reserve!`;
         document.getElementById('cancelSubBtn').classList.remove('hidden');
         this.renderLiveBoard();
@@ -2521,6 +3271,7 @@
         const outPid = AppState.subOutPlayerId;
         const outPlayer = AppState.squad.find(i => i.id === outPid);
         const inPlayer = AppState.squad.find(i => i.id === benchPid);
+        if (!outPlayer || !inPlayer || !AppState.match.starters.includes(outPid) || !AppState.match.bench.includes(benchPid)) return;
         const savedPos = AppState.match.fieldPositions[outPid] || { x: 50, y: 50 };
         AppState.match.fieldPositions[benchPid] = savedPos;
         AppState.match.starters = AppState.match.starters.map(id => id === outPid ? benchPid : id);
@@ -2529,6 +3280,8 @@
           id: 'ev_' + Date.now(),
           matchId: AppState.match.id,
           type: 'Sub',
+          playerInId: benchPid,
+          playerOutId: outPid,
           playerOut: outPlayer.name,
           playerOutNum: outPlayer.number,
           playerIn: inPlayer.name,
@@ -2658,6 +3411,7 @@
       },
       // Requirement 2: Manual Score Steppers (+/-)
       adjustScore(team, delta) {
+        if (!Number.isSafeInteger(delta)) return;
         if (team === 'our') {
           AppState.match.ourGoals = Math.max(0, (AppState.match.ourGoals || 0) + delta);
           const el = document.getElementById('scoreboardGoals');
@@ -2715,6 +3469,7 @@
         }
       },
       confirmEndMatch() {
+        if (AppState.clock.running) this.tickClock();
         this.closeModals();
         const myTeam = AppState.match.teamName || AppState.currentTeamName || 'Clubstride';
         const opp = AppState.match.opponent || 'Opponent';
@@ -2741,9 +3496,16 @@
           period: AppState.clock.period || '2nd Half',
           endedAt: new Date().toISOString(),
           playerTimers: { ...AppState.playerTimers },
-          starters: [ ...AppState.match.starters ],
-          bench: [ ...AppState.match.bench ],
-          events: [ ...AppState.events ]
+          teamId: AppState.currentTeamId || 'lite-default',
+          status: 'completed',
+          ...(AppState.match.proId ? { proId: AppState.match.proId } : {}),
+          ...(AppState.match.lineupIds ? { lineupIds: AppState.match.lineupIds } : {}),
+          recordedAt: AppState.match.recordedAt,
+          players: JSON.parse(JSON.stringify(this.liveMatchPlayers())),
+          starters: [...(AppState.match.initialStarters || this.initialMatchStarters())],
+          bench: [...(AppState.match.initialBench || (AppState.match.players || AppState.squad).map(p => p.id)
+            .filter(id => !(AppState.match.initialStarters || this.initialMatchStarters()).includes(id)))],
+          events: JSON.parse(JSON.stringify(AppState.events))
         };
         if (!AppState.matchHistory) AppState.matchHistory = [];
         AppState.matchHistory.unshift(matchRecord);
@@ -2757,7 +3519,9 @@
           nextTitle = 'Match ' + (parseInt(mMatch[1]) + 1);
         }
         // Reset live match session ready for new kickoff
-        AppState.match.id = 'm_' + Date.now();
+        AppState.match.id = 'm_' + Date.now() + '_next';
+        ['proId', 'lineupIds', 'recordedAt', 'initialStarters', 'initialBench', 'players'].forEach(key => delete AppState.match[key]);
+        AppState.match.status = 'scheduled';
         AppState.match.title = nextTitle;
         AppState.match.ourGoals = 0;
         AppState.match.opponentGoals = 0;
@@ -2786,7 +3550,8 @@
       },
       deleteMatchHistory(matchId) {
         if (!confirm('Are you sure you want to remove this match from history?')) return;
-        AppState.matchHistory = (AppState.matchHistory || []).filter(m => m.id !== matchId);
+        const selected = new Set(this.selectedTeamHistory());
+        AppState.matchHistory = (AppState.matchHistory || []).filter(m => m.id !== matchId || !selected.has(m));
         this.saveStorage();
         this.renderStats();
         this.toast('Match removed from history');
@@ -2830,10 +3595,12 @@
       },
       // Requirement 5: Import full backup from JSON file
       importBackup(event) {
+        if (!this.rosterMutationAllowed()) return;
         const file = event.target.files && event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
+          if (!this.rosterMutationAllowed()) return;
           try {
             const data = JSON.parse(e.target.result);
             if (!data.squad || !Array.isArray(data.squad)) {
@@ -2856,6 +3623,7 @@
             if (data.teams) AppState.teams = data.teams;
             if (data.currentTeamId) AppState.currentTeamId = data.currentTeamId;
             if (data.currentTeamName) AppState.currentTeamName = data.currentTeamName;
+            this.setSharedTeamMetadata((AppState.teams || []).find(t => t.id === AppState.currentTeamId) || {});
             if (data.kitColor) AppState.kitColor = data.kitColor;
             if (data.theme) AppState.theme = data.theme;
             if (data.themeStyle) AppState.themeStyle = data.themeStyle;
@@ -2919,7 +3687,7 @@
         });
       },
       getSelectedGameIds() {
-        const history = AppState.matchHistory || [];
+        const history = this.selectedTeamHistory();
         const hasLiveActive = AppState.clock.seconds > 0 || (AppState.events && AppState.events.length > 0);
         
         if (AppState.selectedGameIds === null || AppState.selectedGameIds === undefined) {
@@ -2944,7 +3712,7 @@
         this.renderStats();
       },
       selectAllGames() {
-        const history = AppState.matchHistory || [];
+        const history = this.selectedTeamHistory();
         const hasLiveActive = AppState.clock.seconds > 0 || (AppState.events && AppState.events.length > 0);
         const all = history.map(m => m.id);
         if (hasLiveActive) all.push('live');
@@ -2960,7 +3728,7 @@
         this.toast('Cleared game selection.');
       },
       selectRecentGames(count = 3) {
-        const history = AppState.matchHistory || [];
+        const history = this.selectedTeamHistory();
         const recent = history.slice(0, count).map(m => m.id);
         AppState.selectedGameIds = recent;
         this.saveStorage();
@@ -2977,7 +3745,7 @@
         container.innerHTML = '';
         const startVal = document.getElementById('statsStartDate') ? document.getElementById('statsStartDate').value : '';
         const endVal = document.getElementById('statsEndDate') ? document.getElementById('statsEndDate').value : '';
-        let history = AppState.matchHistory || [];
+        let history = this.selectedTeamHistory();
         if (startVal) {
           history = history.filter(m => (m.date || '') >= startVal);
         }
@@ -2988,15 +3756,16 @@
         const selectedGameIds = this.getSelectedGameIds();
         const liveSelected = hasLiveActive && selectedGameIds.includes('live');
         const selectedMatches = history.filter(m => selectedGameIds.includes(m.id));
+        const statsPlayers = this.matchStatsPlayers(selectedMatches, liveSelected);
         const totalSelectedCount = selectedMatches.length + (liveSelected ? 1 : 0);
         const totalAvailableCount = history.length + (hasLiveActive ? 1 : 0);
         const badge = document.getElementById('selectedGamesBadge');
         if (badge) {
           badge.innerText = `${totalSelectedCount} of ${totalAvailableCount} Games Selected`;
         }
-        // Aggregate statistics across selected games only
+        // Aggregate statistics across selected games only, including archived roster identities.
         const playerStats = {};
-        AppState.squad.forEach(p => {
+        statsPlayers.forEach(p => {
           playerStats[p.id] = {
             player: p,
             totalSeconds: 0,
@@ -3014,7 +3783,7 @@
           const starters = m.starters || [];
           const events = m.events || [];
           combinedTotalSec += (m.durationSeconds || 0);
-          AppState.squad.forEach(p => {
+          statsPlayers.forEach(p => {
             const sec = pTimers[p.id] || 0;
             const isStarter = starters.includes(p.id);
             if (sec > 0 || isStarter) {
@@ -3034,7 +3803,7 @@
         });
         if (liveSelected) {
           combinedTotalSec += (AppState.clock.seconds || 0);
-          AppState.squad.forEach(p => {
+          statsPlayers.forEach(p => {
             const sec = AppState.playerTimers[p.id] || 0;
             const isStarter = AppState.match.starters.includes(p.id);
             if (sec > 0 || isStarter) {
@@ -3095,7 +3864,7 @@
           emptySelCard.innerHTML = `No games selected. Tap <span class="text-cyber-cyan font-bold">"✓ All"</span> or check games in Match History below to pull playing time totals.`;
           container.appendChild(emptySelCard);
         } else {
-          AppState.squad.forEach(p => {
+          statsPlayers.forEach(p => {
             const stats = playerStats[p.id];
             const wasStarter = AppState.match.starters.includes(p.id);
             const shirtColor = wasStarter ? AppState.kitColor : '#303A4A';
@@ -3233,7 +4002,7 @@
         const pStarters = starters || [];
         const pEvents = events || [];
         let rowsHtml = '';
-        AppState.squad.forEach(p => {
+        (match.players || AppState.squad).forEach(p => {
           const sec = pTimers[p.id] || 0;
           const isStarter = pStarters.includes(p.id);
           const goals = pEvents.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
@@ -3365,7 +4134,7 @@
         const select = document.getElementById('pdfSelectMatch');
         if (select) {
           select.innerHTML = '';
-          const history = AppState.matchHistory || [];
+          const history = this.selectedTeamHistory();
           
           if (AppState.clock.seconds > 0 || (AppState.events && AppState.events.length > 0)) {
             const opt = document.createElement('option');
@@ -3393,9 +4162,9 @@
         // Populate team filter options for date range
         const teamSelect = document.getElementById('pdfRangeTeamFilter');
         if (teamSelect) {
-          teamSelect.innerHTML = '<option value="all">All Teams</option>';
+          teamSelect.innerHTML = '<option value="all">Selected Team</option>';
           if (AppState.teams && AppState.teams.length > 0) {
-            AppState.teams.forEach(t => {
+            AppState.teams.filter(t => t.id === AppState.currentTeamId).forEach(t => {
               const opt = document.createElement('option');
               opt.value = t.id;
               opt.innerText = t.name;
@@ -3444,7 +4213,7 @@
         if (matchId === 'live') {
           target = AppState.match;
         } else if (AppState.matchHistory) {
-          target = AppState.matchHistory.find(m => m.id === matchId);
+          target = this.selectedTeamHistory().find(m => m.id === matchId);
         }
         if (!target) {
           preview.innerHTML = '<span class="text-slate-400 italic">No match selected</span>';
@@ -3502,14 +4271,13 @@
         const startDate = startInput ? startInput.value : '';
         const endDate = endInput ? endInput.value : '';
         const teamId = teamSelect ? teamSelect.value : 'all';
-        const history = AppState.matchHistory || [];
+        const history = this.selectedTeamHistory();
         const matched = history.filter(m => {
           const d = m.date || '';
           if (startDate && d < startDate) return false;
           if (endDate && d > endDate) return false;
           if (teamId && teamId !== 'all') {
-            const team = (AppState.teams || []).find(t => t.id === teamId);
-            if (team && m.teamName && m.teamName !== team.name) return false;
+            if (this.historyTeamId(m) !== teamId) return false;
           }
           return true;
         });
@@ -3547,7 +4315,7 @@
           target = AppState.match;
           isLive = true;
         } else if (matchId && AppState.matchHistory) {
-          target = AppState.matchHistory.find(m => m.id === matchId);
+          target = this.selectedTeamHistory().find(m => m.id === matchId);
         }
         if (!target) {
           this.toast('Please select a valid match fixture.', 'card-yellow');
@@ -3566,7 +4334,7 @@
         const container = document.getElementById('pdfExportContainer');
         if (!container) return;
         let tableRowsHtml = '';
-        AppState.squad.forEach(p => {
+        (isLive ? AppState.match.players || AppState.squad : target.players || AppState.squad).forEach(p => {
           const pitchSec = playerTimers[p.id] || 0;
           const benchSec = Math.max(0, durationSec - pitchSec);
           const goals = events.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
@@ -3694,14 +4462,13 @@
           const tSel = document.getElementById('pdfRangeTeamFilter');
           teamId = tSel ? tSel.value : 'all';
         }
-        const history = AppState.matchHistory || [];
+        const history = this.selectedTeamHistory();
         const matchedMatches = history.filter(m => {
           const d = m.date || '';
           if (startDate && d < startDate) return false;
           if (endDate && d > endDate) return false;
           if (teamId && teamId !== 'all') {
-            const team = (AppState.teams || []).find(t => t.id === teamId);
-            if (team && m.teamName && m.teamName !== team.name) return false;
+            if (this.historyTeamId(m) !== teamId) return false;
           }
           return true;
         });
@@ -3718,9 +4485,10 @@
           else if (og === tg) draws++;
           else losses++;
         });
-        // Compute player totals across ALL squad members
+        // Include archived players who have since left the selected team's roster.
+        const statsPlayers = this.matchStatsPlayers(matchedMatches);
         const playerStats = {};
-        AppState.squad.forEach(p => {
+        statsPlayers.forEach(p => {
           playerStats[p.id] = {
             player: p,
             matchesPlayed: 0,
@@ -3736,7 +4504,7 @@
           const starters = m.starters || [];
           const timers = m.playerTimers || {};
           const events = m.events || [];
-          AppState.squad.forEach(p => {
+          statsPlayers.forEach(p => {
             const st = playerStats[p.id];
             const isStarter = starters.includes(p.id);
             const pitchSec = timers[p.id] || 0;
@@ -3933,7 +4701,7 @@
         if (matchId === 'selected') {
           isMultiGame = true;
           const selectedIds = this.getSelectedGameIds();
-          const history = AppState.matchHistory || [];
+          const history = this.selectedTeamHistory();
           const selectedMatches = history.filter(m => selectedIds.includes(m.id));
           const liveSelected = (AppState.clock.seconds > 0 || (AppState.events && AppState.events.length > 0)) && selectedIds.includes('live');
           
@@ -3958,6 +4726,7 @@
           }
           const count = selectedMatches.length + (liveSelected ? 1 : 0);
           targetMatch = {
+            players: this.matchStatsPlayers(selectedMatches, liveSelected),
             title: `Pulled Totals (${count} Games)`,
             teamName: AppState.currentTeamName || 'Clubstride FC',
             opponent: `${count} Selected Fixtures`,
@@ -3967,7 +4736,8 @@
             opponentGoals: 0
           };
         } else if (matchId && AppState.matchHistory) {
-          const hist = AppState.matchHistory.find(m => m.id === matchId);
+          const hist = this.selectedTeamHistory().find(m => m.id === matchId);
+          if (!hist) { this.toast('Select a match from the current team.'); return; }
           if (hist) {
             targetMatch = hist;
             targetEvents = hist.events || [];
@@ -3985,7 +4755,7 @@
         document.getElementById('pdfMatchResult').innerText = `Score: ${targetMatch.ourGoals || 0} - ${targetMatch.opponentGoals || 0} (Duration: ${this.formatTime(targetDuration)})`;
         const tbody = document.getElementById('pdfPlayerTableBody');
         tbody.innerHTML = '';
-        AppState.squad.forEach(p => {
+        (targetMatch.players || AppState.squad).forEach(p => {
           const sec = targetTimers[p.id] || 0;
           const goals = targetEvents.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
           const assists = targetEvents.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
@@ -4048,6 +4818,10 @@
         const opp = document.getElementById('inputMatchOpponent').value.trim() || 'Echo Strikers';
         const date = document.getElementById('inputMatchDate').value || new Date().toISOString().split('T')[0];
         const fmt = AppState.pendingFormat || AppState.match.format || '7';
+        if ([teamName, title, opp].some(v => v.length > 200 || /[<>\u0000-\u001f\u007f]/.test(v)) ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(date) || !['5', '7', '9', '11'].includes(fmt)) {
+          this.toast('Please enter safe match details and a valid date.'); return;
+        }
         AppState.match.teamName = teamName;
         AppState.match.title = title;
         AppState.match.opponent = opp;
@@ -4065,6 +4839,7 @@
         this.toast('Match configuration saved!');
       },
       openAddPlayerModal() {
+        if (!this.rosterMutationAllowed()) return;
         AppState.editingPlayerId = null;
         const title = document.getElementById('modalAddPlayerTitle');
         if (title) title.innerText = 'Add Squad Player';
@@ -4077,6 +4852,7 @@
         if (_mAdd) { _mAdd.classList.remove('hidden'); _mAdd.classList.add('flex'); }
       },
       openEditPlayerModal(pid) {
+        if (!this.rosterMutationAllowed()) return;
         const p = AppState.squad.find(item => item.id === pid);
         if (!p) return;
         AppState.editingPlayerId = pid;
@@ -4091,10 +4867,12 @@
         if (_mAdd) { _mAdd.classList.remove('hidden'); _mAdd.classList.add('flex'); }
       },
       saveNewPlayer() {
+        if (!this.rosterMutationAllowed()) return;
         const name = document.getElementById('inputPlayerName').value.trim();
-        const num = parseInt(document.getElementById('inputPlayerNumber').value);
+        const num = Number(document.getElementById('inputPlayerNumber').value);
         const pos = document.getElementById('inputPlayerPosition').value;
-        if (!name || isNaN(num) || num < 1 || num > 99) {
+        if (!name || name.length > 200 || /[<>\u0000-\u001f\u007f]/.test(name) ||
+          !Number.isInteger(num) || num < 1 || num > 99 || !pos.trim() || pos.length > 40 || /[<>\u0000-\u001f\u007f]/.test(pos)) {
           this.toast('Please provide a valid name and shirt number (1-99)');
           return;
         }
@@ -4108,8 +4886,10 @@
           }
           AppState.editingPlayerId = null;
         } else {
+          let id = 'p_' + Date.now();
+          while (AppState.squad.some(p => p.id === id)) id += '_new';
           const newPlayer = {
-            id: 'p_' + Date.now(),
+            id,
             number: num,
             name: name,
             position: pos
@@ -4148,6 +4928,8 @@
         const frame = document.getElementById('proFrame');
         if (!shell || !frame) return;
         if (shell.style.display === 'flex') return;
+        // Refresh the same-origin snapshot before Pro reads it, including on shell reopen.
+        if (!this.publishLiteRoster()) return;
         if (!frame.getAttribute('src')) frame.setAttribute('src', this.PRO_URL);
         if (!fromHistory) {
           try {
@@ -4225,6 +5007,25 @@
         this.renderStats();
       }
     };
+    // Guard public tools as well as internal mutators: hidden UI is not authorization.
+    const MATCH_TOOLS = ['applyFormatDefaults', 'sortStartersByPosition', 'sortLineupByPosition',
+      'onFormationChanged', 'applyFormationPositions', 'openSaveFormationModal', 'saveCurrentFormation',
+      'confirmSaveFormation', 'saveCustomFormation', 'deleteCurrentCustomFormation', 'sendToBench',
+      'promoteBenchToStarter', 'toggleStarter', 'toggleTimer', 'tickClock', 'syncLiveGameSelection',
+      'resetTimer', 'setPeriod', 'selectSubOut', 'selectSubIn', 'cancelSubSelection', 'openEventModal',
+      'populateAssistOptions', 'saveEvent', 'confirmEvent', 'adjustScore', 'deleteTimelineEvent', 'deleteEvent',
+      'endMatch', 'confirmEndMatch', 'deleteMatchHistory', 'toggleGameSelection', 'selectAllGames',
+      'deselectAllGames', 'selectRecentGames', 'toggleGameDetail', 'openMatchSetupModal', 'selectFormat',
+      'saveMatchSetup', 'exportBackup', 'openPdfReportModal', 'switchPdfReportMode', 'onPdfMatchSelected',
+      'applyPdfDatePreset', 'updatePdfRangePreview', 'generateSingleMatchPdf', 'generateDateRangePdf',
+      'openExportModal', 'printLedger', 'exportLedgerPdf'];
+    MATCH_TOOLS.forEach(name => {
+      const tool = App[name];
+      App[name] = function (...args) {
+        if (!this.matchMutationAllowed()) return false;
+        return tool.apply(this, args);
+      };
+    });
     window.addEventListener('DOMContentLoaded', () => {
       App.init();
       const proBack = document.getElementById('proBackBtn');
