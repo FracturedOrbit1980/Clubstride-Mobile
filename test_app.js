@@ -17,6 +17,8 @@ const expectedIds = [
   'scoreboardTeam', 'scoreboardOpponent', 'scoreboardGoals', 'scoreboardOpponentGoals',
   'clockToggleBtn', 'matchClockDisplay', 'clockStatusSubtext',
   'eventModalTitle', 'eventPlayerSelector', 'eventAssistSelector',
+  'goalSideOurBtn', 'goalSideOppBtn', 'goalOwnToggle', 'eventGoalMinute', 'modalEventSubmitBtn',
+  'confirmAltBtn',
   'inputMatchTeamName', 'inputMatchTitle', 'inputMatchOpponent', 'inputMatchDate',
   'backupFileInput', 'storageFailureStatus', 'sharedRosterStatus', 'recoverSharedRosterBtn',
   'installPwaBtn', 'installGuideNote', 'installGuideSteps', 'installGuideHint'
@@ -322,6 +324,11 @@ console.log('✓ Manual score steppers (+/-) working properly');
 // ==========================================
 let p1 = AppState.squad[0];
 let p2 = AppState.squad[1];
+
+// The match is five minutes in so logging a goal here is not gated by the kickoff sheet.
+AppState.clock.running = false;
+AppState.clock.seconds = 300;
+AppState.clock.period = '1st Half';
 
 App.openEventModal('Goal');
 dom['eventPlayerSelector'].value = '';
@@ -1766,7 +1773,7 @@ const touchCss = html.match(/<style>([\s\S]*?)<\/style>/)[1];
   '.roster-chip-btn { min-height: 44px; }',
   '.position-select { min-height: 44px; }',
   '.timeline-undo { min-height: 44px;',
-  '.sheet-close { width: 44px; height: 44px; }',
+  '.sheet-close { width: 44px; height: 44px; flex-shrink: 0; }',
   '.chip-btn { min-height: 44px; }',
   '.touch-input { min-height: 44px; }',
   '[id^="tabBtn_"] { min-height: 44px; }',
@@ -1774,6 +1781,37 @@ const touchCss = html.match(/<style>([\s\S]*?)<\/style>/)[1];
   ".token-bench-btn::after { content: ''; position: absolute; inset: -10px; }",
 ].forEach(needle => assert.ok(touchCss.includes(needle), 'The touchline CSS keeps ' + needle));
 assert.ok(touchCss.includes('.fixed .glass-card button:not(.w-5),'), 'Sheet controls carry the same 44px floor');
+assert.ok(touchCss.includes('.fixed .glass-card label:has(input[type="checkbox"]) { min-height: 44px; }'),
+  'A checkbox is hit through its whole label row');
+assert.ok(touchCss.includes('.sheet-close { width: 44px; height: 44px; flex-shrink: 0; }'),
+  'A long sheet title cannot squeeze the cross below its 44px box');
+
+// A class the frozen bundle never compiled renders as nothing at all — that is how the selected
+// "Opponent" chip became dark text on a dark card. Every class the goal sheet and the confirm sheet
+// can end up wearing, from the markup or at runtime, has to exist in tailwind.min.css or in the
+// inline touchline block.
+const bundleCss = fs.readFileSync('tailwind.min.css', 'utf-8');
+const sheetTokens = new Set();
+const collectTokens = value => String(value || '').split(/\s+/)
+  .forEach(token => token && !token.startsWith('ci-') && sheetTokens.add(token));
+(html.match(/<!-- 3\. GOAL LOGGER[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)[0].match(/class="([^"$`]*)"/g) || [])
+  .forEach(decl => collectTokens(decl.slice(7, -1)));
+const sheetIds = ['goalSideOurBtn', 'goalSideOppBtn', 'eventGoalScorerField', 'eventGoalAssistField', 'modalEventSubmitBtn'];
+['our', 'opponent'].forEach(side => [false, true].forEach(own => {
+  dom.goalOwnToggle.checked = own;
+  App.setGoalSide(side);
+  sheetIds.forEach(id => collectTokens(dom[id].className));
+}));
+[{ title: 'Undo a goal?', body: 'It comes off the board.', confirmLabel: 'Undo goal' },
+  { title: 'The clock still says Ready to Kickoff', body: 'Nothing is timed yet.', confirmLabel: 'Start clock & log goal', tone: 'primary', altLabel: 'Log without the clock' }]
+  .forEach(opts => {
+    App.askConfirm(opts);
+    ['confirmYesBtn', 'confirmAltBtn'].forEach(id => collectTokens(dom[id].className));
+    App.dismissConfirm();
+  });
+const undefinedUtilities = [...sheetTokens].filter(token =>
+  !bundleCss.includes('.' + token.replace(/[^a-zA-Z0-9_-]/g, ch => '\\' + ch)) && !touchCss.includes('.' + token));
+assert.deepStrictEqual(undefinedUtilities, [], 'Every class the goal and confirm sheets apply exists in the shipped CSS');
 assert.ok((html.match(/dock\.className = 'dock-btn flex-1/g) || []).length === 2,
   'switchTab rewrites the dock buttons with flex-1 intact, so their 44px box survives a tap');
 ['score-step', 'roster-icon-btn', 'roster-chip-btn', 'timeline-undo', 'token-bench-btn', 'sheet-close', 'chip-btn']
@@ -1825,8 +1863,192 @@ AppState.teams = savedTeams; AppState.currentTeamId = savedTeamId; AppState.curr
 App.setHeaderTeamBadge();
 console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way, deletes ask first, and tight spots get a short team name');
 
+// ==========================================
+// TEST 41: Live logging on the touchline (kickoff guard, goal sides, sub undo, event wording)
+// ==========================================
+{
+  const savedClock = AppState.clock;
+  const savedEvents = AppState.events;
+  const savedMatch = AppState.match;
+  const savedReadOnly = AppState.readOnly;
+  const savedSelected = AppState.selectedGameIds;
+  const p = AppState.squad.slice(0, 4);
+  const liveMatch = () => ({
+    ...savedMatch, id: 'live-guard-match', title: 'Guard Test', ourGoals: 0, opponentGoals: 0,
+    starters: [p[0].id, p[1].id], bench: [p[2].id, p[3].id], availability: {},
+    fieldPositions: { [p[0].id]: { x: 40, y: 60 }, [p[1].id]: { x: 60, y: 40 } },
+    initialStarters: undefined, initialBench: undefined, status: 'scheduled'
+  });
+  const stoppedClock = () => ({ running: false, intervalId: null, startedAt: 0, seconds: 0, period: '1st Half', sinceSync: 0 });
+
+  AppState.readOnly = false;
+  AppState.clock = stoppedClock();
+  AppState.events = [];
+  AppState.match = liveMatch();
+  App.dismissConfirm();
+  const toasts = [];
+  const realToast = App.toast;
+  App.toast = function (msg) { toasts.push(msg); };
+
+  // 14: the coach is asked before a goal lands on a clock that never started, and starting it works
+  App.openEventModal();
+  dom['eventPlayerSelector'].value = p[0].id;
+  dom['eventAssistSelector'].value = '';
+  dom['eventGoalMinute'].value = '12';
+  App.confirmEvent();
+  assert.strictEqual(AppState.match.ourGoals, 0, 'A goal logged before kickoff waits for the coach to answer');
+  assert.ok(App.confirmSheetIsOpen(), 'The kickoff sheet is on screen instead of a silent write');
+  App.runConfirm();
+  assert.strictEqual(AppState.match.ourGoals, 1, 'Taking the offer logs the goal');
+  assert.strictEqual(AppState.clock.running, true, 'and starts the clock it said was stopped');
+  assert.strictEqual(AppState.events[0].matchTimeSeconds, 720, 'The minute the coach typed is kept, not the clock reading');
+  App.toggleTimer();
+
+  // 14 + 15: refusing the clock still logs, and an opponent goal moves the other score
+  AppState.clock = stoppedClock();
+  AppState.events = [];
+  AppState.match = liveMatch();
+  App.openEventModal();
+  App.setGoalSide('opponent');
+  assert.ok(dom['eventGoalScorerField'].className.includes('hidden'), 'An opponent goal does not offer our scorer list');
+  App.confirmEvent();
+  assert.ok(App.confirmSheetIsOpen(), 'The stopped clock is still flagged for an opponent goal');
+  App.runConfirmAlt();
+  assert.strictEqual(AppState.match.ourGoals, 0, 'An opponent goal cannot add to our score');
+  assert.strictEqual(AppState.match.opponentGoals, 1, 'It moves the opponent counter on its own');
+  assert.strictEqual(AppState.clock.running, false, 'Declining the sheet leaves the clock stopped');
+  assert.strictEqual(AppState.events[0].side, 'opponent', 'The event remembers which net it went into');
+  assert.strictEqual(AppState.events[0].playerId, undefined, 'No squad player is credited with an opponent goal');
+  assert.ok(App.goalEventLabel(AppState.events[0]).includes('OPPONENT'), 'and it reads as an opponent goal');
+
+  // 15: one of ours on his own net costs us a goal but not his tally
+  App.openEventModal();
+  App.setGoalSide('opponent');
+  dom['goalOwnToggle'].checked = true;
+  App.syncGoalForm();
+  assert.ok(!dom['eventGoalScorerField'].className.includes('hidden'), 'An own goal names the player who touched it');
+  assert.ok(dom['eventGoalAssistField'].className.includes('hidden'), 'An own goal cannot be assisted');
+  dom['eventPlayerSelector'].value = p[1].id;
+  dom['eventGoalMinute'].value = '31';
+  App.confirmEvent();
+  assert.strictEqual(AppState.match.opponentGoals, 2, 'The own goal is scored against us');
+  assert.strictEqual(AppState.events[0].ownGoal, true, 'It is flagged so the stat line never reads as his goal');
+  assert.strictEqual(AppState.events[0].playerId, p[1].id, 'and still says who put it in');
+  const ownGoalSafeTallies = (jsCode.match(/type === 'Goal' && !e\.ownGoal && e\.playerId === p\.id/g) || []).length;
+  assert.ok(ownGoalSafeTallies >= 6, `Every player goal tally skips own goals (${ownGoalSafeTallies} updated)`);
+  assert.ok(!/type === 'Goal' && e\.playerId === p\.id/.test(jsCode), 'No leftover tally counts an own goal for the scorer');
+
+  // 15: a minute that is not a whole number is refused rather than written into the timeline
+  const goalsBefore = AppState.match.ourGoals;
+  App.openEventModal();
+  dom['goalOwnToggle'].checked = false;
+  App.setGoalSide('our');
+  dom['eventPlayerSelector'].value = p[0].id;
+  dom['eventGoalMinute'].value = 'abc';
+  App.confirmEvent();
+  assert.strictEqual(AppState.match.ourGoals, goalsBefore, 'A nonsense minute logs no goal');
+  assert.ok(toasts.some(msg => /whole minute/.test(msg)), 'and the coach is told what to type');
+
+  // 16: undoing a substitution moves the players back, not only the record
+  App.selectSubOut(p[0].id);
+  App.selectSubIn(p[2].id);
+  assert.ok(AppState.match.starters.includes(p[2].id) && !AppState.match.starters.includes(p[0].id), 'The sub takes the field');
+  assert.ok(AppState.match.bench.includes(p[0].id), 'The replaced player drops to the bench');
+  assert.strictEqual(AppState.match.fieldPositions[p[2].id].x, 40, 'He inherits the slot he ran into');
+  const firstSub = AppState.events.find(ev => ev.type === 'Sub');
+  App.deleteEvent(firstSub.id);
+  assert.ok(!AppState.events.some(ev => ev.id === firstSub.id), 'The substitution record is gone');
+  assert.ok(AppState.match.starters.includes(p[0].id), 'Undo puts the taken-off player back on the field');
+  assert.ok(AppState.match.bench.includes(p[2].id), 'and sends the replacement back to the bench');
+  assert.strictEqual(AppState.match.fieldPositions[p[0].id].x, 40, 'The shirt returns to the slot he left');
+  assert.strictEqual(AppState.match.fieldPositions[p[2].id], undefined, 'The benched player no longer holds a pitch slot');
+
+  // 16: undoing a swap that sits under a later one replays from the kickoff list
+  AppState.clock = { ...stoppedClock(), seconds: 900 };
+  AppState.events = [];
+  AppState.match = { ...liveMatch(), initialStarters: [p[0].id, p[1].id], initialBench: [p[2].id, p[3].id] };
+  App.selectSubOut(p[0].id); App.selectSubIn(p[2].id);
+  App.selectSubOut(p[1].id); App.selectSubIn(p[3].id);
+  assert.strictEqual(new Set(AppState.events.map(ev => ev.id)).size, AppState.events.length, 'Two subs in the same millisecond still get different ids');
+  const earliest = AppState.events.filter(ev => ev.type === 'Sub').reverse()[0];
+  App.deleteEvent(earliest.id);
+  assert.deepEqual(AppState.match.starters, [p[0].id, p[3].id], 'Undoing the first swap keeps the second one on the field');
+  assert.deepEqual(AppState.match.bench, [p[2].id, p[1].id], 'and the bench follows the same rule');
+
+  // 17: an event count reads as English, not "1 events"
+  AppState.events = [{ id: 'ev_one', type: 'Goal', side: 'our', playerId: p[0].id, playerName: p[0].name,
+    playerNumber: p[0].number, matchTimeSeconds: 60, period: '1st Half', timestamp: Date.now() }];
+  App.renderTimeline();
+  assert.strictEqual(dom['timelineEventCount'].innerText, '1 event', 'A single event is not "1 events"');
+  AppState.events.push({ id: 'ev_two', type: 'Assist', playerId: p[1].id, playerName: p[1].name,
+    playerNumber: p[1].number, goalId: 'ev_one', matchTimeSeconds: 60, period: '1st Half', timestamp: Date.now() });
+  App.renderTimeline();
+  assert.strictEqual(dom['timelineEventCount'].innerText, '2 events', 'Two events still pluralise');
+  assert.strictEqual(App.eventCountLabel(0), '0 events', 'and an empty timeline reads as zero events');
+
+  App.toast = realToast;
+  if (AppState.clock.running) App.toggleTimer();
+  AppState.clock = savedClock;
+  AppState.events = savedEvents;
+  AppState.match = savedMatch;
+  AppState.readOnly = savedReadOnly;
+  AppState.selectedGameIds = savedSelected;
+  console.log('✓ Goals ask before landing on a stopped clock, opponent and own goals score the right side, sub undo restores the line-up, and event counts read as English');
+}
+
+// ==========================================
+// TEST 42: Opponent and own goals stay in Lite without breaking the shared match file
+// ==========================================
+{
+  const saved = { match: AppState.match, events: AppState.events, timers: AppState.playerTimers,
+    clock: { ...AppState.clock }, teamId: AppState.currentTeamId, selected: AppState.selectedGameIds,
+    readOnly: AppState.readOnly };
+  const a = AppState.squad[0];
+  const b = AppState.squad[1];
+  AppState.readOnly = false;
+  AppState.clock = { running: false, intervalId: null, startedAt: 0, seconds: 600, period: '1st Half', sinceSync: 0 };
+  AppState.events = [
+    { id: 'ev_own', type: 'Goal', side: 'opponent', ownGoal: true, playerId: b.id, playerName: b.name,
+      playerNumber: b.number, matchTimeSeconds: 540, period: '1st Half', timestamp: Date.now() },
+    { id: 'ev_opp', type: 'Goal', side: 'opponent', matchTimeSeconds: 300, period: '1st Half', timestamp: Date.now() - 1000 },
+    { id: 'ev_ours', type: 'Goal', side: 'our', playerId: a.id, playerName: a.name, playerNumber: a.number,
+      matchTimeSeconds: 60, period: '1st Half', timestamp: Date.now() - 2000 },
+    { id: 'ev_sub', type: 'Sub', playerInId: b.id, playerOutId: a.id, playerIn: b.name, playerInNum: b.number,
+      playerOut: a.name, playerOutNum: a.number, matchTimeSeconds: 120, period: '1st Half', timestamp: Date.now() - 3000 }
+  ];
+  AppState.match = { ...saved.match, id: 'm_share_filter', status: 'paused', ourGoals: 1, opponentGoals: 2,
+    starters: [b.id], bench: [a.id], availability: {}, fieldPositions: {}, players: AppState.squad,
+    recordedAt: new Date(Date.now() - 60000).toISOString() };
+  AppState.playerTimers = { [a.id]: 300, [b.id]: 300 };
+  App.saveStorage();
+  const key = App.matchScope().key;
+  const file = JSON.parse(storage[key]);
+  assert.ok(file.live, 'The live match is published for Pro');
+  const liveIds = file.live.events.map(e => e.id);
+  assert.ok(!liveIds.includes('ev_opp'), 'An opponent goal is not written to the cloud file: Pro rows need one of our players');
+  assert.ok(!liveIds.includes('ev_own'), 'An own goal is not written either, so Pro cannot credit him with it');
+  assert.ok(liveIds.includes('ev_ours') && liveIds.includes('ev_sub'), 'A credited goal and a substitution still share');
+  assert.strictEqual(file.live.opponentGoals, 2, 'The goals against us still land on the shared score line');
+  assert.strictEqual(file.live.ourGoals, 1, 'and our own tally is unchanged');
+
+  // Pro echoes that filtered file straight back; the Lite-only goals must survive the round trip.
+  const revision = new Date(Date.now() + 1000).toISOString();
+  storage[key] = JSON.stringify({ ...file, revision, live: { ...file.live, recordedAt: revision } });
+  App.applySharedMatches();
+  const mergedIds = AppState.events.map(e => e.id);
+  assert.ok(mergedIds.includes('ev_opp') && mergedIds.includes('ev_own'), 'Reading the shared file back keeps the goals only Lite can hold');
+  assert.strictEqual(mergedIds.filter(id => id === 'ev_ours').length, 1, 'A shared goal is not duplicated by the merge');
+  assert.strictEqual(mergedIds.filter(id => id === 'ev_sub').length, 1, 'and neither is a substitution');
+  assert.strictEqual(AppState.match.opponentGoals, 2, 'The score still arrives with the incoming record');
+
+  AppState.match = saved.match; AppState.events = saved.events; AppState.playerTimers = saved.timers;
+  Object.assign(AppState.clock, saved.clock); AppState.currentTeamId = saved.teamId;
+  AppState.selectedGameIds = saved.selected; AppState.readOnly = saved.readOnly;
+  console.log('✓ Opponent and own goals stay out of the cloud file but survive a shared-match round trip in Lite');
+}
+
 console.log('\n=========================================');
-console.log('ALL 40 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 42 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 

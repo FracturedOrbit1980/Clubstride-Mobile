@@ -63,7 +63,8 @@
     .roster-chip-btn { min-height: 44px; }
     .position-select { min-height: 44px; }
     .timeline-undo { min-height: 44px; padding-left: 12px; padding-right: 12px; font-size: 12px; }
-    .sheet-close { width: 44px; height: 44px; }
+    /* A long sheet title would otherwise shrink the cross below 44px. */
+    .sheet-close { width: 44px; height: 44px; flex-shrink: 0; }
     .chip-btn { min-height: 44px; }
     .touch-input { min-height: 44px; }
     .header-icon-btn { width: 44px; height: 44px; }
@@ -78,6 +79,8 @@
     /* The badge stays small on the shirt; only its touch box grows. Kept square — a rounded
        touch box loses exactly the corners a thumb aims for. The 1px border eats 2px. */
     .token-bench-btn::after { content: ''; position: absolute; inset: -10px; }
+    /* A checkbox is hit through its label, so the label row carries the 44px, not the box. */
+    .fixed .glass-card label:has(input[type="checkbox"]) { min-height: 44px; }
     /* Toasts land above the dock instead of covering the Lite/Pro row and the match card. */
     #toastPod { top: auto; bottom: calc(env(safe-area-inset-bottom, 16px) + 96px); }
     #lineupPanel { scroll-margin-top: 84px; }
@@ -738,28 +741,45 @@
   </div>
   <!-- 3. GOAL LOGGER — SCORER PLUS OPTIONAL ASSIST, ALWAYS TIED TO A GOAL -->
   <div id="modalEvent" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
+    <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <h3 id="eventModalTitle" class="text-base font-bold text-white flex items-center space-x-2">
-          <span><svg class="ci ci-16 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> Register Goal</span>
+          <span><svg class="ci ci-16 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> <span id="eventModalTitleText">Register Goal</span></span>
         </h3>
         <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
-      <p class="text-xs text-slate-300">Only players on the pitch can score or assist. The assist is optional.</p>
+      <p class="text-xs text-slate-300">Pick the side the goal counts for, then name the scorer if it came off one of your players.</p>
       <div>
-        <label for="eventPlayerSelector" class="text-[10px] font-bold uppercase tracking-wider text-cyber-mint">Goal Scorer</label>
+        <div class="text-[10px] font-bold uppercase tracking-wider text-cyber-mint">Goal counts for</div>
+        <div class="mt-1 grid grid-cols-2 gap-2">
+          <button type="button" id="goalSideOurBtn" onclick="App.setGoalSide('our')" class="chip-btn rounded-xl bg-cyber-mint text-obsidian-950 font-bold text-xs">Our team</button>
+          <button type="button" id="goalSideOppBtn" onclick="App.setGoalSide('opponent')" class="chip-btn rounded-xl bg-obsidian-950 border border-white/15 text-slate-400 font-semibold text-xs">Opponent</button>
+        </div>
+      </div>
+      <label for="goalOwnToggle" class="flex items-center space-x-2 cursor-pointer">
+        <input type="checkbox" id="goalOwnToggle" onchange="App.syncGoalForm()" class="w-4 h-4 accent-cyber-cyan flex-shrink-0" />
+        <span class="text-xs font-bold text-white">Own goal</span>
+        <span id="goalOwnHint" class="text-[10px] text-slate-400">Put in the net by an opponent</span>
+      </label>
+      <div id="eventGoalScorerField">
+        <label for="eventPlayerSelector" id="eventGoalScorerLabel" class="text-[10px] font-bold uppercase tracking-wider text-cyber-mint">Goal Scorer</label>
         <select id="eventPlayerSelector" onchange="App.populateAssistOptions()" class="w-full mt-1 bg-obsidian-950 border border-white/15 rounded-xl p-3 text-white text-sm font-semibold focus:outline-none focus:border-cyber-cyan">
           <option value="" disabled selected>-- Select player --</option>
         </select>
       </div>
-      <div>
+      <div id="eventGoalAssistField">
         <label for="eventAssistSelector" class="text-[10px] font-bold uppercase tracking-wider text-sky-400">Assist (Optional)</label>
         <select id="eventAssistSelector" class="w-full mt-1 bg-obsidian-950 border border-white/15 rounded-xl p-3 text-white text-sm font-semibold focus:outline-none focus:border-cyber-cyan">
           <option value="">-- No Assist --</option>
         </select>
       </div>
+      <div>
+        <label for="eventGoalMinute" class="text-[10px] font-bold uppercase tracking-wider text-cyber-cyan">Minute</label>
+        <input type="number" id="eventGoalMinute" min="0" max="999" step="1" inputmode="numeric" class="w-full mt-1 bg-obsidian-950 border border-white/15 rounded-xl p-3 text-white text-sm font-semibold focus:outline-none focus:border-cyber-cyan" placeholder="0" />
+        <p class="text-[10px] text-slate-400 mt-1">Already 12 minutes in? Type 12. The clock only tracks playing time you run here.</p>
+      </div>
       <div class="flex space-x-2 pt-2">
-        <button onclick="App.confirmEvent()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95">
+        <button onclick="App.confirmEvent()" id="modalEventSubmitBtn" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95">
           Record Goal
         </button>
       </div>
@@ -926,6 +946,7 @@
         <button type="button" onclick="App.cancelConfirm()" class="py-2.5 rounded-xl bg-obsidian-950 border border-white/15 text-slate-300 font-bold text-xs transition active:scale-95">Cancel</button>
         <button type="button" id="confirmYesBtn" onclick="App.runConfirm()" class="py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 font-bold text-xs transition active:scale-95">Confirm</button>
       </div>
+      <button type="button" id="confirmAltBtn" onclick="App.runConfirmAlt()" class="hidden w-full py-2.5 rounded-xl bg-obsidian-950 border border-cyber-cyan/40 text-cyber-cyan font-bold text-xs transition active:scale-95">Continue</button>
     </div>
   </div>
   <!-- 6. PDF REPORT GENERATOR MODAL (Single Match & Date Range) -->
@@ -2219,6 +2240,24 @@
         this.toast('Shared match tools are read-only. Only team staff can change matches.');
         return false;
       },
+      // Pro's match_events rows require one of our players as the actor, so an opponent goal or an
+      // own goal has no honest home in the cloud file: the score counters on the match row already
+      // carry it. These goals stay in Lite, and the incoming snapshot must not delete them.
+      eventIsShareable(event) {
+        if (event.type !== 'Goal') return true;
+        return !!event.playerId && !event.ownGoal && event.side !== 'opponent';
+      },
+      eventTimeMs(event) {
+        return typeof event.timestamp === 'number' ? event.timestamp : (Date.parse(event.timestamp) || 0);
+      },
+      mergeLocalOnlyEvents(localEvents, incomingEvents) {
+        const withheld = (localEvents || []).filter(event => !this.eventIsShareable(event));
+        const incoming = incomingEvents || [];
+        if (!withheld.length) return incoming;
+        const byId = new Map(incoming.map(event => [event.id, event]));
+        withheld.forEach(event => { if (!byId.has(event.id)) byId.set(event.id, event); });
+        return [...byId.values()].sort((a, b) => this.eventTimeMs(b) - this.eventTimeMs(a));
+      },
       matchScope() {
         const installationId = AppState.sharedInstallationId || this.getLiteInstallationId();
         const teamId = String(AppState.currentTeamId || 'lite-default');
@@ -2242,7 +2281,7 @@
           if (player.proId !== undefined) p.proId = player.proId;
           return p;
         });
-        content.events = (record.events || []).map(event => {
+        content.events = (record.events || []).filter(event => this.eventIsShareable(event)).map(event => {
           const e = {};
           ['id', 'proId', 'type', 'playerId', 'playerInId', 'playerOutId', 'playerName', 'playerNumber',
             'playerIn', 'playerInNum', 'playerOut', 'playerOutNum', 'goalId', 'matchTimeSeconds',
@@ -2502,6 +2541,13 @@
         try {
           const current = this.selectedTeamHistory();
           const local = new Map(current.map(m => [m.id, m]));
+          // Opponent goals and own goals are kept in Lite only, so a round trip through the shared
+          // file must not delete them: remember them per match before the incoming rows land.
+          const localWithheld = new Map();
+          [...current, { id: AppState.match.id, events: AppState.events }].forEach(m => {
+            const keep = (m.events || []).filter(event => !this.eventIsShareable(event));
+            if (keep.length) localWithheld.set(m.id, keep);
+          });
           const removed = new Map(snapshot.removed.map(m => [m.id, m]));
           const matches = snapshot.matches.filter(m => !removed.has(m.id) || removed.get(m.id).recordedAt < m.recordedAt).map(m => {
             const old = local.get(m.id);
@@ -2512,7 +2558,11 @@
             if (!matches.some(row => row.id === m.id) && m.recordedAt > snapshot.revision &&
               (!removed.has(m.id) || m.recordedAt > removed.get(m.id).recordedAt)) matches.push(m);
           });
-          AppState.matchHistory = (AppState.matchHistory || []).filter(m => this.historyTeamId(m) !== scope.teamId).concat(matches);
+          AppState.matchHistory = (AppState.matchHistory || []).filter(m => this.historyTeamId(m) !== scope.teamId).concat(
+            matches.map(m => {
+              const keep = localWithheld.get(m.id);
+              return keep ? { ...m, events: this.mergeLocalOnlyEvents(keep, m.events) } : m;
+            }));
           const live = snapshot.live;
           const localTime = AppState.match.recordedAt || previous?.live?.recordedAt || '';
           const keepRunning = AppState.clock.running && ((live?.id === AppState.match.id && live.recordedAt <= localTime) ||
@@ -2523,7 +2573,8 @@
               clearInterval(AppState.clock.intervalId);
               AppState.match = { ...live, teamId: scope.teamId, availability: Object.fromEntries(AppState.squad.map(p => [p.id, p.available !== false])),
                 fieldPositions: positions || {}, initialStarters: live.status === 'scheduled' ? undefined : this.initialMatchStarters(live.starters, live.events) };
-              AppState.events = live.events; AppState.playerTimers = live.playerTimers;
+              AppState.events = this.mergeLocalOnlyEvents(AppState.events, live.events);
+              AppState.playerTimers = live.playerTimers;
               const running = live.status === 'in_progress';
               Object.assign(AppState.clock, { seconds: live.durationSeconds, period: live.period, running,
                 startedAt: running ? Date.now() : 0, intervalId: null, sinceSync: 0 });
@@ -3601,12 +3652,19 @@
         const outPlayer = AppState.squad.find(i => i.id === outPid);
         const inPlayer = AppState.squad.find(i => i.id === benchPid);
         if (!outPlayer || !inPlayer || !AppState.match.starters.includes(outPid) || !AppState.match.bench.includes(benchPid)) return;
+        this.requireKickoff('substitution', 'Start clock & log sub', 'Log without the clock',
+          () => this.commitSub(outPid, benchPid));
+      },
+      commitSub(outPid, benchPid) {
+        const outPlayer = AppState.squad.find(i => i.id === outPid);
+        const inPlayer = AppState.squad.find(i => i.id === benchPid);
+        if (!outPlayer || !inPlayer || !AppState.match.starters.includes(outPid) || !AppState.match.bench.includes(benchPid)) return;
         const savedPos = AppState.match.fieldPositions[outPid] || { x: 50, y: 50 };
         AppState.match.fieldPositions[benchPid] = savedPos;
         AppState.match.starters = AppState.match.starters.map(id => id === outPid ? benchPid : id);
         AppState.match.bench = AppState.match.bench.map(id => id === benchPid ? outPid : id);
         const eventRecord = {
-          id: 'ev_' + Date.now(),
+          id: this.newEventId(),
           matchId: AppState.match.id,
           type: 'Sub',
           playerInId: benchPid,
@@ -3652,8 +3710,41 @@
           selector.appendChild(opt);
         });
         this.populateAssistOptions();
+        this._goalSide = 'our';
+        document.getElementById('goalOwnToggle').checked = false;
+        document.getElementById('eventGoalMinute').value = Math.floor((AppState.clock.seconds || 0) / 60);
+        this.syncGoalForm();
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+      },
+      setGoalSide(side) {
+        this._goalSide = side === 'opponent' ? 'opponent' : 'our';
+        this.syncGoalForm();
+      },
+      goalFormState() {
+        const side = this._goalSide === 'opponent' ? 'opponent' : 'our';
+        const own = document.getElementById('goalOwnToggle').checked;
+        return { side, own, byUs: side === 'our' ? !own : own };
+      },
+      // Naming a scorer only makes sense when the ball came off one of your players. The other
+      // side is not on the squad sheet, so those fields are hidden rather than left to guess.
+      syncGoalForm() {
+        const { side, own, byUs } = this.goalFormState();
+        const idle = 'bg-obsidian-950 border border-white/15 text-slate-400 font-semibold';
+        document.getElementById('goalSideOurBtn').className = `chip-btn rounded-xl text-xs ${side === 'our' ? 'bg-cyber-mint text-obsidian-950 font-bold' : idle}`;
+        document.getElementById('goalSideOppBtn').className = `chip-btn rounded-xl text-xs ${side === 'opponent' ? 'bg-red-500 text-white font-bold' : idle}`;
+        document.getElementById('eventGoalScorerField').classList.toggle('hidden', !byUs);
+        document.getElementById('eventGoalAssistField').classList.toggle('hidden', side !== 'our' || own);
+        document.getElementById('eventGoalScorerLabel').innerText = own ? 'Your Own-Goal Scorer' : 'Goal Scorer';
+        document.getElementById('goalOwnHint').innerText = side === 'our'
+          ? 'Put in the net by an opponent'
+          : 'Put in the net by one of your players';
+        document.getElementById('eventModalTitleText').innerText = own
+          ? 'Register Own Goal'
+          : side === 'opponent' ? 'Register Opponent Goal' : 'Register Goal';
+        document.getElementById('modalEventSubmitBtn').innerText = own
+          ? (side === 'opponent' ? 'Record Own Goal' : 'Record Opponent Own Goal')
+          : side === 'opponent' ? 'Record Opponent Goal' : 'Record Goal';
       },
       getFieldedPlayers() {
         return AppState.match.starters
@@ -3682,42 +3773,75 @@
         return this.confirmEvent();
       },
       confirmEvent() {
-        const selector = document.getElementById('eventPlayerSelector');
-        const assistSelector = document.getElementById('eventAssistSelector');
-        const pid = selector.value;
-        // Requirement 3: Enforce scorer selection
-        if (!pid) {
-          this.toast('Please choose the goal scorer!', 'card-yellow');
+        const { side, own, byUs } = this.goalFormState();
+        const minuteEl = document.getElementById('eventGoalMinute');
+        const typedMinute = String(minuteEl.value === undefined ? '' : minuteEl.value).trim();
+        const minute = typedMinute === ''
+          ? Math.floor((AppState.clock.seconds || 0) / 60) : Number(typedMinute);
+        if (!Number.isInteger(minute) || minute < 0 || minute > 999) {
+          this.toast('Enter a whole minute between 0 and 999', 'card-yellow');
           return;
         }
-        const player = AppState.squad.find(i => i.id === pid);
-        if (!player) return;
-        const assistPid = assistSelector ? assistSelector.value : '';
-        if (assistPid === pid) {
+        let player = null;
+        if (byUs) {
+          // Requirement 3: Enforce scorer selection
+          const pid = document.getElementById('eventPlayerSelector').value;
+          if (!pid) {
+            this.toast('Please choose the goal scorer!', 'card-yellow');
+            return;
+          }
+          player = AppState.squad.find(i => i.id === pid);
+          if (!player) return;
+        }
+        let assister = null;
+        const assistSelector = document.getElementById('eventAssistSelector');
+        const assistPid = side === 'our' && !own && assistSelector ? assistSelector.value : '';
+        if (player && assistPid === player.id) {
           this.toast('The scorer cannot assist their own goal!', 'card-yellow');
           return;
         }
-        const assister = assistPid ? AppState.squad.find(i => i.id === assistPid) : null;
-        if (assistPid && !assister) return;
-        AppState.match.ourGoals = (AppState.match.ourGoals || 0) + 1;
-        const scoreEl = document.getElementById('scoreboardGoals');
-        if (scoreEl) scoreEl.innerText = AppState.match.ourGoals;
+        if (assistPid) {
+          assister = AppState.squad.find(i => i.id === assistPid);
+          if (!assister) return;
+        }
+        this.requireKickoff('goal', 'Start clock & log goal', 'Log without the clock',
+          () => this.commitGoal({ side, own, player, assister, minute }));
+      },
+      updateScoreboard() {
+        const ourEl = document.getElementById('scoreboardGoals');
+        if (ourEl) ourEl.innerText = AppState.match.ourGoals || 0;
+        const oppEl = document.getElementById('scoreboardOpponentGoals');
+        if (oppEl) oppEl.innerText = AppState.match.opponentGoals || 0;
+      },
+      // Two events stamped in the same millisecond used to share an id, and the shared match file
+      // refuses a snapshot with duplicate ids, which silently blocks the whole sync.
+      newEventId() {
+        return 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+      },
+      commitGoal({ side, own, player, assister, minute }) {
         const stamp = Date.now();
         const goalEvent = {
-          id: 'ev_' + stamp,
+          id: this.newEventId(),
           matchId: AppState.match.id,
           type: 'Goal',
-          playerId: pid,
-          playerName: player.name,
-          playerNumber: player.number,
-          matchTimeSeconds: AppState.clock.seconds,
+          side,
+          ownGoal: !!own,
+          matchTimeSeconds: minute * 60,
           period: AppState.clock.period,
           timestamp: stamp
         };
+        if (player) {
+          goalEvent.playerId = player.id;
+          goalEvent.playerName = player.name;
+          goalEvent.playerNumber = player.number;
+        }
+        if (side === 'our') AppState.match.ourGoals = (AppState.match.ourGoals || 0) + 1;
+        else AppState.match.opponentGoals = (AppState.match.opponentGoals || 0) + 1;
+        this.updateScoreboard();
         AppState.events.unshift(goalEvent);
         if (assister) {
           const assistEvent = {
-            id: 'ev_' + stamp + '_assist',
+            id: goalEvent.id + '_assist',
             matchId: AppState.match.id,
             type: 'Assist',
             playerId: assister.id,
@@ -3734,9 +3858,18 @@
         this.closeModals();
         this.renderTimeline();
         this.renderStats();
-        this.toast(assister
-          ? `Goal: #${player.number} ${player.name} • Assist: #${assister.number} ${assister.name}`
-          : `Goal: #${player.number} ${player.name}!`);
+        this.toast(this.goalEventLabel(goalEvent) +
+          (assister ? ` • Assist: #${assister.number} ${assister.name}` : '!'));
+      },
+      goalEventLabel(ev) {
+        const who = ev.playerNumber !== undefined
+          ? `#${ev.playerNumber} ${ev.playerName}`
+          : 'Opponent';
+        if (ev.ownGoal) return ev.side === 'opponent' ? `OWN GOAL by ${who}` : 'OWN GOAL by an opponent';
+        return ev.side === 'opponent' ? 'OPPONENT GOAL' : `GOAL by ${who}`;
+      },
+      eventCountLabel(count) {
+        return `${count} event${count === 1 ? '' : 's'}`;
       },
       // Requirement 2: Manual Score Steppers (+/-)
       adjustScore(team, delta) {
@@ -3763,21 +3896,70 @@
         const ev = AppState.events[evIndex];
         const linkedAssists = ev.type === 'Goal' ? AppState.events.filter(e => e.goalId === ev.id) : [];
         const confirmMsg = ev.type === 'Goal'
-          ? `Undo this Goal by #${ev.playerNumber} ${ev.playerName}? Score will decrement by 1.${linkedAssists.length ? `\n\nIts ${linkedAssists.length} linked assist will be removed too.` : ''}`
-          : `Delete this ${ev.type} event (${ev.playerName || ''})?`;
+          ? `Undo this ${this.goalEventLabel(ev)}? The score will decrement by 1.${linkedAssists.length ? `\n\nIts ${linkedAssists.length} linked assist will be removed too.` : ''}`
+          : ev.type === 'Sub'
+            ? `Undo this substitution? #${ev.playerInNum} ${ev.playerIn} returns to the bench and #${ev.playerOutNum} ${ev.playerOut} goes back on the field.`
+            : `Delete this ${ev.type} event (${ev.playerName || ''})?`;
         if (!confirm(confirmMsg)) return;
+        const isSub = ev.type === 'Sub';
         if (ev.type === 'Goal') {
-          AppState.match.ourGoals = Math.max(0, (AppState.match.ourGoals || 0) - 1);
-          const el = document.getElementById('scoreboardGoals');
-          if (el) el.innerText = AppState.match.ourGoals;
+          if (ev.side === 'opponent') AppState.match.opponentGoals = Math.max(0, (AppState.match.opponentGoals || 0) - 1);
+          else AppState.match.ourGoals = Math.max(0, (AppState.match.ourGoals || 0) - 1);
+          this.updateScoreboard();
         }
         const removedIds = [ev.id, ...linkedAssists.map(a => a.id)];
         AppState.events = AppState.events.filter(e => !removedIds.includes(e.id));
+        if (isSub) this.revertSubstitution(ev);
         this.saveStorage();
         this.renderTimeline();
         this.renderStats();
         this.renderLiveBoard();
+        if (isSub) this.renderPitchTokens();
         this.toast(linkedAssists.length ? `${ev.type} + linked assist undone & stats updated!` : `${ev.type} undone & stats updated!`);
+      },
+      // A substitution moves two ids between the starting XI and the bench, so deleting the record
+      // alone leaves the line-up swapped. Replaying the subs that survive from the kickoff list
+      // keeps the answer right even when the undone swap sat under later ones.
+      revertSubstitution(ev) {
+        const inn = ev.playerInId;
+        const out = ev.playerOutId;
+        if (!inn || !out) return;
+        const positions = AppState.match.fieldPositions || (AppState.match.fieldPositions = {});
+        const base = AppState.match.initialStarters;
+        const baseBench = AppState.match.initialBench;
+        let starters;
+        let bench;
+        if (Array.isArray(base) && base.length && Array.isArray(baseBench)) {
+          starters = [...base];
+          bench = [...baseBench];
+          [...AppState.events].reverse().forEach(e => {
+            if (e.type !== 'Sub' || !e.playerInId || !e.playerOutId) return;
+            const slot = starters.indexOf(e.playerOutId);
+            if (slot >= 0) starters[slot] = e.playerInId;
+            const seat = bench.indexOf(e.playerInId);
+            if (seat >= 0) bench[seat] = e.playerOutId;
+          });
+        } else {
+          starters = [...AppState.match.starters];
+          bench = [...AppState.match.bench];
+          const slot = starters.indexOf(inn);
+          const seat = bench.indexOf(out);
+          if (slot < 0 || seat < 0) {
+            this.toast('Only the record was removed. The line-up had already moved on from that swap.');
+            return;
+          }
+          starters[slot] = out;
+          bench[seat] = inn;
+        }
+        const known = id => AppState.squad.some(p => p.id === id);
+        starters = [...new Set(starters)].filter(known);
+        bench = [...new Set(bench)].filter(id => known(id) && !starters.includes(id));
+        AppState.match.starters = starters;
+        AppState.match.bench = bench;
+        if (starters.includes(out)) {
+          positions[out] = positions[inn] || { x: 50, y: 50 };
+          delete positions[inn];
+        }
       },
       // Requirement 1: End Match flow and archival
       endMatch() {
@@ -3975,7 +4157,7 @@
       renderTimeline() {
         const list = document.getElementById('matchTimelineList');
         const countBadge = document.getElementById('timelineEventCount');
-        countBadge.innerText = `${AppState.events.length} events`;
+        countBadge.innerText = this.eventCountLabel(AppState.events.length);
         if (AppState.events.length === 0) {
           list.innerHTML = `<div class="text-slate-500 text-center py-4 italic">No match events logged yet</div>`;
           return;
@@ -3988,7 +4170,11 @@
           let text = '';
           if (ev.type === 'Goal') {
             icon = '<svg class="ci ci-20 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg>';
-            text = `<span class="font-bold text-cyber-mint">GOAL</span> by #${ev.playerNumber} ${ev.playerName}`;
+            const word = ev.ownGoal ? 'OWN GOAL' : ev.side === 'opponent' ? 'OPPONENT GOAL' : 'GOAL';
+            const tint = ev.ownGoal ? 'text-amber-400' : ev.side === 'opponent' ? 'text-red-400' : 'text-cyber-mint';
+            text = ev.playerNumber === undefined
+              ? `<span class="font-bold ${tint}">${word}</span>`
+              : `<span class="font-bold ${tint}">${word}</span> by #${ev.playerNumber} ${ev.playerName}`;
           } else if (ev.type === 'Assist') {
             icon = '<svg class="ci ci-20 ci-assist" aria-hidden="true"><use href="#ci-assist"></use></svg>';
             text = `<span class="font-bold text-sky-400">ASSIST</span> by #${ev.playerNumber} ${ev.playerName}`;
@@ -4122,7 +4308,7 @@
               playerStats[p.id].starts++;
             }
             playerStats[p.id].totalSeconds += sec;
-            const pGoals = events.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
+            const pGoals = events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
             const pAssists = events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
             playerStats[p.id].goals += pGoals;
             playerStats[p.id].assists += pAssists;
@@ -4142,7 +4328,7 @@
               playerStats[p.id].starts++;
             }
             playerStats[p.id].totalSeconds += sec;
-            const pGoals = AppState.events.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
+            const pGoals = AppState.events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
             const pAssists = AppState.events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
             playerStats[p.id].goals += pGoals;
             playerStats[p.id].assists += pAssists;
@@ -4271,7 +4457,7 @@
                   <span>${isLiveExpanded ? 'Hide Detail' : 'Game Detail'}</span>
                 </button>
               </div>
-              <span class="text-[11px] text-slate-400 font-mono">${(AppState.events || []).length} events</span>
+              <span class="text-[11px] text-slate-400 font-mono">${this.eventCountLabel((AppState.events || []).length)}</span>
             </div>
             ${isLiveExpanded ? this.renderGameDetailHtml('live', AppState.match, AppState.playerTimers, AppState.events, AppState.match.starters) : ''}
           `;
@@ -4335,7 +4521,7 @@
         (match.players || AppState.squad).forEach(p => {
           const sec = pTimers[p.id] || 0;
           const isStarter = pStarters.includes(p.id);
-          const goals = pEvents.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
+          const goals = pEvents.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
           const assists = pEvents.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
           rowsHtml += `
             <div class="flex items-center justify-between p-2 rounded-xl bg-obsidian-950/70 border border-white/5 text-xs">
@@ -4367,7 +4553,7 @@
         } else {
           eventsHtml = pEvents.map(ev => {
             let label = '';
-            if (ev.type === 'Goal') label = `<svg class="ci ci-14 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> GOAL by #${ev.playerNumber} ${ev.playerName}`;
+            if (ev.type === 'Goal') label = `<svg class="ci ci-14 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> ${this.goalEventLabel(ev)}`;
             else if (ev.type === 'Assist') label = `<svg class="ci ci-14 ci-assist" aria-hidden="true"><use href="#ci-assist"></use></svg> ASSIST by #${ev.playerNumber} ${ev.playerName}`;
             else if (ev.type === 'Sub') label = `<svg class="ci ci-14" aria-hidden="true"><use href="#ci-sub-swap"></use></svg> SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
             return `<div class="text-[11px] text-slate-300 flex items-center space-x-1.5 py-0.5"><span class="font-mono text-cyber-cyan text-[10px] font-bold">[${this.formatTime(ev.matchTimeSeconds || 0)}]</span><span>${label}</span></div>`;
@@ -4565,7 +4751,7 @@
             <div><span class="text-slate-500">Format:</span> ${fmt}</div>
             <div><span class="text-slate-500">Formation:</span> ${formation}</div>
             <div><span class="text-slate-500">Played:</span> ${dur}</div>
-            <div><span class="text-slate-500">Events:</span> ${(target.events || []).length} logged</div>
+            <div><span class="text-slate-500">Events:</span> ${this.eventCountLabel((target.events || []).length)} logged</div>
           </div>
         `;
       },
@@ -4667,7 +4853,7 @@
         (isLive ? AppState.match.players || AppState.squad : target.players || AppState.squad).forEach(p => {
           const pitchSec = playerTimers[p.id] || 0;
           const benchSec = Math.max(0, durationSec - pitchSec);
-          const goals = events.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
+          const goals = events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
           const assists = events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
           const subsIn = events.filter(e => e.type === 'Sub' && e.playerInId === p.id).length;
           const subsOut = events.filter(e => e.type === 'Sub' && e.playerOutId === p.id).length;
@@ -4694,7 +4880,7 @@
           events.forEach(ev => {
             let icon = '•';
             let label = '';
-            if (ev.type === 'Goal') { icon = ''; label = `GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
+            if (ev.type === 'Goal') { icon = ''; label = `${this.goalEventLabel(ev)} (${ev.period || 'Match'})`; }
             else if (ev.type === 'Assist') { icon = ''; label = `ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
             else if (ev.type === 'Sub') { icon = ''; label = `SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`; }
             else { label = `${ev.type} - ${ev.playerName || ''}`; }
@@ -4844,7 +5030,7 @@
               if (isStarter) st.starts += 1;
             }
             st.totalSeconds += pitchSec;
-            st.goals += events.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
+            st.goals += events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
             st.assists += events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
             st.subsIn += events.filter(e => e.type === 'Sub' && e.playerInId === p.id).length;
             st.subsOut += events.filter(e => e.type === 'Sub' && e.playerOutId === p.id).length;
@@ -5062,8 +5248,8 @@
             opponent: `${count} Selected Fixtures`,
             date: new Date().toISOString().split('T')[0],
             format: AppState.match.format || '7',
-            ourGoals: targetEvents.filter(e => e.type === 'Goal').length,
-            opponentGoals: 0
+            ourGoals: targetEvents.filter(e => e.type === 'Goal' && e.side !== 'opponent').length,
+            opponentGoals: targetEvents.filter(e => e.type === 'Goal' && e.side === 'opponent').length
           };
         } else if (matchId && AppState.matchHistory) {
           const hist = this.selectedTeamHistory().find(m => m.id === matchId);
@@ -5087,7 +5273,7 @@
         tbody.innerHTML = '';
         (targetMatch.players || AppState.squad).forEach(p => {
           const sec = targetTimers[p.id] || 0;
-          const goals = targetEvents.filter(e => e.type === 'Goal' && e.playerId === p.id).length;
+          const goals = targetEvents.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
           const assists = targetEvents.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
           const isStarter = targetStarters.includes(p.id);
           const row = document.createElement('tr');
@@ -5111,7 +5297,7 @@
           targetEvents.forEach(ev => {
             const item = document.createElement('div');
             let txt = '';
-            if (ev.type === 'Goal') txt = `[${this.formatTime(ev.matchTimeSeconds)}] GOAL by #${ev.playerNumber} ${ev.playerName} (${ev.period || ''})`;
+            if (ev.type === 'Goal') txt = `[${this.formatTime(ev.matchTimeSeconds)}] ${this.goalEventLabel(ev)} (${ev.period || ''})`;
             else if (ev.type === 'Assist') txt = `[${this.formatTime(ev.matchTimeSeconds)}] ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period || ''})`;
             else if (ev.type === 'Sub') txt = `[${this.formatTime(ev.matchTimeSeconds)}] SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
             item.innerText = txt;
@@ -5209,8 +5395,8 @@
           const out = shift.picked.has(pid);
           return `
             <button type="button" onclick="App.toggleFormatBenchPick('${pid}')" aria-pressed="${out}"
-              class="w-full min-h-[44px] flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left transition active:scale-[0.99] ${
-                out ? 'bg-red-500/10 border-red-500/35 text-red-300' : 'bg-obsidian-950 border-white/15 text-slate-200'
+              class="chip-btn w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left transition active:scale-95 ${
+                out ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-obsidian-950 border-white/15 text-slate-300'
               }">
               <span class="flex items-center space-x-2 min-w-0">
                 <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-white/10 text-[10px] font-black flex items-center justify-center">${p.number}</span>
@@ -5411,7 +5597,15 @@
         this._pendingConfirm = opts;
         document.getElementById('confirmTitle').innerText = opts.title;
         document.getElementById('confirmBody').innerText = opts.body;
-        document.getElementById('confirmYesBtn').innerText = opts.confirmLabel || 'Confirm';
+        const yes = document.getElementById('confirmYesBtn');
+        yes.innerText = opts.confirmLabel || 'Confirm';
+        // The sheet answers deletions as well as kickoffs, so only the destructive ones wear the red.
+        yes.className = opts.tone === 'primary'
+          ? 'py-2.5 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/20 border border-cyber-cyan/40 text-cyber-cyan font-bold text-xs transition active:scale-95'
+          : 'py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 font-bold text-xs transition active:scale-95';
+        const alt = document.getElementById('confirmAltBtn');
+        alt.innerText = opts.altLabel || 'Continue';
+        alt.classList.toggle('hidden', !opts.altLabel);
         const modal = document.getElementById('modalConfirm');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -5432,6 +5626,30 @@
         const job = this._pendingConfirm;
         this.dismissConfirm();
         if (job && typeof job.action === 'function') job.action();
+      },
+      runConfirmAlt() {
+        const job = this._pendingConfirm;
+        this.dismissConfirm();
+        if (job && typeof job.altAction === 'function') job.altAction();
+      },
+      // A goal or a sub logged before kickoff used to land silently on a stopped clock, so the coach
+      // lost those playing minutes without being told. Once anything is on the board the coach has
+      // answered the question, so the sheet does not ask again mid-match.
+      matchHasStarted() {
+        return !!(AppState.clock.running || AppState.clock.seconds > 0 ||
+          (AppState.events || []).length > 0 || AppState.match.status === 'in_progress');
+      },
+      requireKickoff(what, startLabel, plainLabel, commit) {
+        if (this.matchHasStarted()) { commit(); return; }
+        this.askConfirm({
+          title: 'The clock still says Ready to Kickoff',
+          body: `Nothing is timed yet, so this ${what} will be logged with no playing minutes behind it.`,
+          confirmLabel: startLabel,
+          tone: 'primary',
+          action: () => { this.toggleTimer(); commit(); },
+          altLabel: plainLabel,
+          altAction: commit
+        });
       },
       TOAST_TINT: { goal: 'ci-goal', assist: 'ci-assist', star: 'ci-accent', 'card-yellow': 'ci-card-yellow', 'card-red': 'ci-card-red', 'sub-in': 'ci-go', 'sub-out': 'ci-danger', 'end-match': 'ci-danger', delete: 'ci-danger' },
       toast(msg, icon = 'star') {
