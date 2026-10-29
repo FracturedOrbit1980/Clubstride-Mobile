@@ -100,6 +100,18 @@ assert(proViewTag.includes('href="https://fracturedorbit1980.github.io/Clubstrid
 assert(!proViewTag.includes('target="_blank"'), 'View switch must open Pro in-app, not in a new tab');
 assert(proViewTag.includes('onclick="return App.openProUpgrade(event)"'), 'View switch must run the in-app Pro shell');
 assert(html.includes('id="liteViewBtn" aria-pressed="true"'), 'Lite must read as the selected view');
+const liteViewTag = (html.match(/<button type="button" id="liteViewBtn"[^>]+>/) || [])[0] || '';
+assert(liteViewTag.includes('view-tab') && proViewTag.includes('view-tab'),
+  'Both view segments take the shared box, so their labels sit on one line');
+assert(html.includes('.view-tab { display: flex; align-items: center; justify-content: center;'),
+  'and that box centres the label instead of leaving it on the line box');
+assert(html.includes('<div class="grid grid-cols-2 gap-1.5" role="group" aria-label="Clubstride view">'),
+  'the two segments sit in equal grid halves, so neither can be wider than the other');
+assert(proViewTag.includes('aria-pressed="false"'), 'The Pro segment must report its own state');
+assert(!liteViewTag.includes('cursor-default'), 'A view segment that really does something is not drawn inert');
+assert(/setViewTabState\(proActive\)/.test(html), 'One helper owns the pressed state of both segments');
+assert(/this\.setViewTabState\(true\)/.test(html) && /this\.setViewTabState\(false\)/.test(html),
+  'Opening Pro presses Pro and Back to Lite releases it');
 assert(html.includes('id="proToggleNote" role="status" aria-live="polite" class="hidden'), 'View-switch offline note must start hidden but be announced when shown');
 assert(/openProUpgrade\(event\) \{[\s\S]*proToggleNote/.test(html), 'Offline guard must reveal the view-switch note too');
 console.log('✓ View switch opens Pro in-app from every tab and guards offline taps');
@@ -723,11 +735,17 @@ assert.strictEqual(proShell.style.display, 'flex', 'Online Pro tap must reveal t
 assert.strictEqual(proFrame.getAttribute('src'), App.PRO_URL, 'Pro iframe must load the Pro app when asked');
 assert.strictEqual(history._pushed, 1, 'Opening Pro must push exactly one history entry');
 assert(document.body.style.overflow === 'hidden', 'Pro shell must lock the page scroll behind it');
+assert.strictEqual(dom['proViewBtn'].getAttribute('aria-pressed'), 'true', 'Pro must read as the view that is on screen');
+assert.strictEqual(dom['liteViewBtn'].getAttribute('aria-pressed'), 'false', 'while Lite reads as the view behind it');
+assert(dom['proViewBtn'].className.includes('text-cyber-mint'), 'the pressed segment takes the mint tint');
+assert(dom['liteViewBtn'].className.includes('bg-obsidian-900'), 'and the idle segment hands it back');
 
 App.closeProShell(false);
 assert.strictEqual(proShell.style.display, 'none', 'Back to Lite must hide the Pro shell');
 assert(document.body.style.overflow === '', 'Back to Lite must release the page scroll');
 assert.strictEqual(history._backed, 1, 'Back to Lite must consume the pushed history entry');
+assert.strictEqual(dom['liteViewBtn'].getAttribute('aria-pressed'), 'true', 'Back to Lite must press the Lite segment again');
+assert.strictEqual(dom['proViewBtn'].getAttribute('aria-pressed'), 'false', 'and release the Pro segment');
 console.log('✓ Pro upgrade opens in-app with Back to Lite, and offline taps stay blocked');
 
 // ==========================================
@@ -857,6 +875,8 @@ try {
   assert(dom['storageFailureStatus'].innerText.includes('Roster sharing'));
   App.openProShell(false);
   assert.strictEqual(proShell.style.display, 'none', 'Do not open Pro with stale data after a snapshot failure');
+  assert.strictEqual(dom['liteViewBtn'].getAttribute('aria-pressed'), 'true', 'A refused Pro open must leave Lite pressed');
+  assert.strictEqual(dom['proViewBtn'].getAttribute('aria-pressed'), 'false', 'and the Pro segment unpressed');
 
   localStorage.setItem = workingSetItem;
   assert.strictEqual(App.saveStorage(), true, 'A later save must retry publication successfully');
