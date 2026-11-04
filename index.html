@@ -425,13 +425,12 @@
               <button type="button" onclick="App.adjustScore('our', 1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-mint/40 text-cyber-mint hover:bg-cyber-mint/20 flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Goal">+</button>
             </div>
           </div>
-          <!-- CENTER column: colon + timer -->
-          <div class="flex flex-col items-center flex-shrink-0 px-1">
-            <span class="font-mono font-bold text-slate-500" style="font-size:2rem;line-height:1">:</span>
-            <div id="matchClockDisplay" class="font-mono font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300 mt-0.5" style="font-size:1rem;line-height:1.2">
+          <!-- CENTER column: match clock -->
+          <div class="flex flex-col items-center justify-center flex-shrink-0 px-1.5">
+            <div id="matchClockDisplay" class="font-mono font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300" style="font-size:2rem;line-height:1">
               00:00
             </div>
-            <p id="clockStatusSubtext" class="text-cyber-cyan font-medium mt-0.5 text-center" style="font-size:0.55rem;line-height:1.1;max-width:80px">Clock Paused — Ready to Kickoff</p>
+            <p id="clockStatusSubtext" class="text-cyber-cyan font-medium mt-1 text-center" style="font-size:0.65rem;line-height:1.1;max-width:96px">Clock Paused — Ready to Kickoff</p>
           </div>
           <!-- AWAY column -->
           <div class="flex flex-col items-center min-w-0" style="flex:1 1 0%;max-width:38%">
