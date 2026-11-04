@@ -2305,8 +2305,75 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   console.log('✓ A date window that hides saved matches says so and offers the whole history');
 }
 
+// ---------------------------------------------------------------------------
+// TEST 47: Live Match Cards (Yellow, Red) & Injury Logging + 1-Page PDF Fit
+// ---------------------------------------------------------------------------
+{
+  const realToast = App.toast;
+  const toasts = [];
+  App.toast = (msg, icon) => toasts.push({ msg, icon });
+
+  // 1. Verify Card & Injury modal and buttons
+  assert(typeof App.openCardModal === 'function', 'App.openCardModal exists');
+  assert(typeof App.confirmCardEvent === 'function', 'App.confirmCardEvent exists');
+
+  // Open Yellow Card modal
+  App.openCardModal('YellowCard');
+  assert.strictEqual(AppState.currentCardType, 'YellowCard', 'currentCardType is YellowCard');
+  assert.strictEqual(dom['cardModalTitleText'].innerText, 'Record Yellow Card', 'Modal title for Yellow Card');
+  assert(!dom['modalCardEvent'].classList.contains('hidden'), 'modalCardEvent is shown');
+
+  // Select player and record
+  const p1 = AppState.squad[0];
+  dom['cardPlayerSelector'].value = p1.id;
+  dom['cardMinute'].value = '15';
+  dom['cardReason'].value = 'Tactical foul';
+  App.confirmCardEvent();
+
+  assert(AppState.events.some(e => e.type === 'YellowCard' && e.playerId === p1.id), 'Yellow Card event was recorded');
+  const ycEv = AppState.events.find(e => e.type === 'YellowCard');
+  assert.strictEqual(ycEv.matchTimeSeconds, 900, 'Minute 15 is 900 seconds');
+  assert.strictEqual(ycEv.reason, 'Tactical foul', 'Reason stored');
+
+  // Record Red Card
+  App.openCardModal('RedCard');
+  const p2 = AppState.squad[1];
+  dom['cardPlayerSelector'].value = p2.id;
+  dom['cardMinute'].value = '35';
+  dom['cardReason'].value = 'Dissent';
+  App.confirmCardEvent();
+  assert(AppState.events.some(e => e.type === 'RedCard' && e.playerId === p2.id), 'Red Card event was recorded');
+
+  // Record Injury
+  App.openCardModal('Injury');
+  dom['cardPlayerSelector'].value = p1.id;
+  dom['cardMinute'].value = '42';
+  dom['cardReason'].value = 'Twisted ankle';
+  App.confirmCardEvent();
+  assert(AppState.events.some(e => e.type === 'Injury' && e.playerId === p1.id), 'Injury event was recorded');
+
+  // Verify timeline rendering includes cards & injury
+  App.renderTimeline();
+  const tlChildren = dom['matchTimelineList'].children || [];
+  assert(tlChildren.some(c => (c.innerHTML || '').includes('YELLOW CARD')), 'Timeline displays Yellow Card');
+  assert(tlChildren.some(c => (c.innerHTML || '').includes('RED CARD')), 'Timeline displays Red Card');
+  assert(tlChildren.some(c => (c.innerHTML || '').includes('INJURY')), 'Timeline displays Injury');
+
+  // Verify Single Match PDF contains YC, RC, Inj columns and 1-page compact layout
+  App.generateSingleMatchPdf('live');
+  const pdfHtml = dom['pdfExportContainer'].innerHTML;
+  assert(pdfHtml.includes('>YC<'), 'PDF table includes YC column header');
+  assert(pdfHtml.includes('>RC<'), 'PDF table includes RC column header');
+  assert(pdfHtml.includes('>Inj<'), 'PDF table includes Inj column header');
+  assert(pdfHtml.includes('grid-template-columns: 1fr 1fr'), 'PDF timeline uses space-saving 2-column grid for 1-page fit');
+  assert(pdfHtml.includes('page-break-inside: avoid'), 'PDF container prevents multi-page break');
+
+  App.toast = realToast;
+  console.log('✓ Yellow card, Red card, Injury logging and 1-page PDF fit verified');
+}
+
 console.log('\n=========================================');
-console.log('ALL 46 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 47 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 

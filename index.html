@@ -451,11 +451,25 @@
           </button>
         </div>
         <!-- GOAL ACTION: SCORER + OPTIONAL ASSIST IN ONE ENTRY -->
-        <div class="mt-4 pt-3 border-t border-white/10">
-          <button onclick="App.openEventModal('Goal')" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
+        <div class="mt-4 pt-3 border-t border-white/10 space-y-2">
+          <button type="button" onclick="App.openEventModal('Goal')" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5">
             <span class="text-base ci-goal"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-goal"></use></svg></span>
             <span>+ Goal (Scorer &amp; Assist)</span>
           </button>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="App.openCardModal('YellowCard')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5" style="background:linear-gradient(135deg,#FACC15,#EAB308);color:#0f172a;">
+              <span class="text-base">🟨</span>
+              <span>Yellow</span>
+            </button>
+            <button type="button" onclick="App.openCardModal('RedCard')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5" style="background:linear-gradient(135deg,#EF4444,#B91C1C);color:#ffffff;">
+              <span class="text-base">🟥</span>
+              <span>Red</span>
+            </button>
+            <button type="button" onclick="App.openCardModal('Injury')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5" style="background:linear-gradient(135deg,#FB923C,#EA580C);color:#ffffff;">
+              <span class="text-base">🩹</span>
+              <span>Injury</span>
+            </button>
+          </div>
         </div>
       </div>
       <!-- ONE-TAP LIVE SUB ROTATION BOARD -->
@@ -783,6 +797,42 @@
       <div class="flex space-x-2 pt-2">
         <button onclick="App.confirmEvent()" id="modalEventSubmitBtn" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95">
           Record Goal
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- MODAL: CARD & INJURY EVENT LOGGING -->
+  <div id="modalCardEvent" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 id="cardModalTitle" class="text-base font-bold text-white flex items-center space-x-2">
+          <span id="cardModalTitleIcon">🟨</span>
+          <span id="cardModalTitleText">Record Yellow Card</span>
+        </h3>
+        <button type="button" onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
+      </div>
+      <p id="cardModalDescription" class="text-xs text-slate-300">Select the cautioned player and the match minute.</p>
+      <div>
+        <label for="cardPlayerSelector" id="cardPlayerLabel" class="text-[10px] font-bold uppercase tracking-wider text-cyber-mint">Player</label>
+        <select id="cardPlayerSelector" class="w-full mt-1 bg-obsidian-950 border border-white/15 rounded-xl p-3 text-white text-sm font-semibold focus:outline-none focus:border-cyber-cyan">
+          <option value="" disabled selected>-- Select player --</option>
+        </select>
+      </div>
+      <div>
+        <label for="cardMinute" class="text-[10px] font-bold uppercase tracking-wider text-cyber-cyan">Match Minute</label>
+        <div class="mt-1 flex items-center space-x-2">
+          <input type="number" id="cardMinute" min="0" max="180" class="w-24 bg-obsidian-950 border border-white/15 rounded-xl p-2.5 text-white text-sm font-mono font-bold focus:outline-none focus:border-cyber-cyan text-center" />
+          <span class="text-xs text-slate-400 font-semibold">' of play</span>
+        </div>
+      </div>
+      <div>
+        <label for="cardReason" id="cardReasonLabel" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Reason / Details (Optional)</label>
+        <input type="text" id="cardReason" placeholder="e.g. Tactical foul, dissent, ankle roll" class="w-full mt-1 bg-obsidian-950 border border-white/15 rounded-xl p-2.5 text-white text-xs font-semibold focus:outline-none focus:border-cyber-cyan" />
+      </div>
+      <div class="flex items-center space-x-2 pt-2">
+        <button type="button" onclick="App.closeModals()" class="flex-1 py-2.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-white/10 text-slate-300 font-semibold text-xs transition">Cancel</button>
+        <button type="button" onclick="App.confirmCardEvent()" id="cardConfirmBtn" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-obsidian-950 font-extrabold text-xs tracking-wide shadow-md hover:brightness-110 active:scale-95 transition">
+          Record Event
         </button>
       </div>
     </div>
@@ -3883,6 +3933,125 @@
         this.toast(this.goalEventLabel(goalEvent) +
           (assister ? ` • Assist: #${assister.number} ${assister.name}` : '!'));
       },
+      openCardModal(type) {
+        AppState.currentCardType = type;
+        const modal = document.getElementById('modalCardEvent');
+        const selector = document.getElementById('cardPlayerSelector');
+        const titleText = document.getElementById('cardModalTitleText');
+        const titleIcon = document.getElementById('cardModalTitleIcon');
+        const desc = document.getElementById('cardModalDescription');
+        const playerLabel = document.getElementById('cardPlayerLabel');
+        const confirmBtn = document.getElementById('cardConfirmBtn');
+        const reasonInput = document.getElementById('cardReason');
+        const minuteInput = document.getElementById('cardMinute');
+        if (reasonInput) reasonInput.value = '';
+        if (minuteInput) minuteInput.value = Math.floor((AppState.clock.seconds || 0) / 60);
+
+        selector.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+
+        if (type === 'YellowCard') {
+          titleIcon.innerText = '🟨';
+          titleText.innerText = 'Record Yellow Card';
+          desc.innerText = 'Select the cautioned player and the match minute.';
+          playerLabel.innerText = 'Cautioned Player';
+          placeholder.innerText = '-- Select Cautioned Player --';
+          confirmBtn.innerText = 'Record Yellow Card';
+          confirmBtn.className = 'flex-1 py-2.5 rounded-xl font-extrabold text-xs tracking-wide shadow-md hover:brightness-110 active:scale-95 transition text-obsidian-950 bg-gradient-to-r from-amber-400 to-amber-500';
+        } else if (type === 'RedCard') {
+          titleIcon.innerText = '🟥';
+          titleText.innerText = 'Record Red Card';
+          desc.innerText = 'Select the sent-off player and the match minute.';
+          playerLabel.innerText = 'Sent-Off Player';
+          placeholder.innerText = '-- Select Sent-Off Player --';
+          confirmBtn.innerText = 'Record Red Card';
+          confirmBtn.className = 'flex-1 py-2.5 rounded-xl font-extrabold text-xs tracking-wide shadow-md hover:brightness-110 active:scale-95 transition text-white bg-gradient-to-r from-red-500 to-red-700';
+        } else if (type === 'Injury') {
+          titleIcon.innerText = '🩹';
+          titleText.innerText = 'Record Injury Event';
+          desc.innerText = 'Log an injury moment to track match fitness and stoppage reasons.';
+          playerLabel.innerText = 'Injured Player';
+          placeholder.innerText = '-- Select Injured Player --';
+          confirmBtn.innerText = 'Record Injury';
+          confirmBtn.className = 'flex-1 py-2.5 rounded-xl font-extrabold text-xs tracking-wide shadow-md hover:brightness-110 active:scale-95 transition text-white bg-gradient-to-r from-orange-400 to-red-500';
+        }
+        selector.appendChild(placeholder);
+
+        const starters = AppState.match.starters || [];
+        const bench = AppState.match.bench || [];
+        const allIds = [...starters, ...bench];
+        allIds.forEach(pid => {
+          const p = AppState.squad.find(i => i.id === pid);
+          if (p) {
+            const isStarter = starters.includes(pid);
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.innerText = `#${p.number} — ${p.name} (${p.position}) [${isStarter ? 'On Pitch' : 'Bench'}]`;
+            selector.appendChild(opt);
+          }
+        });
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      },
+      confirmCardEvent() {
+        const type = AppState.currentCardType || 'YellowCard';
+        const selector = document.getElementById('cardPlayerSelector');
+        const pid = selector ? selector.value : '';
+        if (!pid) {
+          const warn = type === 'YellowCard' ? 'Please choose the cautioned player!'
+            : type === 'RedCard' ? 'Please choose the sent-off player!' : 'Please choose the injured player!';
+          this.toast(warn, 'card-yellow');
+          return;
+        }
+        const player = AppState.squad.find(i => i.id === pid);
+        if (!player) return;
+
+        const minuteEl = document.getElementById('cardMinute');
+        const typedMinute = String(minuteEl && minuteEl.value !== undefined ? minuteEl.value : '').trim();
+        const minute = typedMinute === '' ? Math.floor((AppState.clock.seconds || 0) / 60) : Number(typedMinute);
+        if (!Number.isInteger(minute) || minute < 0 || minute > 999) {
+          this.toast('Enter a valid whole minute between 0 and 999', 'card-yellow');
+          return;
+        }
+
+        const reasonEl = document.getElementById('cardReason');
+        const reason = reasonEl ? reasonEl.value.trim() : '';
+
+        const ev = {
+          id: this.newEventId(),
+          matchId: AppState.match.id,
+          type: type,
+          playerId: pid,
+          playerName: player.name,
+          playerNumber: player.number,
+          reason: reason,
+          matchTimeSeconds: minute * 60,
+          period: AppState.clock.period || '1st Half',
+          timestamp: Date.now()
+        };
+
+        AppState.events.unshift(ev);
+        this.saveStorage();
+        this.closeModals();
+        this.renderTimeline();
+        this.renderStats();
+        this.renderLiveBoard();
+
+        let icon = 'card-yellow';
+        let msg = `Yellow Card recorded for #${player.number} ${player.name}`;
+        if (type === 'RedCard') {
+          icon = 'card-red';
+          msg = `Red Card recorded for #${player.number} ${player.name}`;
+        } else if (type === 'Injury') {
+          icon = 'whistle';
+          msg = `Injury logged for #${player.number} ${player.name}`;
+        }
+        this.toast(msg, icon);
+      },
       goalEventLabel(ev) {
         const who = ev.playerNumber !== undefined
           ? `#${ev.playerNumber} ${ev.playerName}`
@@ -4226,6 +4395,15 @@
             // Use SubBadge components for sub-in / sub-out icons in timeline
             icon = '<span data-sub-badge="in-24" class="cs-sub-inline"></span><span data-sub-badge="out-24" class="cs-sub-inline"></span>';
             text = `<span class="font-bold" style="color:var(--cs-match-sub-in,#3BE38A)">IN</span> #${ev.playerInNum} ${ev.playerIn} <span class="text-slate-400 mx-0.5">|</span> <span class="font-bold" style="color:var(--cs-match-sub-out,#FF8A80)">OUT</span> #${ev.playerOutNum} ${ev.playerOut}`;
+          } else if (ev.type === 'YellowCard') {
+            icon = '<span class="text-base inline-flex items-center">🟨</span>';
+            text = `<span class="font-bold text-amber-400">YELLOW CARD</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
+          } else if (ev.type === 'RedCard') {
+            icon = '<span class="text-base inline-flex items-center">🟥</span>';
+            text = `<span class="font-bold text-red-500">RED CARD</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
+          } else if (ev.type === 'Injury') {
+            icon = '<span class="text-base inline-flex items-center">🩹</span>';
+            text = `<span class="font-bold text-orange-400">INJURY</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
           }
           item.innerHTML = `
             <div class="flex items-center space-x-2 truncate">
@@ -4349,6 +4527,9 @@
             totalSeconds: 0,
             goals: 0,
             assists: 0,
+            yellowCards: 0,
+            redCards: 0,
+            injuries: 0,
             appearances: 0,
             starts: 0
           };
@@ -4373,8 +4554,14 @@
             playerStats[p.id].totalSeconds += sec;
             const pGoals = events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
             const pAssists = events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
+            const pYC = events.filter(e => e.type === 'YellowCard' && e.playerId === p.id).length;
+            const pRC = events.filter(e => e.type === 'RedCard' && e.playerId === p.id).length;
+            const pInj = events.filter(e => e.type === 'Injury' && e.playerId === p.id).length;
             playerStats[p.id].goals += pGoals;
             playerStats[p.id].assists += pAssists;
+            playerStats[p.id].yellowCards = (playerStats[p.id].yellowCards || 0) + pYC;
+            playerStats[p.id].redCards = (playerStats[p.id].redCards || 0) + pRC;
+            playerStats[p.id].injuries = (playerStats[p.id].injuries || 0) + pInj;
             combinedGoals += pGoals;
             combinedAssists += pAssists;
           });
@@ -4393,8 +4580,14 @@
             playerStats[p.id].totalSeconds += sec;
             const pGoals = AppState.events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
             const pAssists = AppState.events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
+            const pYC = AppState.events.filter(e => e.type === 'YellowCard' && e.playerId === p.id).length;
+            const pRC = AppState.events.filter(e => e.type === 'RedCard' && e.playerId === p.id).length;
+            const pInj = AppState.events.filter(e => e.type === 'Injury' && e.playerId === p.id).length;
             playerStats[p.id].goals += pGoals;
             playerStats[p.id].assists += pAssists;
+            playerStats[p.id].yellowCards = (playerStats[p.id].yellowCards || 0) + pYC;
+            playerStats[p.id].redCards = (playerStats[p.id].redCards || 0) + pRC;
+            playerStats[p.id].injuries = (playerStats[p.id].injuries || 0) + pInj;
             combinedGoals += pGoals;
             combinedAssists += pAssists;
           });
@@ -4468,9 +4661,12 @@
                   <div class="font-mono font-bold text-sm text-cyber-mint" data-stat-time="player" data-pid="${p.id}" data-base="${archivedSec}">${this.formatTime(stats.totalSeconds)}</div>
                   <div class="text-[9px] uppercase tracking-wider text-slate-400">Total Min</div>
                 </div>
-                <div class="flex items-center space-x-1.5 text-xs font-bold">
+                <div class="flex flex-wrap items-center justify-end gap-1 text-xs font-bold">
                   <span class="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="Goals"><svg class="ci ci-12 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> ${stats.goals}</span>
                   <span class="px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30" title="Assists"><svg class="ci ci-12 ci-assist" aria-hidden="true"><use href="#ci-assist"></use></svg> ${stats.assists}</span>
+                  ${stats.yellowCards > 0 ? `<span class="px-1.5 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/30" title="Yellow Cards">🟨 ${stats.yellowCards}</span>` : ''}
+                  ${stats.redCards > 0 ? `<span class="px-1.5 py-0.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30" title="Red Cards">🟥 ${stats.redCards}</span>` : ''}
+                  ${stats.injuries > 0 ? `<span class="px-1.5 py-0.5 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30" title="Injuries">🩹 ${stats.injuries}</span>` : ''}
                 </div>
               </div>
             `;
@@ -4597,6 +4793,9 @@
           const isStarter = pStarters.includes(p.id);
           const goals = pEvents.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
           const assists = pEvents.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
+          const yCards = pEvents.filter(e => e.type === 'YellowCard' && e.playerId === p.id).length;
+          const rCards = pEvents.filter(e => e.type === 'RedCard' && e.playerId === p.id).length;
+          const injuries = pEvents.filter(e => e.type === 'Injury' && e.playerId === p.id).length;
           rowsHtml += `
             <div class="flex items-center justify-between p-2 rounded-xl bg-obsidian-950/70 border border-white/5 text-xs">
               <div class="flex items-center space-x-2 truncate">
@@ -4611,9 +4810,12 @@
                   <div class="text-[10px] text-slate-400">${p.position}</div>
                 </div>
               </div>
-              <div class="flex items-center space-x-2 flex-shrink-0">
+              <div class="flex items-center space-x-1.5 flex-shrink-0">
                 ${goals > 0 ? `<span class="text-[10px] text-emerald-400 font-bold"><svg class="ci ci-12 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> ${goals}</span>` : ''}
                 ${assists > 0 ? `<span class="text-[10px] text-sky-400 font-bold"><svg class="ci ci-12 ci-assist" aria-hidden="true"><use href="#ci-assist"></use></svg> ${assists}</span>` : ''}
+                ${yCards > 0 ? `<span class="text-[10px] text-amber-300 font-bold">🟨 ${yCards}</span>` : ''}
+                ${rCards > 0 ? `<span class="text-[10px] text-red-400 font-bold">🟥 ${rCards}</span>` : ''}
+                ${injuries > 0 ? `<span class="text-[10px] text-orange-400 font-bold">🩹 ${injuries}</span>` : ''}
                 <span class="px-2.5 py-1 rounded-lg font-mono font-bold text-cyber-mint text-xs bg-obsidian-900/90 border border-cyber-mint/30" title="Official Tracked Playing Time">
                   ${this.formatTime(sec)}
                 </span>
@@ -4630,6 +4832,9 @@
             if (ev.type === 'Goal') label = `<svg class="ci ci-14 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> ${this.goalEventLabel(ev)}`;
             else if (ev.type === 'Assist') label = `<svg class="ci ci-14 ci-assist" aria-hidden="true"><use href="#ci-assist"></use></svg> ASSIST by #${ev.playerNumber} ${ev.playerName}`;
             else if (ev.type === 'Sub') label = `<svg class="ci ci-14" aria-hidden="true"><use href="#ci-sub-swap"></use></svg> SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
+            else if (ev.type === 'YellowCard') label = `🟨 YELLOW CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`;
+            else if (ev.type === 'RedCard') label = `🟥 RED CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`;
+            else if (ev.type === 'Injury') label = `🩹 INJURY: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`;
             return `<div class="text-[11px] text-slate-300 flex items-center space-x-1.5 py-0.5"><span class="font-mono text-cyber-cyan text-[10px] font-bold">[${this.formatTime(ev.matchTimeSeconds || 0)}]</span><span>${label}</span></div>`;
           }).join('');
         }
@@ -4690,10 +4895,10 @@
         }
         container.classList.remove('hidden');
         const opt = {
-          margin: [8, 8, 8, 8],
+          margin: [5, 5, 5, 5],
           filename: fileName,
-          image: { type: 'jpeg', quality: 0.95 },
-          pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] },
+          image: { type: 'jpeg', quality: 0.98 },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'], avoid: ['tr', 'div'] },
           html2canvas: {
             scale: this.pdfRenderScale(container),
             backgroundColor: '#ffffff',
@@ -4927,95 +5132,111 @@
         const starters = isLive ? AppState.match.starters : (target.starters || []);
         const container = document.getElementById('pdfExportContainer');
         if (!container) return;
+
         let tableRowsHtml = '';
         (isLive ? AppState.match.players || AppState.squad : target.players || AppState.squad).forEach(p => {
           const pitchSec = playerTimers[p.id] || 0;
           const benchSec = Math.max(0, durationSec - pitchSec);
           const goals = events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
           const assists = events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
+          const yCards = events.filter(e => e.type === 'YellowCard' && e.playerId === p.id).length;
+          const rCards = events.filter(e => e.type === 'RedCard' && e.playerId === p.id).length;
+          const injuries = events.filter(e => e.type === 'Injury' && e.playerId === p.id).length;
           const subsIn = events.filter(e => e.type === 'Sub' && e.playerInId === p.id).length;
           const subsOut = events.filter(e => e.type === 'Sub' && e.playerOutId === p.id).length;
           const isStarter = starters.includes(p.id);
           tableRowsHtml += `
-            <tr style="border-bottom: 1px solid #E6EBF1;">
-              <td style="padding: 7px 10px; font-weight: bold; color: #303A4A;">#${p.number}</td>
-              <td style="padding: 7px 10px; font-weight: 600; color: #0B1B33;">${p.name}</td>
-              <td style="padding: 7px 10px; color: #5B677A; font-family: monospace;">${p.position || 'MID'}</td>
-              <td style="padding: 7px 10px; color: ${isStarter ? '#15803D' : '#444F61'}; font-weight: 600;">${isStarter ? 'Starter' : 'Bench'}</td>
-              <td style="padding: 7px 10px; text-align: center; font-family: monospace; font-weight: bold; color: #0B8F55;">${this.formatPdfDuration(pitchSec)}</td>
-              <td style="padding: 7px 10px; text-align: center; font-family: monospace; color: #5B677A;">${this.formatPdfDuration(benchSec)}</td>
-              <td style="padding: 7px 10px; text-align: center; font-weight: bold; color: ${goals > 0 ? '#0B8F55' : '#8391A3'};">${goals}</td>
-              <td style="padding: 7px 10px; text-align: center; font-weight: bold; color: ${assists > 0 ? '#0B5F59' : '#8391A3'};">${assists}</td>
-              <td style="padding: 7px 10px; text-align: center; color: #444F61;">${subsIn}</td>
-              <td style="padding: 7px 10px; text-align: center; color: #444F61;">${subsOut}</td>
+            <tr style="border-bottom: 1px solid #E6EBF1; font-size: 8.5px; line-height: 1.15;">
+              <td style="padding: 2.5px 5px; font-weight: bold; color: #303A4A;">#${p.number}</td>
+              <td style="padding: 2.5px 5px; font-weight: 600; color: #0B1B33; white-space: nowrap;">${p.name}</td>
+              <td style="padding: 2.5px 5px; color: #5B677A; font-family: monospace;">${p.position || 'MID'}</td>
+              <td style="padding: 2.5px 5px; color: ${isStarter ? '#15803D' : '#444F61'}; font-weight: 600;">${isStarter ? 'Starter' : 'Bench'}</td>
+              <td style="padding: 2.5px 5px; text-align: center; font-family: monospace; font-weight: bold; color: #0B8F55;">${this.formatPdfDuration(pitchSec)}</td>
+              <td style="padding: 2.5px 5px; text-align: center; font-family: monospace; color: #5B677A;">${this.formatPdfDuration(benchSec)}</td>
+              <td style="padding: 2.5px 5px; text-align: center; font-weight: bold; color: ${goals > 0 ? '#0B8F55' : '#cbd5e1'};">${goals}</td>
+              <td style="padding: 2.5px 5px; text-align: center; font-weight: bold; color: ${assists > 0 ? '#0B5F59' : '#cbd5e1'};">${assists}</td>
+              <td style="padding: 2.5px 5px; text-align: center; font-weight: bold; color: ${yCards > 0 ? '#d97706' : '#cbd5e1'};">${yCards}</td>
+              <td style="padding: 2.5px 5px; text-align: center; font-weight: bold; color: ${rCards > 0 ? '#dc2626' : '#cbd5e1'};">${rCards}</td>
+              <td style="padding: 2.5px 5px; text-align: center; font-weight: bold; color: ${injuries > 0 ? '#ea580c' : '#cbd5e1'};">${injuries}</td>
+              <td style="padding: 2.5px 5px; text-align: center; color: #444F61;">${subsIn}</td>
+              <td style="padding: 2.5px 5px; text-align: center; color: #444F61;">${subsOut}</td>
             </tr>
           `;
         });
+
         let timelineHtml = '';
         if (!events || events.length === 0) {
-          timelineHtml = '<div style="color: #8391A3; font-style: italic; padding: 6px 0;">No match events recorded for this fixture.</div>';
+          timelineHtml = '<div style="color: #8391A3; font-style: italic; padding: 4px 0; font-size: 8.5px;">No match events recorded for this fixture.</div>';
         } else {
+          timelineHtml = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px;">';
           events.forEach(ev => {
             let icon = '•';
             let label = '';
-            if (ev.type === 'Goal') { icon = ''; label = `${this.goalEventLabel(ev)} (${ev.period || 'Match'})`; }
-            else if (ev.type === 'Assist') { icon = ''; label = `ASSIST by #${ev.playerNumber} ${ev.playerName} (${ev.period || 'Match'})`; }
-            else if (ev.type === 'Sub') { icon = ''; label = `SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`; }
-            else { label = `${ev.type} - ${ev.playerName || ''}`; }
+            if (ev.type === 'Goal') { icon = '⚽'; label = `${this.goalEventLabel(ev)} (${ev.period || 'Match'})`; }
+            else if (ev.type === 'Assist') { icon = '👟'; label = `ASSIST by #${ev.playerNumber} ${ev.playerName}`; }
+            else if (ev.type === 'Sub') { icon = '⇄'; label = `SUB: #${ev.playerInNum} ${ev.playerIn} IN / #${ev.playerOutNum} ${ev.playerOut} OUT`; }
+            else if (ev.type === 'YellowCard') { icon = '🟨'; label = `YELLOW CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`; }
+            else if (ev.type === 'RedCard') { icon = '🟥'; label = `RED CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`; }
+            else if (ev.type === 'Injury') { icon = '🩹'; label = `INJURY: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`; }
+            else { label = `${ev.type}: #${ev.playerNumber || ''} ${ev.playerName || ''}`; }
             timelineHtml += `
-              <div style="padding: 4px 0; display: flex; align-items: center; color: #303A4A; font-size: 11px;">
-                <span style="font-family: monospace; font-weight: bold; color: #0B8F55; min-width: 50px;">[${this.formatPdfDuration(ev.matchTimeSeconds)}]</span>
-                <span style="margin: 0 6px;">${icon}</span>
-                <span>${label}</span>
+              <div style="padding: 1px 0; display: flex; align-items: center; color: #303A4A; font-size: 8.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <span style="font-family: monospace; font-weight: bold; color: #0B8F55; min-width: 44px; flex-shrink: 0;">[${this.formatPdfDuration(ev.matchTimeSeconds)}]</span>
+                <span style="margin: 0 4px; flex-shrink: 0;">${icon}</span>
+                <span style="overflow: hidden; text-overflow: ellipsis;">${label}</span>
               </div>
             `;
           });
+          timelineHtml += '</div>';
         }
         const dateGen = this.formatDateTime();
         container.innerHTML = `
-          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0B1B33; padding: 24px;">
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0B1B33; padding: 10px 14px; max-width: 760px; margin: 0 auto; box-sizing: border-box; page-break-inside: avoid;">
             <!-- HEADER -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0B8F55; padding-bottom: 12px; margin-bottom: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0B8F55; padding-bottom: 6px; margin-bottom: 6px;">
               <div>
-                <div style="font-family: 'Fredoka', 'Inter', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; color: #0B1B33;">
-                  Club<span style="color: #0B8F55;">stride</span> <span style="font-size: 11px; font-weight: 700; color: #06142B; background: #C8F230; border-radius: 9999px; padding: 2px 9px; margin-left: 2px; text-transform: uppercase; letter-spacing: .5px;">Lite</span> <span style="font-size: 14px; font-weight: 700; color: #444F61; text-transform: uppercase; margin-left: 6px;">Match Performance Report</span>
+                <div style="font-family: 'Fredoka', 'Inter', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; color: #0B1B33;">
+                  Club<span style="color: #0B8F55;">stride</span> <span style="font-size: 10px; font-weight: 700; color: #06142B; background: #C8F230; border-radius: 9999px; padding: 1.5px 7px; margin-left: 2px; text-transform: uppercase; letter-spacing: .5px;">Lite</span> <span style="font-size: 12px; font-weight: 700; color: #444F61; text-transform: uppercase; margin-left: 5px;">Match Performance Report</span>
                 </div>
-                <div style="font-size: 13px; color: #5B677A; margin-top: 3px;">Tactical Rotations, Playing Time & Official Timeline</div>
+                <div style="font-size: 9.5px; color: #5B677A; margin-top: 1px;">Tactical Rotations, Playing Time & Official Timeline</div>
               </div>
-              <div style="text-align: right; font-size: 11px; color: #5B677A;">
-                <div style="font-weight: bold; color: #303A4A; font-size: 13px;">${dateLabel}</div>
+              <div style="text-align: right; font-size: 9px; color: #5B677A;">
+                <div style="font-weight: bold; color: #303A4A; font-size: 11px;">${dateLabel}</div>
                 <div>Generated: ${dateGen}</div>
               </div>
             </div>
             <!-- SCOREBOARD CARD -->
-            <div style="background: linear-gradient(135deg, #F8FAFC 0%, #F2F5F9 100%); border: 1px solid #D0D8E2; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: linear-gradient(135deg, #F8FAFC 0%, #F2F5F9 100%); border: 1px solid #D0D8E2; border-radius: 8px; padding: 5px 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #5B677A; letter-spacing: 0.5px;">Fixture</div>
-                <div style="font-size: 18px; font-weight: 900; color: #0B1B33;">${teamName} <span style="color: #5B677A; font-weight: 600;">vs</span> ${opponent}</div>
-                <div style="font-size: 12px; color: #444F61; margin-top: 3px;">Format: <strong>${fmt}</strong> &bull; Formation: <strong>${formation}</strong></div>
+                <div style="font-size: 8.5px; text-transform: uppercase; font-weight: 700; color: #5B677A; letter-spacing: 0.5px;">Fixture</div>
+                <div style="font-size: 14px; font-weight: 900; color: #0B1B33;">${teamName} <span style="color: #5B677A; font-weight: 600;">vs</span> ${opponent}</div>
+                <div style="font-size: 9px; color: #444F61; margin-top: 1px;">Format: <strong>${fmt}</strong> &bull; Formation: <strong>${formation}</strong></div>
               </div>
               <div style="text-align: right;">
-                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #5B677A; letter-spacing: 0.5px;">Final Score</div>
-                <div style="font-size: 26px; font-weight: 900; color: #0B8F55; font-variant-numeric: tabular-nums;">${finalScore}</div>
-                <div style="font-size: 11px; color: #5B677A; font-family: monospace;">Duration: ${this.formatPdfDuration(durationSec)}</div>
+                <div style="font-size: 8.5px; text-transform: uppercase; font-weight: 700; color: #5B677A; letter-spacing: 0.5px;">Final Score</div>
+                <div style="font-size: 18px; font-weight: 900; color: #0B8F55; font-variant-numeric: tabular-nums;">${finalScore}</div>
+                <div style="font-size: 8.5px; color: #5B677A; font-family: monospace;">Duration: ${this.formatPdfDuration(durationSec)}</div>
               </div>
             </div>
             <!-- PLAYER PERFORMANCE TABLE -->
-            <div style="margin-bottom: 22px; page-break-inside: avoid;">
-              <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #303A4A; margin-bottom: 8px;">Player Playing Time & Statistics</div>
-              <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: #ffffff; border: 1px solid #D0D8E2; border-radius: 10px; overflow: hidden;">
+            <div style="margin-bottom: 6px; page-break-inside: avoid;">
+              <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #303A4A; margin-bottom: 3px;">Player Playing Time & Statistics</div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 8.5px; text-align: left; background: #ffffff; border: 1px solid #D0D8E2; border-radius: 6px; overflow: hidden;">
                 <thead>
-                  <tr style="background-color: #0B1B33; color: #ffffff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
-                    <th style="padding: 8px 10px; background-color: #0B1B33;">#</th>
-                    <th style="padding: 8px 10px; background-color: #0B1B33;">Player</th>
-                    <th style="padding: 8px 10px; background-color: #0B1B33;">Pos</th>
-                    <th style="padding: 8px 10px; background-color: #0B1B33;">Role</th>
-                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Pitch Min</th>
-                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Bench Min</th>
-                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Goals</th>
-                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Assists</th>
-                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">In</th>
-                    <th style="padding: 8px 10px; text-align: center; background-color: #0B1B33;">Out</th>
+                  <tr style="background-color: #0B1B33; color: #ffffff; font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <th style="padding: 3px 5px; background-color: #0B1B33;">#</th>
+                    <th style="padding: 3px 5px; background-color: #0B1B33;">Player</th>
+                    <th style="padding: 3px 5px; background-color: #0B1B33;">Pos</th>
+                    <th style="padding: 3px 5px; background-color: #0B1B33;">Role</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">Pitch</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">Bench</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">G</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">A</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">YC</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">RC</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">Inj</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">In</th>
+                    <th style="padding: 3px 5px; text-align: center; background-color: #0B1B33;">Out</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -5024,15 +5245,15 @@
               </table>
             </div>
             <!-- TIMELINE SECTION -->
-            <div style="margin-bottom: 24px; page-break-inside: avoid;">
-              <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #303A4A; margin-bottom: 8px;">Match Timeline & Key Events</div>
-              <div style="background: #F8FAFC; border: 1px solid #E6EBF1; border-left: 4px solid #0B8F55; border-radius: 10px; padding: 12px 16px;">
+            <div style="margin-bottom: 6px; page-break-inside: avoid;">
+              <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #303A4A; margin-bottom: 3px;">Match Timeline & Key Events</div>
+              <div style="background: #F8FAFC; border: 1px solid #E6EBF1; border-left: 3px solid #0B8F55; border-radius: 6px; padding: 5px 8px;">
                 ${timelineHtml}
               </div>
             </div>
             <!-- FOOTER -->
-            <div style="border-top: 1px solid #E6EBF1; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #8391A3;">
-              <div style="display: flex; align-items: center;"><img src="./assets/brand/L1_lockup_light.png" style="height: 26px; width: auto; margin-right: 10px;" alt="Clubstride Lite" /><span>Clubstride Lite &bull; Tactical Pitch, Live Rotations & Match Intelligence</span></div>
+            <div style="border-top: 1px solid #E6EBF1; padding-top: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #8391A3;">
+              <div style="display: flex; align-items: center;"><img src="./assets/brand/L1_lockup_light.png" style="height: 18px; width: auto; margin-right: 8px;" alt="Clubstride Lite" /><span>Clubstride Lite &bull; Tactical Pitch, Live Rotations & Match Intelligence</span></div>
               <div>Page 1 of 1 &bull; ${dateLabel}</div>
             </div>
           </div>
@@ -5042,8 +5263,7 @@
         const safeOpp = String(opponent).replace(/[^a-zA-Z0-9_-]/g, '_');
         const fileName = `Clubstride_${safeTeam}_${safeOpp}_${date}.pdf`;
         this.exportLedgerPdf(container, fileName);
-      },
-      generateDateRangePdf(startDate = null, endDate = null, teamId = null) {
+      },generateDateRangePdf(startDate = null, endDate = null, teamId = null) {
         if (!startDate) {
           const sIn = document.getElementById('pdfRangeStartDate');
           startDate = sIn ? sIn.value : '';
@@ -5780,7 +6000,7 @@
       'onFormationChanged', 'applyFormationPositions', 'openSaveFormationModal', 'saveCurrentFormation',
       'confirmSaveFormation', 'saveCustomFormation', 'deleteCurrentCustomFormation', 'sendToBench',
       'promoteBenchToStarter', 'toggleStarter', 'toggleTimer', 'tickClock', 'syncLiveGameSelection',
-      'resetTimer', 'setPeriod', 'selectSubOut', 'selectSubIn', 'cancelSubSelection', 'openEventModal',
+      'resetTimer', 'setPeriod', 'selectSubOut', 'selectSubIn', 'cancelSubSelection', 'openEventModal', 'openCardModal', 'confirmCardEvent',
       'populateAssistOptions', 'saveEvent', 'confirmEvent', 'adjustScore', 'deleteTimelineEvent', 'deleteEvent',
       'endMatch', 'confirmEndMatch', 'deleteMatchHistory', 'toggleGameSelection', 'selectAllGames',
       'deselectAllGames', 'selectRecentGames', 'toggleGameDetail', 'openMatchSetupModal', 'startNewMatch', 'selectFormat',
