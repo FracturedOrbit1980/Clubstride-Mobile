@@ -462,77 +462,119 @@
             <span>+ Goal (Scorer &amp; Assist)</span>
           </button>
           <div class="grid grid-cols-3 gap-2">
-            <!-- Yellow Card — 3D card SVG icon -->
-            <button type="button" onclick="App.openCardModal('YellowCard')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex flex-col items-center justify-center gap-0.5 bg-obsidian-950 border border-white/15 text-white" title="Yellow Card">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="22" height="28" aria-hidden="true">
+            <!-- Yellow Card -->
+            <button type="button" onclick="App.openCardModal('YellowCard')"
+              class="chip-btn py-3 rounded-2xl font-extrabold text-xs uppercase tracking-wider active:scale-95 transition flex flex-col items-center justify-center gap-1"
+              style="background:rgba(255,213,0,0.10);border:1px solid rgba(255,213,0,0.55);border-top-color:rgba(255,240,100,0.80);box-shadow:0 4px 18px -4px rgba(255,213,0,0.35),inset 0 1px 0 rgba(255,255,255,0.08);color:#FFD500;"
+              title="Yellow Card">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="22" height="30" aria-hidden="true">
                 <defs>
-                  <linearGradient id="yc-face" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#FDE047"/>
-                    <stop offset="100%" stop-color="#CA8A04"/>
+                  <linearGradient id="yc2-face" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FFF176"/>
+                    <stop offset="55%" stop-color="#FFD500"/>
+                    <stop offset="100%" stop-color="#B8960A"/>
                   </linearGradient>
-                  <linearGradient id="yc-side" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#A16207"/>
-                    <stop offset="100%" stop-color="#854D0E"/>
+                  <linearGradient id="yc2-top" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FFEE58"/>
+                    <stop offset="100%" stop-color="#FFD500"/>
+                  </linearGradient>
+                  <linearGradient id="yc2-side" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#8C6D00"/>
+                    <stop offset="100%" stop-color="#6B5100"/>
+                  </linearGradient>
+                  <linearGradient id="yc2-gloss" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(255,255,255,0.45)"/>
+                    <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
                   </linearGradient>
                 </defs>
-                <!-- top face -->
-                <polygon points="4,4 28,4 32,8 8,8" fill="#FEF08A"/>
-                <!-- right side -->
-                <polygon points="28,4 32,8 32,42 28,38" fill="url(#yc-side)"/>
+                <!-- perspective top face -->
+                <polygon points="4,5 32,5 40,12 12,12" fill="url(#yc2-top)"/>
+                <!-- right side depth -->
+                <polygon points="32,5 40,12 40,52 32,47" fill="url(#yc2-side)"/>
                 <!-- main face -->
-                <rect x="4" y="8" width="24" height="34" rx="2" fill="url(#yc-face)"/>
-                <!-- gloss -->
-                <rect x="6" y="10" width="8" height="30" rx="1" fill="rgba(255,255,255,0.12)"/>
+                <rect x="4" y="12" width="28" height="40" rx="3" fill="url(#yc2-face)"/>
+                <!-- specular gloss bar -->
+                <rect x="7" y="14" width="10" height="36" rx="2" fill="url(#yc2-gloss)"/>
+                <!-- inner shadow bottom -->
+                <rect x="4" y="44" width="28" height="8" rx="3" fill="rgba(0,0,0,0.18)"/>
               </svg>
               <span>Yellow</span>
             </button>
-            <!-- Red Card — 3D card SVG icon -->
-            <button type="button" onclick="App.openCardModal('RedCard')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex flex-col items-center justify-center gap-0.5 bg-obsidian-950 border border-white/15 text-white" title="Red Card">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="22" height="28" aria-hidden="true">
+            <!-- Red Card -->
+            <button type="button" onclick="App.openCardModal('RedCard')"
+              class="chip-btn py-3 rounded-2xl font-extrabold text-xs uppercase tracking-wider active:scale-95 transition flex flex-col items-center justify-center gap-1"
+              style="background:rgba(215,20,26,0.12);border:1px solid rgba(215,20,26,0.55);border-top-color:rgba(255,100,100,0.75);box-shadow:0 4px 18px -4px rgba(215,20,26,0.40),inset 0 1px 0 rgba(255,255,255,0.08);color:#FF8A80;"
+              title="Red Card">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="22" height="30" aria-hidden="true">
                 <defs>
-                  <linearGradient id="rc-face" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#F87171"/>
-                    <stop offset="100%" stop-color="#991B1B"/>
+                  <linearGradient id="rc2-face" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FF6B6B"/>
+                    <stop offset="55%" stop-color="#D7141A"/>
+                    <stop offset="100%" stop-color="#7F0000"/>
                   </linearGradient>
-                  <linearGradient id="rc-side" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#7F1D1D"/>
-                    <stop offset="100%" stop-color="#6B1A1A"/>
+                  <linearGradient id="rc2-top" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FF8A80"/>
+                    <stop offset="100%" stop-color="#D7141A"/>
+                  </linearGradient>
+                  <linearGradient id="rc2-side" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#5C0000"/>
+                    <stop offset="100%" stop-color="#420000"/>
+                  </linearGradient>
+                  <linearGradient id="rc2-gloss" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(255,255,255,0.40)"/>
+                    <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
                   </linearGradient>
                 </defs>
-                <!-- top face -->
-                <polygon points="4,4 28,4 32,8 8,8" fill="#FCA5A5"/>
-                <!-- right side -->
-                <polygon points="28,4 32,8 32,42 28,38" fill="url(#rc-side)"/>
+                <!-- perspective top face -->
+                <polygon points="4,5 32,5 40,12 12,12" fill="url(#rc2-top)"/>
+                <!-- right side depth -->
+                <polygon points="32,5 40,12 40,52 32,47" fill="url(#rc2-side)"/>
                 <!-- main face -->
-                <rect x="4" y="8" width="24" height="34" rx="2" fill="url(#rc-face)"/>
-                <!-- gloss -->
-                <rect x="6" y="10" width="8" height="30" rx="1" fill="rgba(255,255,255,0.12)"/>
+                <rect x="4" y="12" width="28" height="40" rx="3" fill="url(#rc2-face)"/>
+                <!-- specular gloss bar -->
+                <rect x="7" y="14" width="10" height="36" rx="2" fill="url(#rc2-gloss)"/>
+                <!-- inner shadow bottom -->
+                <rect x="4" y="44" width="28" height="8" rx="3" fill="rgba(0,0,0,0.22)"/>
               </svg>
               <span>Red</span>
             </button>
-            <!-- Injury — plaster / bandage SVG icon -->
-            <button type="button" onclick="App.openCardModal('Injury')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex flex-col items-center justify-center gap-0.5 bg-obsidian-950 border border-white/15 text-white" title="Injury">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" aria-hidden="true">
+            <!-- Injury — polished plaster -->
+            <button type="button" onclick="App.openCardModal('Injury')"
+              class="chip-btn py-3 rounded-2xl font-extrabold text-xs uppercase tracking-wider active:scale-95 transition flex flex-col items-center justify-center gap-1"
+              style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.50);border-top-color:rgba(255,214,100,0.75);box-shadow:0 4px 18px -4px rgba(245,158,11,0.32),inset 0 1px 0 rgba(255,255,255,0.08);color:#FBBF24;"
+              title="Injury">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true">
                 <defs>
-                  <linearGradient id="pl-body" x1="0" y1="0" x2="1" y2="1">
+                  <linearGradient id="pl2-strip" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stop-color="#FDE68A"/>
-                    <stop offset="100%" stop-color="#D97706"/>
+                    <stop offset="100%" stop-color="#CA8A04"/>
+                  </linearGradient>
+                  <linearGradient id="pl2-cap" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#D97706"/>
+                    <stop offset="100%" stop-color="#92400E"/>
+                  </linearGradient>
+                  <linearGradient id="pl2-pad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FEF9EE"/>
+                    <stop offset="100%" stop-color="#FEF3C7"/>
                   </linearGradient>
                 </defs>
-                <!-- plaster body rotated 45° — rendered as a rounded rect -->
-                <g transform="translate(18,18) rotate(45) translate(-18,-18)">
-                  <rect x="4" y="12" width="28" height="12" rx="6" fill="url(#pl-body)"/>
-                  <!-- left end cap (darker) -->
-                  <rect x="4" y="12" width="8" height="12" rx="4" fill="#B45309"/>
-                  <!-- right end cap (darker) -->
-                  <rect x="24" y="12" width="8" height="12" rx="4" fill="#B45309"/>
-                  <!-- centre pad -->
-                  <rect x="13" y="13" width="10" height="10" rx="2" fill="#FEF3C7"/>
-                  <!-- pad cross marks -->
-                  <line x1="18" y1="15" x2="18" y2="21" stroke="#D97706" stroke-width="1.5" stroke-linecap="round"/>
-                  <line x1="15" y1="18" x2="21" y2="18" stroke="#D97706" stroke-width="1.5" stroke-linecap="round"/>
-                  <!-- gloss sheen -->
-                  <rect x="6" y="13" width="4" height="10" rx="2" fill="rgba(255,255,255,0.25)"/>
+                <g transform="translate(18,18) rotate(-45) translate(-18,-18)">
+                  <!-- strip body -->
+                  <rect x="3" y="11.5" width="30" height="13" rx="6.5" fill="url(#pl2-strip)"/>
+                  <!-- top-edge specular -->
+                  <rect x="5" y="11.5" width="22" height="3" rx="1.5" fill="rgba(255,255,255,0.40)"/>
+                  <!-- left cap -->
+                  <rect x="3" y="11.5" width="9" height="13" rx="5" fill="url(#pl2-cap)"/>
+                  <!-- right cap -->
+                  <rect x="24" y="11.5" width="9" height="13" rx="5" fill="url(#pl2-cap)"/>
+                  <!-- pad white area -->
+                  <rect x="12.5" y="12.5" width="11" height="11" rx="2.5" fill="url(#pl2-pad)"/>
+                  <!-- pad shadow edge -->
+                  <rect x="12.5" y="20.5" width="11" height="3" rx="1.5" fill="rgba(0,0,0,0.08)"/>
+                  <!-- cross vertical -->
+                  <line x1="18" y1="15" x2="18" y2="22" stroke="#D97706" stroke-width="1.8" stroke-linecap="round"/>
+                  <!-- cross horizontal -->
+                  <line x1="14.5" y1="18" x2="21.5" y2="18" stroke="#D97706" stroke-width="1.8" stroke-linecap="round"/>
                 </g>
               </svg>
               <span>Injury</span>
