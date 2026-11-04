@@ -414,31 +414,31 @@
           </div>
         </div>
         <!-- Master Digital Stopwatch -->
-        <!-- Scoreboard Hero: Home — Score — Timer — Score — Away -->
-        <div class="flex items-center justify-between gap-x-1 mb-2" style="min-height:88px">
+        <!-- Scoreboard Hero: Home (Left) — Timer (Center) — Away (Right) -->
+        <div class="flex items-center justify-between gap-x-2 mb-2 px-1" style="min-height:96px">
           <!-- HOME column -->
-          <div class="flex flex-col items-center min-w-0" style="flex:1 1 0%;max-width:38%">
+          <div class="flex flex-col items-center min-w-0" style="flex:1 1 0%;max-width:33%">
             <span class="text-white font-bold truncate min-w-0 text-xs mb-1 block w-full text-center" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="scoreboardTeam" title="Your Team">Clubstride</span>
-            <div class="flex items-center space-x-1">
-              <button type="button" onclick="App.adjustScore('our', -1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">−</button>
-              <span id="scoreboardGoals" class="flex-shrink-0 rounded-xl bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40 font-mono text-center inline-flex items-center justify-center" style="font-size:2.5rem;font-weight:800;min-width:3.2rem;height:3.5rem;line-height:1">0</span>
-              <button type="button" onclick="App.adjustScore('our', 1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-mint/40 text-cyber-mint hover:bg-cyber-mint/20 flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Goal">+</button>
+            <span id="scoreboardGoals" class="flex-shrink-0 font-mono text-center inline-flex items-center justify-center text-cyber-mint" style="font-size:2.75rem;font-weight:900;line-height:1;height:3rem">0</span>
+            <div class="flex items-center justify-center space-x-1 mt-1">
+              <button type="button" onclick="App.adjustScore('our', -1)" class="score-step flex-shrink-0 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">−</button>
+              <button type="button" onclick="App.adjustScore('our', 1)" class="score-step flex-shrink-0 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-cyber-mint/40 text-cyber-mint hover:bg-cyber-mint/20 flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Goal">+</button>
             </div>
           </div>
           <!-- CENTER column: match clock -->
-          <div class="flex flex-col items-center justify-center flex-shrink-0 px-1.5">
+          <div class="flex flex-col items-center justify-center flex-shrink-0 px-1" style="max-width:34%">
             <div id="matchClockDisplay" class="font-mono font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300" style="font-size:2rem;line-height:1">
               00:00
             </div>
-            <p id="clockStatusSubtext" class="text-cyber-cyan font-medium mt-1 text-center" style="font-size:0.65rem;line-height:1.1;max-width:96px">Clock Paused — Ready to Kickoff</p>
+            <p id="clockStatusSubtext" class="text-cyber-cyan font-medium mt-1 text-center" style="font-size:0.65rem;line-height:1.15;max-width:96px">Clock Paused — Ready to Kickoff</p>
           </div>
           <!-- AWAY column -->
-          <div class="flex flex-col items-center min-w-0" style="flex:1 1 0%;max-width:38%">
+          <div class="flex flex-col items-center min-w-0" style="flex:1 1 0%;max-width:33%">
             <span class="text-slate-400 font-semibold truncate min-w-0 text-xs mb-1 block w-full text-center" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="scoreboardOpponent" title="Opponent">Echo</span>
-            <div class="flex items-center space-x-1">
-              <button type="button" onclick="App.adjustScore('opponent', -1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">−</button>
-              <span id="scoreboardOpponentGoals" class="flex-shrink-0 rounded-xl bg-white/10 text-slate-300 font-mono text-center inline-flex items-center justify-center" style="font-size:2.5rem;font-weight:800;min-width:3.2rem;height:3.5rem;line-height:1">0</span>
-              <button type="button" onclick="App.adjustScore('opponent', 1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Opponent Goal">+</button>
+            <span id="scoreboardOpponentGoals" class="flex-shrink-0 font-mono text-center inline-flex items-center justify-center text-slate-200" style="font-size:2.75rem;font-weight:900;line-height:1;height:3rem">0</span>
+            <div class="flex items-center justify-center space-x-1 mt-1">
+              <button type="button" onclick="App.adjustScore('opponent', -1)" class="score-step flex-shrink-0 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">−</button>
+              <button type="button" onclick="App.adjustScore('opponent', 1)" class="score-step flex-shrink-0 rounded-xl bg-obsidian-950 hover:bg-obsidian-900 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Plus 1 Opponent Goal">+</button>
             </div>
           </div>
         </div>
@@ -815,6 +815,73 @@
       <div class="pt-2">
         <button id="modalAddPlayerSubmitBtn" onclick="App.saveNewPlayer()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95">
           Add to Squad
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- 4B. PLAYER RATING & WHATSAPP STATS REVIEW MODAL -->
+  <div id="modalPlayerRating" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <div class="min-w-0 pr-2">
+          <h3 id="ratingModalPlayerName" class="text-base font-bold text-white truncate">Player Rating &amp; Stats</h3>
+          <p id="ratingModalPlayerSub" class="text-xs text-cyber-cyan font-medium truncate">Review and send to WhatsApp</p>
+        </div>
+        <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm flex-shrink-0">✕</button>
+      </div>
+      <!-- Stats snapshot card -->
+      <div id="ratingModalStatsBox" class="p-3 rounded-xl bg-obsidian-950/80 border border-white/10 grid grid-cols-3 gap-2 text-center text-xs">
+      </div>
+      <!-- Skills Rating Inputs (1-10) -->
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-semibold">Technical</span>
+          <div class="flex items-center space-x-2">
+            <input type="range" id="rateTechnical" min="1" max="10" value="7" oninput="document.getElementById('valTechnical').innerText = this.value" class="w-28 accent-cyber-cyan cursor-pointer" />
+            <span id="valTechnical" class="font-mono font-bold text-cyber-cyan w-5 text-right">7</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-semibold">Tactical</span>
+          <div class="flex items-center space-x-2">
+            <input type="range" id="rateTactical" min="1" max="10" value="7" oninput="document.getElementById('valTactical').innerText = this.value" class="w-28 accent-cyber-cyan cursor-pointer" />
+            <span id="valTactical" class="font-mono font-bold text-cyber-cyan w-5 text-right">7</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-semibold">Physical</span>
+          <div class="flex items-center space-x-2">
+            <input type="range" id="ratePhysical" min="1" max="10" value="7" oninput="document.getElementById('valPhysical').innerText = this.value" class="w-28 accent-cyber-cyan cursor-pointer" />
+            <span id="valPhysical" class="font-mono font-bold text-cyber-cyan w-5 text-right">7</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-semibold">Mental</span>
+          <div class="flex items-center space-x-2">
+            <input type="range" id="rateMental" min="1" max="10" value="7" oninput="document.getElementById('valMental').innerText = this.value" class="w-28 accent-cyber-cyan cursor-pointer" />
+            <span id="valMental" class="font-mono font-bold text-cyber-cyan w-5 text-right">7</span>
+          </div>
+        </div>
+      </div>
+      <!-- Rating Note & Homework -->
+      <div class="space-y-2 text-xs">
+        <div>
+          <label class="text-slate-400 font-medium block mb-1">Coach Note</label>
+          <input type="text" id="rateNotes" class="w-full bg-obsidian-950 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-cyber-cyan" placeholder="e.g. Great vision and work rate today" />
+        </div>
+        <div>
+          <label class="text-slate-400 font-medium block mb-1">Homework</label>
+          <input type="text" id="rateHomework" class="w-full bg-obsidian-950 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-cyber-cyan" placeholder="e.g. 50 wall touches daily" />
+        </div>
+      </div>
+      <!-- Action Buttons -->
+      <div class="space-y-2 pt-2">
+        <button type="button" onclick="App.sendPlayerWhatsAppStats()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-md active:scale-95 transition flex items-center justify-center space-x-2">
+          <svg class="ci ci-16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <span>Send to WhatsApp to Review Stats</span>
+        </button>
+        <button type="button" onclick="App.savePlayerRatingOnly()" class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-bold text-xs tracking-wide active:scale-95 transition">
+          Save Rating Only
         </button>
       </div>
     </div>
@@ -3502,6 +3569,9 @@
               }">
                 ${isAvail ? '✓ Avail' : '✗ Out'}
               </button>
+              <button type="button" onclick="App.openPlayerRatingModal('${p.id}')" class="roster-icon-btn rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 hover:text-white transition flex items-center justify-center text-xs" title="Player rating & share stats to WhatsApp">
+                <svg class="ci ci-16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              </button>
               <button type="button" onclick="App.openEditPlayerModal('${p.id}')" class="roster-icon-btn rounded-xl bg-white/5 hover:bg-cyber-cyan/20 text-slate-400 hover:text-cyber-cyan transition flex items-center justify-center text-xs" title="Edit player name, number or position">
                 <svg class="ci ci-16" aria-hidden="true"><use href="#ci-edit"></use></svg>
               </button>
@@ -5977,7 +6047,7 @@
       closeModals() {
         AppState.editingPlayerId = null;
         this._pendingConfirm = null;
-        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalPdfReport, #modalEndMatch, #modalFormatShift, #modalConfirm').forEach(m => {
+        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalPdfReport, #modalEndMatch, #modalFormatShift, #modalConfirm, #modalPlayerRating').forEach(m => {
           m.classList.add('hidden');
           m.classList.remove('flex');
         });
