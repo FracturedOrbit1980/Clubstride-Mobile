@@ -1502,7 +1502,7 @@ assert(podActions.includes('flex-shrink-0'), 'Pitch, Avail, Edit and Delete keep
 assert(podActions.includes('ml-auto'), 'Actions that folded to their own line still sit on the right edge');
 assert(/<span class="flex-shrink-0 px-1\.5[^>]*>Starter<\/span>/.test(podRegion), 'The Starter badge is never squashed by a long name');
 
-const boardRegion = html.slice(html.indexOf('STOPWATCH & ROTATION CLOCK HERO POD'), html.indexOf('Master Digital Stopwatch'));
+const boardRegion = html.slice(html.indexOf('STOPWATCH & ROTATION CLOCK HERO POD'), html.indexOf('Clock Action Controls'));
 assert(/<div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 mb-2">/.test(boardRegion), 'The scoreboard row folds so the goal steppers stay inside the card');
 const steppers = boardRegion.match(/<button[^>]*adjustScore[^>]*>/g) || [];
 assert.strictEqual(steppers.length, 4, 'All four goal steppers must be present to check');
