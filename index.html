@@ -418,7 +418,7 @@
         <div class="flex items-center justify-between gap-x-1 mb-2" style="min-height:88px">
           <!-- HOME column -->
           <div class="flex flex-col items-center min-w-0" style="flex:1 1 0%;max-width:38%">
-            <span class="text-white font-bold truncate min-w-0 max-w-[80px] text-xs mb-1 block w-full text-center" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="scoreboardTeam" title="Your Team">Clubstride</span>
+            <span class="text-white font-bold truncate min-w-0 text-xs mb-1 block w-full text-center" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="scoreboardTeam" title="Your Team">Clubstride</span>
             <div class="flex items-center space-x-1">
               <button type="button" onclick="App.adjustScore('our', -1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Goal">−</button>
               <span id="scoreboardGoals" class="flex-shrink-0 rounded-xl bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40 font-mono text-center inline-flex items-center justify-center" style="font-size:2.5rem;font-weight:800;min-width:3.2rem;height:3.5rem;line-height:1">0</span>
@@ -435,7 +435,7 @@
           </div>
           <!-- AWAY column -->
           <div class="flex flex-col items-center min-w-0" style="flex:1 1 0%;max-width:38%">
-            <span class="text-slate-400 font-semibold truncate min-w-0 max-w-[80px] text-xs mb-1 block w-full text-center" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="scoreboardOpponent" title="Opponent">Echo</span>
+            <span class="text-slate-400 font-semibold truncate min-w-0 text-xs mb-1 block w-full text-center" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="scoreboardOpponent" title="Opponent">Echo</span>
             <div class="flex items-center space-x-1">
               <button type="button" onclick="App.adjustScore('opponent', -1)" class="score-step flex-shrink-0 rounded-lg bg-obsidian-950 hover:bg-obsidian-900 border border-white/15 text-slate-300 hover:text-white flex items-center justify-center text-xs active:scale-95 transition" title="Minus 1 Opponent Goal">−</button>
               <span id="scoreboardOpponentGoals" class="flex-shrink-0 rounded-xl bg-white/10 text-slate-300 font-mono text-center inline-flex items-center justify-center" style="font-size:2.5rem;font-weight:800;min-width:3.2rem;height:3.5rem;line-height:1">0</span>
@@ -462,16 +462,79 @@
             <span>+ Goal (Scorer &amp; Assist)</span>
           </button>
           <div class="grid grid-cols-3 gap-2">
-            <button type="button" onclick="App.openCardModal('YellowCard')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5" style="background:linear-gradient(135deg,#FACC15,#EAB308);color:#0f172a;">
-              <span class="text-base">🟨</span>
+            <!-- Yellow Card — 3D card SVG icon -->
+            <button type="button" onclick="App.openCardModal('YellowCard')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex flex-col items-center justify-center gap-0.5 bg-obsidian-950 border border-white/15 text-white" title="Yellow Card">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="22" height="28" aria-hidden="true">
+                <defs>
+                  <linearGradient id="yc-face" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FDE047"/>
+                    <stop offset="100%" stop-color="#CA8A04"/>
+                  </linearGradient>
+                  <linearGradient id="yc-side" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#A16207"/>
+                    <stop offset="100%" stop-color="#854D0E"/>
+                  </linearGradient>
+                </defs>
+                <!-- top face -->
+                <polygon points="4,4 28,4 32,8 8,8" fill="#FEF08A"/>
+                <!-- right side -->
+                <polygon points="28,4 32,8 32,42 28,38" fill="url(#yc-side)"/>
+                <!-- main face -->
+                <rect x="4" y="8" width="24" height="34" rx="2" fill="url(#yc-face)"/>
+                <!-- gloss -->
+                <rect x="6" y="10" width="8" height="30" rx="1" fill="rgba(255,255,255,0.12)"/>
+              </svg>
               <span>Yellow</span>
             </button>
-            <button type="button" onclick="App.openCardModal('RedCard')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5" style="background:linear-gradient(135deg,#EF4444,#B91C1C);color:#ffffff;">
-              <span class="text-base">🟥</span>
+            <!-- Red Card — 3D card SVG icon -->
+            <button type="button" onclick="App.openCardModal('RedCard')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex flex-col items-center justify-center gap-0.5 bg-obsidian-950 border border-white/15 text-white" title="Red Card">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="22" height="28" aria-hidden="true">
+                <defs>
+                  <linearGradient id="rc-face" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#F87171"/>
+                    <stop offset="100%" stop-color="#991B1B"/>
+                  </linearGradient>
+                  <linearGradient id="rc-side" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#7F1D1D"/>
+                    <stop offset="100%" stop-color="#6B1A1A"/>
+                  </linearGradient>
+                </defs>
+                <!-- top face -->
+                <polygon points="4,4 28,4 32,8 8,8" fill="#FCA5A5"/>
+                <!-- right side -->
+                <polygon points="28,4 32,8 32,42 28,38" fill="url(#rc-side)"/>
+                <!-- main face -->
+                <rect x="4" y="8" width="24" height="34" rx="2" fill="url(#rc-face)"/>
+                <!-- gloss -->
+                <rect x="6" y="10" width="8" height="30" rx="1" fill="rgba(255,255,255,0.12)"/>
+              </svg>
               <span>Red</span>
             </button>
-            <button type="button" onclick="App.openCardModal('Injury')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5" style="background:linear-gradient(135deg,#FB923C,#EA580C);color:#ffffff;">
-              <span class="text-base">🩹</span>
+            <!-- Injury — plaster / bandage SVG icon -->
+            <button type="button" onclick="App.openCardModal('Injury')" class="py-2.5 rounded-2xl font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex flex-col items-center justify-center gap-0.5 bg-obsidian-950 border border-white/15 text-white" title="Injury">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" aria-hidden="true">
+                <defs>
+                  <linearGradient id="pl-body" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#FDE68A"/>
+                    <stop offset="100%" stop-color="#D97706"/>
+                  </linearGradient>
+                </defs>
+                <!-- plaster body rotated 45° — rendered as a rounded rect -->
+                <g transform="translate(18,18) rotate(45) translate(-18,-18)">
+                  <rect x="4" y="12" width="28" height="12" rx="6" fill="url(#pl-body)"/>
+                  <!-- left end cap (darker) -->
+                  <rect x="4" y="12" width="8" height="12" rx="4" fill="#B45309"/>
+                  <!-- right end cap (darker) -->
+                  <rect x="24" y="12" width="8" height="12" rx="4" fill="#B45309"/>
+                  <!-- centre pad -->
+                  <rect x="13" y="13" width="10" height="10" rx="2" fill="#FEF3C7"/>
+                  <!-- pad cross marks -->
+                  <line x1="18" y1="15" x2="18" y2="21" stroke="#D97706" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="15" y1="18" x2="21" y2="18" stroke="#D97706" stroke-width="1.5" stroke-linecap="round"/>
+                  <!-- gloss sheen -->
+                  <rect x="6" y="13" width="4" height="10" rx="2" fill="rgba(255,255,255,0.25)"/>
+                </g>
+              </svg>
               <span>Injury</span>
             </button>
           </div>
