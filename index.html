@@ -69,6 +69,28 @@
     /* The View row is one control, so both segments take the same box. Without this a <button>
        centres its label while the <a> beside it sits on the line box, ~9px higher. */
     .view-tab { display: flex; align-items: center; justify-content: center; line-height: 1; }
+    /* The three touchline event buttons are one set, so they take their colour from the CI card
+       tokens. The gradient and size utilities the first cut used are not in the frozen Tailwind
+       build, so the box and the tint are written here and re-tinted for day mode. */
+    .event-chip { width: 44px; height: 44px; border-radius: 16px; flex-shrink: 0; display: flex;
+      align-items: center; justify-content: center; border: 1px solid transparent; transition: transform 0.12s ease-out; }
+    .event-chip:active { transform: scale(0.95); }
+    .event-chip--yellow { color: var(--cs-card-yellow); background: rgba(255,213,0,0.10); border-color: rgba(255,213,0,0.45); }
+    .event-chip--red { color: var(--cs-danger); background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.42); }
+    .event-chip--injury { color: var(--cs-blue-300); background: rgba(125,211,252,0.12); border-color: rgba(125,211,252,0.42); }
+    body.theme-day .event-chip--yellow { color: var(--cs-amber-700); background: rgba(255,213,0,0.20); border-color: rgba(180,83,9,0.40); }
+    body.theme-day .event-chip--red { color: var(--cs-card-red); background: rgba(215,20,26,0.10); border-color: rgba(215,20,26,0.40); }
+    body.theme-day .event-chip--injury { color: var(--cs-blue-600); background: rgba(29,78,216,0.10); border-color: rgba(29,78,216,0.32); }
+    .apply-btn { flex: 1 1 0%; min-width: 0; min-height: 44px; padding: 10px 12px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px;
+      letter-spacing: 0.02em; transition: transform 0.12s ease-out; }
+    .apply-btn:active { transform: scale(0.95); }
+    .apply-btn--yellow { background: var(--cs-card-yellow); color: var(--cs-on-card-yellow); }
+    .apply-btn--red { background: var(--cs-card-red); color: var(--cs-on-card-red); }
+    .apply-btn--injury { background: var(--cs-blue-300); color: var(--cs-navy-950); }
+    /* The bundle ships ci-card-yellow/ci-card-red; the injury glyph is the same idea. */
+    .ci-injury { color: var(--cs-blue-300); }
+    body.theme-day .ci-injury { color: var(--cs-blue-600); }
     .touch-input { min-height: 44px; }
     .header-icon-btn { width: 44px; height: 44px; }
     /* The tab strip is rewritten by switchTab, so the size lives with the id, not the class. */
@@ -220,6 +242,7 @@
     <symbol id="ci-feedback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H10l-4 4v-4H6a2 2 0 0 1-2-2z"/><path d="M8 9h8M8 12.5h5"/></symbol>
     <symbol id="ci-goal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l4.3 3.1-1.6 5h-5.4l-1.6-5z"/><path d="M12 3v4.5M16.3 10.6l4.4-1.4M14.7 15.6l2.6 3.7M9.3 15.6l-2.6 3.7M7.7 10.6L3.3 9.2"/></symbol>
     <symbol id="ci-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7.5 9 7.5"/><path d="M5.5 9.5V19a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V9.5"/><path d="M10 21v-5h4v5"/></symbol>
+    <symbol id="ci-injury" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-45 12 12)"><rect x="2.5" y="8.5" width="19" height="7" rx="3.5"/><path d="M12 10.3v3.4M10.3 12h3.4"/></g></symbol>
     <symbol id="ci-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></symbol>
     <symbol id="ci-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></symbol>
     <symbol id="ci-pdf-export" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14l3 3 3-3"/></symbol>
@@ -460,107 +483,30 @@
         <!-- GOAL ACTION: SCORER + OPTIONAL ASSIST & SMALL CARD / INJURY ICONS -->
         <div class="mt-4 pt-3 border-t border-white/10 flex items-center gap-1.5">
           <!-- Main Goal Button (Scorer & Assist) -->
-          <button type="button" onclick="App.openEventModal('Goal')" class="flex-1 min-w-0 py-2.5 px-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1.5 min-h-[44px]">
+          <button type="button" onclick="App.openEventModal('Goal')" title="Goal: scorer and optional assist" aria-label="Log a goal with scorer and assist"
+            class="chip-btn flex-1 min-w-0 py-2.5 px-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center">
             <span class="text-base ci-goal flex-shrink-0"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-goal"></use></svg></span>
-            <span class="truncate">+ Goal (Scorer &amp; Assist)</span>
+            <span class="truncate">+ Goal</span>
           </button>
           <!-- Small Action Icons: Yellow Card, Red Card, Injury -->
           <div class="flex items-center gap-1.5 flex-shrink-0">
             <!-- Yellow Card Icon Button -->
-            <button type="button" onclick="App.openCardModal('YellowCard')"
-              class="chip-btn w-11 h-11 rounded-2xl active:scale-95 transition flex items-center justify-center flex-shrink-0"
-              style="background:rgba(255,213,0,0.10);border:1px solid rgba(255,213,0,0.55);border-top-color:rgba(255,240,100,0.80);box-shadow:0 4px 18px -4px rgba(255,213,0,0.35),inset 0 1px 0 rgba(255,255,255,0.08);color:#FFD500;"
-              title="Yellow Card" aria-label="Yellow Card">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="18" height="24" aria-hidden="true">
-                <defs>
-                  <linearGradient id="yc2-face" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#FFF176"/>
-                    <stop offset="55%" stop-color="#FFD500"/>
-                    <stop offset="100%" stop-color="#B8960A"/>
-                  </linearGradient>
-                  <linearGradient id="yc2-top" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#FFEE58"/>
-                    <stop offset="100%" stop-color="#FFD500"/>
-                  </linearGradient>
-                  <linearGradient id="yc2-side" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#8C6D00"/>
-                    <stop offset="100%" stop-color="#6B5100"/>
-                  </linearGradient>
-                  <linearGradient id="yc2-gloss" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="rgba(255,255,255,0.45)"/>
-                    <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
-                  </linearGradient>
-                </defs>
-                <polygon points="4,5 32,5 40,12 12,12" fill="url(#yc2-top)"/>
-                <polygon points="32,5 40,12 40,52 32,47" fill="url(#yc2-side)"/>
-                <rect x="4" y="12" width="28" height="40" rx="3" fill="url(#yc2-face)"/>
-                <rect x="7" y="14" width="10" height="36" rx="2" fill="url(#yc2-gloss)"/>
-                <rect x="4" y="44" width="28" height="8" rx="3" fill="rgba(0,0,0,0.18)"/>
-              </svg>
+            <button type="button" onclick="App.openCardModal('Yellow')"
+              class="event-chip event-chip--yellow"
+              title="Yellow Card" aria-label="Log a yellow card">
+              <svg class="ci ci-20" aria-hidden="true"><use href="#ci-card-yellow"></use></svg>
             </button>
             <!-- Red Card Icon Button -->
-            <button type="button" onclick="App.openCardModal('RedCard')"
-              class="chip-btn w-11 h-11 rounded-2xl active:scale-95 transition flex items-center justify-center flex-shrink-0"
-              style="background:rgba(215,20,26,0.12);border:1px solid rgba(215,20,26,0.55);border-top-color:rgba(255,100,100,0.75);box-shadow:0 4px 18px -4px rgba(215,20,26,0.40),inset 0 1px 0 rgba(255,255,255,0.08);color:#FF8A80;"
-              title="Red Card" aria-label="Red Card">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 52" width="18" height="24" aria-hidden="true">
-                <defs>
-                  <linearGradient id="rc2-face" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#FF6B6B"/>
-                    <stop offset="55%" stop-color="#D7141A"/>
-                    <stop offset="100%" stop-color="#7F0000"/>
-                  </linearGradient>
-                  <linearGradient id="rc2-top" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#FF8A80"/>
-                    <stop offset="100%" stop-color="#D7141A"/>
-                  </linearGradient>
-                  <linearGradient id="rc2-side" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#5C0000"/>
-                    <stop offset="100%" stop-color="#420000"/>
-                  </linearGradient>
-                  <linearGradient id="rc2-gloss" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="rgba(255,255,255,0.40)"/>
-                    <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
-                  </linearGradient>
-                </defs>
-                <polygon points="4,5 32,5 40,12 12,12" fill="url(#rc2-top)"/>
-                <polygon points="32,5 40,12 40,52 32,47" fill="url(#rc2-side)"/>
-                <rect x="4" y="12" width="28" height="40" rx="3" fill="url(#rc2-face)"/>
-                <rect x="7" y="14" width="10" height="36" rx="2" fill="url(#rc2-gloss)"/>
-                <rect x="4" y="44" width="28" height="8" rx="3" fill="rgba(0,0,0,0.22)"/>
-              </svg>
+            <button type="button" onclick="App.openCardModal('Red')"
+              class="event-chip event-chip--red"
+              title="Red Card" aria-label="Log a red card">
+              <svg class="ci ci-20" aria-hidden="true"><use href="#ci-card-red"></use></svg>
             </button>
             <!-- Injury Icon Button -->
             <button type="button" onclick="App.openCardModal('Injury')"
-              class="chip-btn w-11 h-11 rounded-2xl active:scale-95 transition flex items-center justify-center flex-shrink-0"
-              style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.50);border-top-color:rgba(255,214,100,0.75);box-shadow:0 4px 18px -4px rgba(245,158,11,0.32),inset 0 1px 0 rgba(255,255,255,0.08);color:#FBBF24;"
-              title="Injury" aria-label="Injury">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="22" height="22" aria-hidden="true">
-                <defs>
-                  <linearGradient id="pl2-strip" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#FDE68A"/>
-                    <stop offset="100%" stop-color="#CA8A04"/>
-                  </linearGradient>
-                  <linearGradient id="pl2-cap" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#D97706"/>
-                    <stop offset="100%" stop-color="#92400E"/>
-                  </linearGradient>
-                  <linearGradient id="pl2-pad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#FEF9EE"/>
-                    <stop offset="100%" stop-color="#FEF3C7"/>
-                  </linearGradient>
-                </defs>
-                <g transform="translate(18,18) rotate(-45) translate(-18,-18)">
-                  <rect x="3" y="11.5" width="30" height="13" rx="6.5" fill="url(#pl2-strip)"/>
-                  <rect x="5" y="11.5" width="22" height="3" rx="1.5" fill="rgba(255,255,255,0.40)"/>
-                  <rect x="3" y="11.5" width="9" height="13" rx="5" fill="url(#pl2-cap)"/>
-                  <rect x="24" y="11.5" width="9" height="13" rx="5" fill="url(#pl2-cap)"/>
-                  <rect x="12.5" y="12.5" width="11" height="11" rx="2.5" fill="url(#pl2-pad)"/>
-                  <rect x="12.5" y="20.5" width="11" height="3" rx="1.5" fill="rgba(0,0,0,0.08)"/>
-                  <line x1="18" y1="15" x2="18" y2="22" stroke="#D97706" stroke-width="1.8" stroke-linecap="round"/>
-                  <line x1="14.5" y1="18" x2="21.5" y2="18" stroke="#D97706" stroke-width="1.8" stroke-linecap="round"/>
-                </g>
-              </svg>
+              class="event-chip event-chip--injury"
+              title="Injury" aria-label="Log an injury">
+              <svg class="ci ci-20" aria-hidden="true"><use href="#ci-injury"></use></svg>
             </button>
           </div>
         </div>
@@ -822,73 +768,6 @@
       </div>
     </div>
   </div>
-  <!-- 4B. PLAYER RATING & WHATSAPP STATS REVIEW MODAL -->
-  <div id="modalPlayerRating" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between">
-        <div class="min-w-0 pr-2">
-          <h3 id="ratingModalPlayerName" class="text-base font-bold text-white truncate">Player Rating &amp; Stats</h3>
-          <p id="ratingModalPlayerSub" class="text-xs text-cyber-cyan font-medium truncate">Review and send to WhatsApp</p>
-        </div>
-        <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm flex-shrink-0">✕</button>
-      </div>
-      <!-- Stats snapshot card -->
-      <div id="ratingModalStatsBox" class="p-3 rounded-xl bg-obsidian-950/80 border border-white/10 grid grid-cols-3 gap-2 text-center text-xs">
-      </div>
-      <!-- Skills Rating Inputs (1-10) -->
-      <div class="space-y-2 text-xs">
-        <div class="flex items-center justify-between">
-          <span class="text-slate-300 font-semibold">Technical</span>
-          <div class="flex items-center space-x-2">
-            <input type="range" id="rateTechnical" min="1" max="10" value="7" oninput="document.getElementById('valTechnical').innerText = this.value" class="w-28 accent-cyber-cyan cursor-pointer" />
-            <span id="valTechnical" class="font-mono font-bold text-cyber-cyan w-5 text-right">7</span>
-          </div>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-slate-300 font-semibold">Tactical</span>
-          <div class="flex items-center space-x-2">
-            <input type="range" id="rateTactical" min="1" max="10" value="7" oninput="document.getElementById('valTactical').innerText = this.value" class="w-28 accent-cyber-cyan cursor-pointer" />
-            <span id="valTactical" class="font-mono font-bold text-cyber-cyan w-5 text-right">7</span>
-          </div>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-slate-300 font-semibold">Physical</span>
-          <div class="flex items-center space-x-2">
-            <input type="range" id="ratePhysical" min="1" max="10" value="7" oninput="document.getElementById('valPhysical').innerText = this.value" class="w-28 accent-cyber-cyan cursor-pointer" />
-            <span id="valPhysical" class="font-mono font-bold text-cyber-cyan w-5 text-right">7</span>
-          </div>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-slate-300 font-semibold">Mental</span>
-          <div class="flex items-center space-x-2">
-            <input type="range" id="rateMental" min="1" max="10" value="7" oninput="document.getElementById('valMental').innerText = this.value" class="w-28 accent-cyber-cyan cursor-pointer" />
-            <span id="valMental" class="font-mono font-bold text-cyber-cyan w-5 text-right">7</span>
-          </div>
-        </div>
-      </div>
-      <!-- Rating Note & Homework -->
-      <div class="space-y-2 text-xs">
-        <div>
-          <label class="text-slate-400 font-medium block mb-1">Coach Note</label>
-          <input type="text" id="rateNotes" class="w-full bg-obsidian-950 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-cyber-cyan" placeholder="e.g. Great vision and work rate today" />
-        </div>
-        <div>
-          <label class="text-slate-400 font-medium block mb-1">Homework</label>
-          <input type="text" id="rateHomework" class="w-full bg-obsidian-950 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-cyber-cyan" placeholder="e.g. 50 wall touches daily" />
-        </div>
-      </div>
-      <!-- Action Buttons -->
-      <div class="space-y-2 pt-2">
-        <button type="button" onclick="App.sendPlayerWhatsAppStats()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-md active:scale-95 transition flex items-center justify-center space-x-2">
-          <svg class="ci ci-16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          <span>Send to WhatsApp to Review Stats</span>
-        </button>
-        <button type="button" onclick="App.savePlayerRatingOnly()" class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-bold text-xs tracking-wide active:scale-95 transition">
-          Save Rating Only
-        </button>
-      </div>
-    </div>
-  </div>
   <!-- 5. SAVE CUSTOM FORMATION MODAL -->
   <div id="modalSaveFormation" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
@@ -966,7 +845,7 @@
     <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <h3 id="cardModalTitle" class="text-base font-bold text-white flex items-center space-x-2">
-          <span id="cardModalTitleIcon">🟨</span>
+          <span id="cardModalTitleIcon"><svg id="cardModalTitleGlyph" class="ci ci-16 ci-card-yellow" aria-hidden="true"><use id="cardModalTitleIconUse" href="#ci-card-yellow"></use></svg></span>
           <span id="cardModalTitleText">Record Yellow Card</span>
         </h3>
         <button type="button" onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
@@ -981,7 +860,7 @@
       <div>
         <label for="cardMinute" class="text-[10px] font-bold uppercase tracking-wider text-cyber-cyan">Match Minute</label>
         <div class="mt-1 flex items-center space-x-2">
-          <input type="number" id="cardMinute" min="0" max="180" class="w-24 bg-obsidian-950 border border-white/15 rounded-xl p-2.5 text-white text-sm font-mono font-bold focus:outline-none focus:border-cyber-cyan text-center" />
+          <input type="number" id="cardMinute" min="0" max="180" class="w-32 bg-obsidian-950 border border-white/15 rounded-xl p-2.5 text-white text-sm font-mono font-bold focus:outline-none focus:border-cyber-cyan text-center" />
           <span class="text-xs text-slate-400 font-semibold">' of play</span>
         </div>
       </div>
@@ -990,9 +869,9 @@
         <input type="text" id="cardReason" placeholder="e.g. Tactical foul, dissent, ankle roll" class="w-full mt-1 bg-obsidian-950 border border-white/15 rounded-xl p-2.5 text-white text-xs font-semibold focus:outline-none focus:border-cyber-cyan" />
       </div>
       <div class="flex items-center space-x-2 pt-2">
-        <button type="button" onclick="App.closeModals()" class="flex-1 py-2.5 rounded-xl bg-obsidian-800 hover:bg-obsidian-700 border border-white/10 text-slate-300 font-semibold text-xs transition">Cancel</button>
-        <button type="button" onclick="App.confirmCardEvent()" id="cardConfirmBtn" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-obsidian-950 font-extrabold text-xs tracking-wide shadow-md hover:brightness-110 active:scale-95 transition">
-          Record Event
+        <button type="button" onclick="App.closeModals()" class="chip-btn flex-1 py-2.5 rounded-xl bg-obsidian-800 border border-white/10 text-slate-300 font-semibold text-xs transition">Cancel</button>
+        <button type="button" onclick="App.confirmCardEvent()" id="cardConfirmBtn" class="apply-btn apply-btn--yellow">
+          Apply
         </button>
       </div>
     </div>
@@ -2459,9 +2338,17 @@
       // own goal has no honest home in the cloud file: the score counters on the match row already
       // carry it. These goals stay in Lite, and the incoming snapshot must not delete them.
       eventIsShareable(event) {
+        // Pro's match parser only accepts the contract's five types, and a file containing anything
+        // else is refused whole. Injury has no cloud type, so it stays on this phone like an
+        // opponent goal does.
+        if (event.type === 'Injury' || event.type === 'YellowCard' || event.type === 'RedCard') return false;
         if (event.type !== 'Goal') return true;
         return !!event.playerId && !event.ownGoal && event.side !== 'opponent';
       },
+      // A card is logged as 'Yellow'/'Red' so it reaches Pro on the shared contract. Phones running
+      // the first live cut saved 'YellowCard'/'RedCard', so every reader accepts both spellings.
+      isYellowCard(event) { return event.type === 'Yellow' || event.type === 'YellowCard'; },
+      isRedCard(event) { return event.type === 'Red' || event.type === 'RedCard'; },
       eventTimeMs(event) {
         return typeof event.timestamp === 'number' ? event.timestamp : (Date.parse(event.timestamp) || 0);
       },
@@ -3572,9 +3459,6 @@
               }">
                 ${isAvail ? '✓ Avail' : '✗ Out'}
               </button>
-              <button type="button" onclick="App.openPlayerRatingModal('${p.id}')" class="roster-icon-btn rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 hover:text-white transition flex items-center justify-center text-xs" title="Player rating & share stats to WhatsApp">
-                <svg class="ci ci-16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              </button>
               <button type="button" onclick="App.openEditPlayerModal('${p.id}')" class="roster-icon-btn rounded-xl bg-white/5 hover:bg-cyber-cyan/20 text-slate-400 hover:text-cyber-cyan transition flex items-center justify-center text-xs" title="Edit player name, number or position">
                 <svg class="ci ci-16" aria-hidden="true"><use href="#ci-edit"></use></svg>
               </button>
@@ -4101,7 +3985,8 @@
         const modal = document.getElementById('modalCardEvent');
         const selector = document.getElementById('cardPlayerSelector');
         const titleText = document.getElementById('cardModalTitleText');
-        const titleIcon = document.getElementById('cardModalTitleIcon');
+        const titleGlyph = document.getElementById('cardModalTitleGlyph');
+        const titleIcon = document.getElementById('cardModalTitleIconUse');
         const desc = document.getElementById('cardModalDescription');
         const playerLabel = document.getElementById('cardPlayerLabel');
         const confirmBtn = document.getElementById('cardConfirmBtn');
@@ -4116,31 +4001,36 @@
         placeholder.disabled = true;
         placeholder.selected = true;
 
-        if (type === 'YellowCard') {
-          titleIcon.innerText = '🟨';
-          titleText.innerText = 'Record Yellow Card';
-          desc.innerText = 'Select the cautioned player and the match minute.';
-          playerLabel.innerText = 'Cautioned Player';
-          placeholder.innerText = '-- Select Cautioned Player --';
-          confirmBtn.innerText = 'Record Yellow Card';
-          confirmBtn.className = 'flex-1 py-2.5 rounded-xl font-extrabold text-xs tracking-wide shadow-md hover:brightness-110 active:scale-95 transition text-obsidian-950 bg-gradient-to-r from-amber-400 to-amber-500';
-        } else if (type === 'RedCard') {
-          titleIcon.innerText = '🟥';
-          titleText.innerText = 'Record Red Card';
-          desc.innerText = 'Select the sent-off player and the match minute.';
-          playerLabel.innerText = 'Sent-Off Player';
-          placeholder.innerText = '-- Select Sent-Off Player --';
-          confirmBtn.innerText = 'Record Red Card';
-          confirmBtn.className = 'flex-1 py-2.5 rounded-xl font-extrabold text-xs tracking-wide shadow-md hover:brightness-110 active:scale-95 transition text-white bg-gradient-to-r from-red-500 to-red-700';
-        } else if (type === 'Injury') {
-          titleIcon.innerText = '🩹';
-          titleText.innerText = 'Record Injury Event';
-          desc.innerText = 'Log an injury moment to track match fitness and stoppage reasons.';
-          playerLabel.innerText = 'Injured Player';
-          placeholder.innerText = '-- Select Injured Player --';
-          confirmBtn.innerText = 'Record Injury';
-          confirmBtn.className = 'flex-1 py-2.5 rounded-xl font-extrabold text-xs tracking-wide shadow-md hover:brightness-110 active:scale-95 transition text-white bg-gradient-to-r from-orange-400 to-red-500';
-        }
+        // 'Yellow' and 'Red' are the shared match contract's names, so a card logged here reaches
+        // Pro unchanged. Injury has no cloud event type, so it stays on this phone.
+        const SHEET = {
+          Yellow: {
+            title: 'Record Yellow Card', desc: 'Select the cautioned player and the match minute.',
+            label: 'Cautioned Player', placeholder: '-- Select Cautioned Player --',
+            sprite: '#ci-card-yellow', tint: 'ci ci-16 ci-card-yellow', apply: 'apply-btn apply-btn--yellow'
+          },
+          Red: {
+            title: 'Record Red Card', desc: 'Select the sent-off player and the match minute.',
+            label: 'Sent-Off Player', placeholder: '-- Select Sent-Off Player --',
+            sprite: '#ci-card-red', tint: 'ci ci-16 ci-card-red', apply: 'apply-btn apply-btn--red'
+          },
+          Injury: {
+            title: 'Record Injury Event', desc: 'Log an injury moment to track match fitness and stoppage reasons.',
+            label: 'Injured Player', placeholder: '-- Select Injured Player --',
+            sprite: '#ci-injury', tint: 'ci ci-16 ci-injury', apply: 'apply-btn apply-btn--injury'
+          }
+        };
+        const sheet = SHEET[type] || SHEET.Yellow;
+        // An <svg>'s className is a read-only animated object in the browser, so the tint has to go
+        // through the attribute or the red and injury titles keep the yellow colour.
+        titleGlyph.setAttribute('class', sheet.tint);
+        titleIcon.setAttribute('href', sheet.sprite);
+        titleText.innerText = sheet.title;
+        desc.innerText = sheet.desc;
+        playerLabel.innerText = sheet.label;
+        placeholder.innerText = sheet.placeholder;
+        confirmBtn.innerText = 'Apply';
+        confirmBtn.className = sheet.apply;
         selector.appendChild(placeholder);
 
         const starters = AppState.match.starters || [];
@@ -4161,13 +4051,13 @@
         modal.classList.add('flex');
       },
       confirmCardEvent() {
-        const type = AppState.currentCardType || 'YellowCard';
+        const type = AppState.currentCardType || 'Yellow';
         const selector = document.getElementById('cardPlayerSelector');
         const pid = selector ? selector.value : '';
         if (!pid) {
-          const warn = type === 'YellowCard' ? 'Please choose the cautioned player!'
-            : type === 'RedCard' ? 'Please choose the sent-off player!' : 'Please choose the injured player!';
-          this.toast(warn, 'card-yellow');
+          const warn = type === 'Yellow' ? 'Please choose the cautioned player!'
+            : type === 'Red' ? 'Please choose the sent-off player!' : 'Please choose the injured player!';
+          this.toast(warn, type === 'Red' ? 'card-red' : 'card-yellow');
           return;
         }
         const player = AppState.squad.find(i => i.id === pid);
@@ -4204,16 +4094,13 @@
         this.renderStats();
         this.renderLiveBoard();
 
-        let icon = 'card-yellow';
-        let msg = `Yellow Card recorded for #${player.number} ${player.name}`;
-        if (type === 'RedCard') {
-          icon = 'card-red';
-          msg = `Red Card recorded for #${player.number} ${player.name}`;
-        } else if (type === 'Injury') {
-          icon = 'whistle';
-          msg = `Injury logged for #${player.number} ${player.name}`;
-        }
-        this.toast(msg, icon);
+        const toastCopy = {
+          Yellow: { icon: 'card-yellow', msg: `Yellow Card recorded for #${player.number} ${player.name}` },
+          Red: { icon: 'card-red', msg: `Red Card recorded for #${player.number} ${player.name}` },
+          Injury: { icon: 'injury', msg: `Injury logged for #${player.number} ${player.name} - kept on this phone` }
+        };
+        const copy = toastCopy[type] || toastCopy.Yellow;
+        this.toast(copy.msg, copy.icon);
       },
       goalEventLabel(ev) {
         const who = ev.playerNumber !== undefined
@@ -4558,18 +4445,18 @@
             // Use SubBadge components for sub-in / sub-out icons in timeline
             icon = '<span data-sub-badge="in-24" class="cs-sub-inline"></span><span data-sub-badge="out-24" class="cs-sub-inline"></span>';
             text = `<span class="font-bold" style="color:var(--cs-match-sub-in,#3BE38A)">IN</span> #${ev.playerInNum} ${ev.playerIn} <span class="text-slate-400 mx-0.5">|</span> <span class="font-bold" style="color:var(--cs-match-sub-out,#FF8A80)">OUT</span> #${ev.playerOutNum} ${ev.playerOut}`;
-          } else if (ev.type === 'YellowCard') {
-            icon = '<span class="text-base inline-flex items-center">🟨</span>';
+          } else if (this.isYellowCard(ev)) {
+            icon = '<svg class="ci ci-20 ci-card-yellow" aria-hidden="true"><use href="#ci-card-yellow"></use></svg>';
             text = `<span class="font-bold text-amber-400">YELLOW CARD</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
-          } else if (ev.type === 'RedCard') {
-            icon = '<span class="text-base inline-flex items-center">🟥</span>';
-            text = `<span class="font-bold text-red-500">RED CARD</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
+          } else if (this.isRedCard(ev)) {
+            icon = '<svg class="ci ci-20 ci-card-red" aria-hidden="true"><use href="#ci-card-red"></use></svg>';
+            text = `<span class="font-bold ci-card-red">RED CARD</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
           } else if (ev.type === 'Injury') {
-            icon = '<span class="text-base inline-flex items-center">🩹</span>';
-            text = `<span class="font-bold text-orange-400">INJURY</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
+            icon = '<svg class="ci ci-20 ci-injury" aria-hidden="true"><use href="#ci-injury"></use></svg>';
+            text = `<span class="font-bold ci-injury">INJURY</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
           }
           item.innerHTML = `
-            <div class="flex items-center space-x-2 truncate">
+            <div class="flex items-center space-x-2 min-w-0 flex-1">
               <span class="text-base flex-shrink-0 inline-flex items-center gap-0.5">${icon}</span>
               <div class="text-xs text-white truncate">${text}</div>
             </div>
@@ -4717,8 +4604,8 @@
             playerStats[p.id].totalSeconds += sec;
             const pGoals = events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
             const pAssists = events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
-            const pYC = events.filter(e => e.type === 'YellowCard' && e.playerId === p.id).length;
-            const pRC = events.filter(e => e.type === 'RedCard' && e.playerId === p.id).length;
+            const pYC = events.filter(e => this.isYellowCard(e) && e.playerId === p.id).length;
+            const pRC = events.filter(e => this.isRedCard(e) && e.playerId === p.id).length;
             const pInj = events.filter(e => e.type === 'Injury' && e.playerId === p.id).length;
             playerStats[p.id].goals += pGoals;
             playerStats[p.id].assists += pAssists;
@@ -4743,8 +4630,8 @@
             playerStats[p.id].totalSeconds += sec;
             const pGoals = AppState.events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
             const pAssists = AppState.events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
-            const pYC = AppState.events.filter(e => e.type === 'YellowCard' && e.playerId === p.id).length;
-            const pRC = AppState.events.filter(e => e.type === 'RedCard' && e.playerId === p.id).length;
+            const pYC = AppState.events.filter(e => this.isYellowCard(e) && e.playerId === p.id).length;
+            const pRC = AppState.events.filter(e => this.isRedCard(e) && e.playerId === p.id).length;
             const pInj = AppState.events.filter(e => e.type === 'Injury' && e.playerId === p.id).length;
             playerStats[p.id].goals += pGoals;
             playerStats[p.id].assists += pAssists;
@@ -4956,8 +4843,8 @@
           const isStarter = pStarters.includes(p.id);
           const goals = pEvents.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
           const assists = pEvents.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
-          const yCards = pEvents.filter(e => e.type === 'YellowCard' && e.playerId === p.id).length;
-          const rCards = pEvents.filter(e => e.type === 'RedCard' && e.playerId === p.id).length;
+          const yCards = pEvents.filter(e => this.isYellowCard(e) && e.playerId === p.id).length;
+          const rCards = pEvents.filter(e => this.isRedCard(e) && e.playerId === p.id).length;
           const injuries = pEvents.filter(e => e.type === 'Injury' && e.playerId === p.id).length;
           rowsHtml += `
             <div class="flex items-center justify-between p-2 rounded-xl bg-obsidian-950/70 border border-white/5 text-xs">
@@ -4995,8 +4882,8 @@
             if (ev.type === 'Goal') label = `<svg class="ci ci-14 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg> ${this.goalEventLabel(ev)}`;
             else if (ev.type === 'Assist') label = `<svg class="ci ci-14 ci-assist" aria-hidden="true"><use href="#ci-assist"></use></svg> ASSIST by #${ev.playerNumber} ${ev.playerName}`;
             else if (ev.type === 'Sub') label = `<svg class="ci ci-14" aria-hidden="true"><use href="#ci-sub-swap"></use></svg> SUB: #${ev.playerInNum} ${ev.playerIn} IN for #${ev.playerOutNum} ${ev.playerOut}`;
-            else if (ev.type === 'YellowCard') label = `🟨 YELLOW CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`;
-            else if (ev.type === 'RedCard') label = `🟥 RED CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`;
+            else if (this.isYellowCard(ev)) label = `🟨 YELLOW CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`;
+            else if (this.isRedCard(ev)) label = `🟥 RED CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`;
             else if (ev.type === 'Injury') label = `🩹 INJURY: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`;
             return `<div class="text-[11px] text-slate-300 flex items-center space-x-1.5 py-0.5"><span class="font-mono text-cyber-cyan text-[10px] font-bold">[${this.formatTime(ev.matchTimeSeconds || 0)}]</span><span>${label}</span></div>`;
           }).join('');
@@ -5302,8 +5189,8 @@
           const benchSec = Math.max(0, durationSec - pitchSec);
           const goals = events.filter(e => e.type === 'Goal' && !e.ownGoal && e.playerId === p.id).length;
           const assists = events.filter(e => e.type === 'Assist' && e.playerId === p.id).length;
-          const yCards = events.filter(e => e.type === 'YellowCard' && e.playerId === p.id).length;
-          const rCards = events.filter(e => e.type === 'RedCard' && e.playerId === p.id).length;
+          const yCards = events.filter(e => this.isYellowCard(e) && e.playerId === p.id).length;
+          const rCards = events.filter(e => this.isRedCard(e) && e.playerId === p.id).length;
           const injuries = events.filter(e => e.type === 'Injury' && e.playerId === p.id).length;
           const subsIn = events.filter(e => e.type === 'Sub' && e.playerInId === p.id).length;
           const subsOut = events.filter(e => e.type === 'Sub' && e.playerOutId === p.id).length;
@@ -5338,8 +5225,8 @@
             if (ev.type === 'Goal') { icon = '⚽'; label = `${this.goalEventLabel(ev)} (${ev.period || 'Match'})`; }
             else if (ev.type === 'Assist') { icon = '👟'; label = `ASSIST by #${ev.playerNumber} ${ev.playerName}`; }
             else if (ev.type === 'Sub') { icon = '⇄'; label = `SUB: #${ev.playerInNum} ${ev.playerIn} IN / #${ev.playerOutNum} ${ev.playerOut} OUT`; }
-            else if (ev.type === 'YellowCard') { icon = '🟨'; label = `YELLOW CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`; }
-            else if (ev.type === 'RedCard') { icon = '🟥'; label = `RED CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`; }
+            else if (this.isYellowCard(ev)) { icon = '🟨'; label = `YELLOW CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`; }
+            else if (this.isRedCard(ev)) { icon = '🟥'; label = `RED CARD: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`; }
             else if (ev.type === 'Injury') { icon = '🩹'; label = `INJURY: #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' (' + ev.reason + ')' : ''}`; }
             else { label = `${ev.type}: #${ev.playerNumber || ''} ${ev.playerName || ''}`; }
             timelineHtml += `
@@ -6066,7 +5953,7 @@
       closeModals() {
         AppState.editingPlayerId = null;
         this._pendingConfirm = null;
-        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalTeams, #modalSaveFormation, #modalPdfReport, #modalEndMatch, #modalFormatShift, #modalConfirm, #modalPlayerRating').forEach(m => {
+        document.querySelectorAll('#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalCardEvent, #modalTeams, #modalSaveFormation, #modalPdfReport, #modalEndMatch, #modalFormatShift, #modalConfirm').forEach(m => {
           m.classList.add('hidden');
           m.classList.remove('flex');
         });
@@ -6134,7 +6021,7 @@
           altAction: commit
         });
       },
-      TOAST_TINT: { goal: 'ci-goal', assist: 'ci-assist', star: 'ci-accent', 'card-yellow': 'ci-card-yellow', 'card-red': 'ci-card-red', 'sub-in': 'ci-go', 'sub-out': 'ci-danger', 'end-match': 'ci-danger', delete: 'ci-danger' },
+      TOAST_TINT: { goal: 'ci-goal', assist: 'ci-assist', star: 'ci-accent', 'card-yellow': 'ci-card-yellow', 'card-red': 'ci-card-red', injury: 'ci-injury', 'sub-in': 'ci-go', 'sub-out': 'ci-danger', 'end-match': 'ci-danger', delete: 'ci-danger' },
       toast(msg, icon = 'star') {
         const pod = document.getElementById('toastPod');
         const msgEl = document.getElementById('toastMessage');

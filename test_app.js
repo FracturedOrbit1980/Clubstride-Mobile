@@ -1829,10 +1829,18 @@ const sheetIds = ['goalSideOurBtn', 'goalSideOppBtn', 'eventGoalScorerField', 'e
     ['confirmYesBtn', 'confirmAltBtn'].forEach(id => collectTokens(dom[id].className));
     App.dismissConfirm();
   });
+// The match-day action row and the card sheet sit in the same trap, so every class they can wear
+// is audited too — including the per-type classes openCardModal assigns at runtime.
+[
+  html.slice(html.indexOf('<!-- GOAL ACTION'), html.indexOf('<!-- ONE-TAP LIVE SUB ROTATION BOARD')),
+  html.slice(html.indexOf('<!-- MODAL: CARD & INJURY EVENT LOGGING'), html.indexOf('<!-- 4. TEAM MANAGER MODAL'))
+].forEach(slice => (slice.match(/class="([^"$`]*)"/g) || []).forEach(decl => collectTokens(decl.slice(7, -1))));
+(html.match(/(?:tint|apply): '[^']*'/g) || []).forEach(pair =>
+  collectTokens(pair.slice(pair.indexOf("'") + 1, pair.lastIndexOf("'"))));
+
 const undefinedUtilities = [...sheetTokens].filter(token =>
   !bundleCss.includes('.' + token.replace(/[^a-zA-Z0-9_-]/g, ch => '\\' + ch)) && !touchCss.includes('.' + token));
-assert.deepStrictEqual(undefinedUtilities, [], 'Every class the goal and confirm sheets apply exists in the shipped CSS');
-assert.ok((html.match(/dock\.className = 'dock-btn flex-1/g) || []).length === 2,
+assert.deepStrictEqual(undefinedUtilities, [], 'Every class the goal and confirm sheets apply exists in the shipped CSS');assert.ok((html.match(/dock\.className = 'dock-btn flex-1/g) || []).length === 2,
   'switchTab rewrites the dock buttons with flex-1 intact, so their 44px box survives a tap');
 ['score-step', 'roster-icon-btn', 'roster-chip-btn', 'timeline-undo', 'token-bench-btn', 'sheet-close', 'chip-btn']
   .forEach(cls => assert.ok((html.match(new RegExp('\\b' + cls + '\\b', 'g')) || []).length >= 2,
@@ -2333,14 +2341,49 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   const toasts = [];
   App.toast = (msg, icon) => toasts.push({ msg, icon });
 
-  // 1. Verify Card & Injury modal and buttons
+  // The three touchline buttons are CI chips: one shared box, colour from the card tokens, and only
+  // utilities the frozen Tailwind build actually contains.
+  const chipRow = html.slice(html.indexOf('<!-- Small Action Icons'), html.indexOf('</div>', html.indexOf('Injury Icon Button')));
+  assert((chipRow.match(/class="event-chip event-chip--(yellow|red|injury)"/g) || []).length === 3,
+    'All three event buttons use the shared CI chip box');
+  assert(!/style=|w-11|h-11|linearGradient/.test(chipRow), 'No hand-mixed inline colour or dead size classes survive');
+  assert(html.includes('.event-chip { width: 44px; height: 44px;'), 'The chip box is written in CSS because w-11/h-11 are not in the bundle');
+  assert(html.includes('.event-chip--yellow { color: var(--cs-card-yellow);'), 'The yellow chip takes the CI card token');
+  assert(html.includes('.event-chip--red { color: var(--cs-danger);'), 'The red chip takes the CI danger token');
+  assert(html.includes('.event-chip--injury { color: var(--cs-blue-300);'), 'The injury chip is its own CI colour, not a second yellow');
+  assert(html.includes('body.theme-day .event-chip--yellow') && html.includes('body.theme-day .event-chip--injury'),
+    'Day mode re-tints all three chips');
+  assert(/<symbol id="ci-injury"/.test(html), 'Injury has a sprite like the two cards');
+  assert(/item\.innerHTML = `[\s\S]{0,80}<div class="flex items-center space-x-2 min-w-0 flex-1">/.test(html),
+    'A long card reason shrinks inside the timeline row instead of pushing Undo off the phone');
+  // An <svg> element ignores a className assignment in the browser, so the sheet tint goes through
+  // the attribute — otherwise the red and injury titles keep the yellow colour.
+  assert(/titleGlyph\.setAttribute\('class'/.test(html), 'The title glyph tint is written as an attribute');
+  assert(!/titleGlyph\.className\s*=/.test(html), 'and nothing assigns className to that svg');
+  const sheetMarkup = html.slice(html.indexOf('<!-- MODAL: CARD & INJURY EVENT LOGGING'), html.indexOf('<!-- 4. TEAM MANAGER MODAL'));
+  assert(!/🟨|🟥|🩹/.test(sheetMarkup), 'The card sheet is drawn with CI sprites, not emoji');
+
+  // WhatsApp never belonged on a player row, and its handlers were never written.
+  assert(!/whatsapp/i.test(html), 'No WhatsApp button or copy remains');
+  assert(!html.includes('modalPlayerRating'), 'The unreachable rating sheet is gone');
+  assert(!html.includes('openPlayerRatingModal') && !html.includes('sendPlayerWhatsAppStats'),
+    'No control calls a missing rating handler');
+
+  // The sheet is closed by the shared helper, so ✕ and Cancel work and Apply is the commit control.
+  assert(html.includes("#modalMatchSetup, #modalAddPlayer, #modalEvent, #modalCardEvent, #modalTeams"),
+    'closeModals covers the card and injury sheet');
+  assert(html.includes('id="cardConfirmBtn" class="apply-btn apply-btn--yellow"') ||
+    /id="cardConfirmBtn" class="apply-btn/.test(html), 'The sheet primary control is the Apply button');
+
   assert(typeof App.openCardModal === 'function', 'App.openCardModal exists');
   assert(typeof App.confirmCardEvent === 'function', 'App.confirmCardEvent exists');
 
   // Open Yellow Card modal
-  App.openCardModal('YellowCard');
-  assert.strictEqual(AppState.currentCardType, 'YellowCard', 'currentCardType is YellowCard');
+  App.openCardModal('Yellow');
+  assert.strictEqual(AppState.currentCardType, 'Yellow', 'Cards are logged with the shared contract type');
   assert.strictEqual(dom['cardModalTitleText'].innerText, 'Record Yellow Card', 'Modal title for Yellow Card');
+  assert.strictEqual(dom['cardModalTitleIconUse'].getAttribute('href'), '#ci-card-yellow', 'The title glyph is the yellow card sprite');
+  assert.strictEqual(dom['cardConfirmBtn'].innerText, 'Apply', 'The sheet commits with an Apply button');
   assert(!dom['modalCardEvent'].classList.contains('hidden'), 'modalCardEvent is shown');
 
   // Select player and record
@@ -2350,27 +2393,48 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   dom['cardReason'].value = 'Tactical foul';
   App.confirmCardEvent();
 
-  assert(AppState.events.some(e => e.type === 'YellowCard' && e.playerId === p1.id), 'Yellow Card event was recorded');
-  const ycEv = AppState.events.find(e => e.type === 'YellowCard');
+  assert(AppState.events.some(e => e.type === 'Yellow' && e.playerId === p1.id), 'Yellow Card event was recorded');
+  const ycEv = AppState.events.find(e => e.type === 'Yellow');
   assert.strictEqual(ycEv.matchTimeSeconds, 900, 'Minute 15 is 900 seconds');
   assert.strictEqual(ycEv.reason, 'Tactical foul', 'Reason stored');
+  assert(dom['modalCardEvent'].classList.contains('hidden'), 'Applying closes the sheet');
 
   // Record Red Card
-  App.openCardModal('RedCard');
+  App.openCardModal('Red');
+  assert.strictEqual(dom['cardModalTitleGlyph'].getAttribute('class'), 'ci ci-16 ci-card-red', 'The red sheet is tinted red');
+  assert.strictEqual(dom['cardConfirmBtn'].className, 'apply-btn apply-btn--red', 'Apply takes the card colour');
   const p2 = AppState.squad[1];
   dom['cardPlayerSelector'].value = p2.id;
   dom['cardMinute'].value = '35';
   dom['cardReason'].value = 'Dissent';
   App.confirmCardEvent();
-  assert(AppState.events.some(e => e.type === 'RedCard' && e.playerId === p2.id), 'Red Card event was recorded');
+  assert(AppState.events.some(e => e.type === 'Red' && e.playerId === p2.id), 'Red Card event was recorded');
 
   // Record Injury
   App.openCardModal('Injury');
+  assert.strictEqual(dom['cardModalTitleIconUse'].getAttribute('href'), '#ci-injury', 'The injury sheet uses the injury sprite');
+  assert.strictEqual(dom['cardModalTitleGlyph'].getAttribute('class'), 'ci ci-16 ci-injury', 'and its title is tinted for injury');
   dom['cardPlayerSelector'].value = p1.id;
   dom['cardMinute'].value = '42';
   dom['cardReason'].value = 'Twisted ankle';
   App.confirmCardEvent();
   assert(AppState.events.some(e => e.type === 'Injury' && e.playerId === p1.id), 'Injury event was recorded');
+
+  // A cancelled sheet logs nothing
+  const eventsBeforeCancel = AppState.events.length;
+  App.openCardModal('Yellow');
+  App.closeModals();
+  assert(dom['modalCardEvent'].classList.contains('hidden') && !dom['modalCardEvent'].classList.contains('flex'),
+    'Cancel hides the sheet and drops the flex layout');
+  assert.strictEqual(AppState.events.length, eventsBeforeCancel, 'Cancelling logs no event');
+
+  // Cards travel on the contract; injuries have no cloud type so they stay on the phone
+  assert(App.isYellowCard({ type: 'YellowCard' }) && App.isRedCard({ type: 'RedCard' }),
+    'Events saved by the first live build still count as cards');
+  const sharedTypes = App.matchRecordContent({ events: AppState.events }).events.map(e => e.type);
+  assert(sharedTypes.includes('Yellow') && sharedTypes.includes('Red'), 'Both cards reach the shared match file');
+  assert(!sharedTypes.includes('Injury') && !App.eventIsShareable({ type: 'Injury' }),
+    'An injury is withheld from the file Pro would reject whole');
 
   // Verify timeline rendering includes cards & injury
   App.renderTimeline();
@@ -2378,6 +2442,7 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   assert(tlChildren.some(c => (c.innerHTML || '').includes('YELLOW CARD')), 'Timeline displays Yellow Card');
   assert(tlChildren.some(c => (c.innerHTML || '').includes('RED CARD')), 'Timeline displays Red Card');
   assert(tlChildren.some(c => (c.innerHTML || '').includes('INJURY')), 'Timeline displays Injury');
+  assert(tlChildren.some(c => (c.innerHTML || '').includes('#ci-card-red')), 'The red row is a CI sprite, not an emoji');
 
   // Verify Single Match PDF contains YC, RC, Inj columns and 1-page compact layout
   App.generateSingleMatchPdf('live');
