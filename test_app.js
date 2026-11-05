@@ -470,8 +470,148 @@ assert.strictEqual(typeof App.openEditGameMinutesModal, 'undefined', 'openEditGa
 assert.strictEqual(typeof App.saveGameMinutes, 'undefined', 'saveGameMinutes must not be defined');
 console.log('✓ Tamper-proof read-only playing time reporting & game detail breakdown verified');
 
+// ==========================================
+// TEST 21: Loading a team updates Live and reports
+// ==========================================
+const harbor = {
+  id: 'team_harbor',
+  name: 'Harbor',
+  kitColor: '#FF8A80',
+  themeStyle: 'glass',
+  format: '7',
+  squad: [
+    { id: 'h1', number: 9, name: 'Harbor Striker', position: 'FWD' },
+    { id: 'h2', number: 1, name: 'Harbor Keeper', position: 'GK' }
+  ],
+  fieldPositions: {}
+};
+const riverside = {
+  id: 'team_riverside',
+  name: 'Riverside',
+  kitColor: '#3BE38A',
+  themeStyle: 'neon',
+  format: '7',
+  squad: [
+    { id: 'r1', number: 10, name: 'Riverside Playmaker', position: 'MID' },
+    { id: 'r2', number: 7, name: 'Riverside Winger', position: 'FWD' },
+    { id: 'r3', number: 1, name: 'Riverside Keeper', position: 'GK' }
+  ],
+  fieldPositions: {}
+};
+AppState.teams = [harbor, riverside];
+AppState.matchHistory = [
+  {
+    id: 'm_harbor',
+    title: 'Harbor Cup',
+    teamName: 'Harbor',
+    teamId: 'team_harbor',
+    opponent: 'Docks',
+    date: '2026-10-02',
+    format: '7',
+    ourGoals: 3,
+    opponentGoals: 1,
+    durationSeconds: 2400,
+    playerTimers: { h1: 2400 },
+    starters: ['h1'],
+    events: [{ type: 'Goal', playerId: 'h1', playerName: 'Harbor Striker', playerNumber: 9, matchTimeSeconds: 100 }]
+  },
+  {
+    id: 'm_riverside',
+    title: 'River Friendly',
+    teamName: 'Riverside',
+    teamId: 'team_riverside',
+    opponent: 'Hilltop',
+    date: '2026-10-11',
+    format: '7',
+    ourGoals: 2,
+    opponentGoals: 0,
+    durationSeconds: 1800,
+    playerTimers: { r1: 1800 },
+    starters: ['r1'],
+    events: [{ type: 'Goal', playerId: 'r1', playerName: 'Riverside Playmaker', playerNumber: 10, matchTimeSeconds: 400 }]
+  }
+];
+AppState.currentTeamId = harbor.id;
+AppState.currentTeamName = 'Harbor';
+AppState.match.teamName = 'Harbor';
+AppState.match.teamId = harbor.id;
+AppState.match.ourGoals = 4;
+AppState.match.opponentGoals = 2;
+AppState.squad = JSON.parse(JSON.stringify(harbor.squad));
+App.renderAll();
+assert.strictEqual(dom['scoreboardTeam'].innerText, 'Harbor', 'Live scoreboard should show the active team before the switch');
+
+App.loadTeam(riverside.id);
+
+assert.strictEqual(AppState.currentTeamName, 'Riverside');
+assert.strictEqual(AppState.match.teamName, 'Riverside', 'Loaded team name must be written onto the live match');
+assert.strictEqual(AppState.match.teamId, riverside.id);
+assert.strictEqual(AppState.match.ourGoals, 0, 'Previous team score must not stay on the Live screen');
+assert.strictEqual(AppState.match.opponentGoals, 0);
+assert(AppState.squad.some(p => p.name === 'Riverside Playmaker'), 'Squad should be the loaded team');
+assert(!AppState.squad.some(p => p.name === 'Harbor Striker'), 'Previous squad should be replaced');
+assert.strictEqual(dom['scoreboardTeam'].innerText, 'Riverside', 'Live scoreboard should show the loaded team');
+assert(dom['activeMatchTitleDisplay'].innerText.includes('Riverside'), 'Match title should show the loaded team');
+assert(!dom['activeMatchTitleDisplay'].innerText.includes('Harbor'), 'Match title should drop the previous team');
+assert.strictEqual(Number(dom['scoreboardGoals'].innerText), 0);
+
+const liveCards = dom['liveOnPitchGrid'].children.slice(-AppState.match.starters.length);
+const liveBlob = liveCards.map(c => c.innerHTML || '').join('\n');
+assert(liveBlob.includes('Riverside Playmaker'), 'Live sub board should list the loaded players');
+assert(!liveBlob.includes('Harbor Striker'), 'Live sub board should not keep the previous players');
+
+const scoped = App.historyForActiveTeam(AppState.matchHistory);
+assert.deepStrictEqual(scoped.map(m => m.id), ['m_riverside'], 'Reports should scope fixtures to the loaded team');
+assert(AppState.selectedGameIds.includes('m_riverside') && !AppState.selectedGameIds.includes('m_harbor'));
+
+const statsBefore = (dom['statsCardsContainer'].children || []).length;
+App.renderStats();
+const statNames = (dom['statsCardsContainer'].children || []).slice(statsBefore).map(c => c.innerHTML || '').join('\n');
+assert(statNames.includes('Riverside Playmaker'), 'Stats report should list the loaded squad');
+assert(statNames.includes('Pulled Totals Summary · Riverside'), 'Stats report should name the loaded team');
+assert(!statNames.includes('Harbor Striker'), 'Stats report should not list the previous squad');
+assert(!statNames.includes('Harbor Cup'), 'Stats report should not keep the previous team fixtures');
+
+App.generateDateRangePdf('2026-10-01', '2026-10-31', riverside.id);
+let pdfHtml = dom['pdfExportContainer'].innerHTML;
+assert(pdfHtml.includes('Riverside'), 'Date-range report should title the loaded team');
+assert(pdfHtml.includes('Riverside Playmaker'), 'Date-range report should list the loaded players');
+assert(pdfHtml.includes('Hilltop'), 'Date-range report should include the loaded team fixture');
+assert(!pdfHtml.includes('Harbor Striker') && !pdfHtml.includes('Docks'), 'Date-range report should omit the previous team');
+
+App.generateSingleMatchPdf('m_riverside');
+pdfHtml = dom['pdfExportContainer'].innerHTML;
+assert(pdfHtml.includes('Riverside'), 'Single-match report should name the loaded team');
+assert(pdfHtml.includes('Riverside Playmaker'));
+assert(!pdfHtml.includes('Harbor'));
+
+assert.strictEqual(storage['Clubstride Mobile_current_team_name'], 'Riverside');
+assert.strictEqual(storage['Clubstride Mobile_current_team_id'], 'team_riverside');
+assert.strictEqual(JSON.parse(storage['Clubstride Mobile_match']).teamName, 'Riverside');
+assert(JSON.parse(storage['Clubstride Mobile_squad']).some(p => p.name === 'Riverside Playmaker'));
+assert(storage['Clubstride Mobile_teams'], 'Teams stay on the existing storage key');
+
+AppState.match.teamName = 'Harbor';
+AppState.currentTeamName = 'Harbor';
+AppState.squad = JSON.parse(JSON.stringify(harbor.squad));
+App.loadStorage();
+App.renderAll();
+assert.strictEqual(AppState.match.teamName, 'Riverside', 'Refresh should restore the loaded team onto the match');
+assert.strictEqual(AppState.currentTeamName, 'Riverside');
+assert(AppState.squad.some(p => p.name === 'Riverside Playmaker'));
+assert.strictEqual(dom['scoreboardTeam'].innerText, 'Riverside', 'Live screen should still show the loaded team after refresh');
+
+dom['inputCurrentTeamName'].value = 'Riverside United';
+App.saveActiveTeam();
+assert.strictEqual(AppState.match.teamName, 'Riverside United');
+assert.strictEqual(dom['scoreboardTeam'].innerText, 'Riverside United', 'Saving the active team should update Live');
+const renamed = AppState.matchHistory.find(m => m.id === 'm_riverside');
+assert.strictEqual(renamed.teamName, 'Riverside United');
+assert.strictEqual(renamed.teamId, 'team_riverside');
+console.log('✓ Loading a team updates Live and reports immediately');
+
 console.log('\n=========================================');
-console.log('ALL 20 AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
+console.log('ALL AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 

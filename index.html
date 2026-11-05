@@ -1476,6 +1476,8 @@
       saveActiveTeam() {
         const teamName = document.getElementById('inputCurrentTeamName').value.trim() || 'My Football Club';
         const teamLogo = localStorage.getItem('Clubstride Mobile_custom_logo') || EMBEDDED_ICON_B64 || './icon-192.png';
+        const previousName = AppState.currentTeamName;
+        const previousId = AppState.currentTeamId;
         if (!AppState.teams) AppState.teams = [];
         let team = AppState.teams.find(t => t.id === AppState.currentTeamId);
         if (!team) {
@@ -1501,9 +1503,24 @@
           team.fieldPositions = JSON.parse(JSON.stringify(AppState.match.fieldPositions || {}));
         }
         AppState.currentTeamName = teamName;
+        // Live and reports read the match record, so the saved team has to land there too.
+        AppState.match.teamName = teamName;
+        AppState.match.teamId = team.id;
+        if (previousId && previousId === team.id && previousName && previousName !== teamName) {
+          (AppState.matchHistory || []).forEach(m => {
+            const tagged = m.teamId && m.teamId === team.id;
+            const named = !m.teamId && m.teamName === previousName;
+            if (tagged || named) {
+              m.teamName = teamName;
+              if (!m.teamId) m.teamId = team.id;
+            }
+          });
+        }
         document.getElementById('headerTeamNameBadge').innerText = teamName.length > 8 ? teamName.substring(0, 8) + '…' : teamName;
         this.saveStorage();
         this.renderSavedTeamsList();
+        this.renderAll();
+        this.syncReportScreensToActiveTeam();
         this.toast(`Team "${teamName}" saved with theme! `);
       },
       createNewTeamPrompt() {
@@ -1555,11 +1572,33 @@
         AppState.squad.forEach(p => { AppState.match.availability[p.id] = true; });
         AppState.match.starters = AppState.squad.slice(0, quota).map(p => p.id);
         AppState.match.bench = AppState.squad.slice(quota).map(p => p.id);
+        AppState.match.teamName = team.name;
+        AppState.match.teamId = team.id;
+        AppState.match.ourGoals = 0;
+        AppState.match.opponentGoals = 0;
         AppState.playerTimers = {};
         AppState.events = [];
+        AppState.subOutPlayerId = null;
         AppState.clock.seconds = 0;
         AppState.clock.running = false;
+        AppState.clock.startedAt = 0;
         clearInterval(AppState.clock.intervalId);
+        AppState.clock.intervalId = null;
+        const cancelBtn = document.getElementById('cancelSubBtn');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        const subText = document.getElementById('subInstructionText');
+        if (subText) subText.innerText = 'Step 1: Tap a player on field to sub OUT';
+        const toggleBtn = document.getElementById('clockToggleBtn');
+        if (toggleBtn) {
+          toggleBtn.innerText = 'START';
+          toggleBtn.className = 'flex-1 max-w-[125px] py-2.5 rounded-2xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-xs tracking-wide shadow-lg active:scale-95 transition';
+        }
+        const clockStatus = document.getElementById('clockStatusSubtext');
+        if (clockStatus) {
+          clockStatus.innerText = 'Clock Paused — Ready to Kickoff';
+          clockStatus.className = 'text-xs text-cyber-cyan font-medium mt-1';
+        }
+        AppState.selectedGameIds = this.historyForActiveTeam(AppState.matchHistory || []).map(m => m.id);
         // Update logo
         if (team.logo) {
           localStorage.setItem('Clubstride Mobile_custom_logo', team.logo);
@@ -1572,6 +1611,7 @@
         this.applyFormatDefaults();
         this.saveStorage();
         this.renderAll();
+        this.syncReportScreensToActiveTeam();
         this.renderSavedTeamsList();
         this.toast(`Switched to team: ${team.name} `);
       },
@@ -1584,7 +1624,11 @@
           } else {
             AppState.currentTeamId = null;
             AppState.currentTeamName = 'Clubstride FC';
+            AppState.match.teamName = 'Clubstride FC';
+            AppState.match.teamId = null;
             document.getElementById('headerTeamNameBadge').innerText = 'Teams';
+            this.renderAll();
+            this.syncReportScreensToActiveTeam();
           }
         }
         this.saveStorage();
@@ -2632,6 +2676,7 @@
           id: AppState.match.id || ('m_' + Date.now()),
           title: AppState.match.title || 'Match',
           teamName: myTeam,
+          teamId: AppState.match.teamId || AppState.currentTeamId || null,
           opponent: opp,
           date: AppState.match.date || new Date().toISOString().split('T')[0],
           format: AppState.match.format || '7',
@@ -2885,6 +2930,7 @@
         if (endVal) {
           history = history.filter(m => (m.date || '') <= endVal);
         }
+        history = this.historyForActiveTeam(history);
         const hasLiveActive = AppState.clock.seconds > 0 || (AppState.events && AppState.events.length > 0);
         const selectedGameIds = this.getSelectedGameIds();
         const liveSelected = hasLiveActive && selectedGameIds.includes('live');
@@ -2954,13 +3000,14 @@
           });
         }
         // Section 1: Pulled Totals Header & Summary Card
+        const activeTeam = this.getActiveTeam();
         const summaryCard = document.createElement('div');
         summaryCard.className = 'glass-card rounded-lite p-3.5 space-y-2 border border-cyber-cyan/30 bg-gradient-to-br from-obsidian-900 to-obsidian-950';
         summaryCard.innerHTML = `
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
               <span class="text-base"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-stats"></use></svg></span>
-              <span class="font-bold text-xs uppercase tracking-wider text-cyber-cyan">Pulled Totals Summary</span>
+              <span class="font-bold text-xs uppercase tracking-wider text-cyber-cyan">Pulled Totals Summary${activeTeam ? ` · ${activeTeam.name}` : ''}</span>
             </div>
             <span class="px-2 py-0.5 rounded-lg bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30 font-bold text-[11px]">
               ${totalSelectedCount} Selected Game${totalSelectedCount === 1 ? '' : 's'}
@@ -2995,8 +3042,8 @@
           emptySelCard.className = 'text-slate-400 text-xs italic text-center py-4 bg-obsidian-950/60 rounded-2xl border border-white/5';
           emptySelCard.innerHTML = `No games selected. Tap <span class="text-cyber-cyan font-bold">"✓ All"</span> or check games in Match History below to pull playing time totals.`;
           container.appendChild(emptySelCard);
-        } else {
-          AppState.squad.forEach(p => {
+        }
+        AppState.squad.forEach(p => {
             const stats = playerStats[p.id];
             const wasStarter = AppState.match.starters.includes(p.id);
             const shirtColor = wasStarter ? AppState.kitColor : '#303A4A';
@@ -3029,7 +3076,6 @@
             `;
             container.appendChild(card);
           });
-        }
         // Section 3: Match History List (Multi-Select Checkboxes + Game Detail Accordion + Manage Minutes)
         const historyHeader = document.createElement('div');
         historyHeader.className = 'flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400 pt-5 pb-1 border-t border-white/10';
@@ -3258,63 +3304,95 @@
           this.printLedger(container);
         }
       },
+      getActiveTeam() {
+        if (!AppState.currentTeamId || !Array.isArray(AppState.teams)) return null;
+        return AppState.teams.find(t => t.id === AppState.currentTeamId) || null;
+      },
+      matchBelongsToTeam(match, team) {
+        if (!match || !team) return false;
+        if (match.teamId) return match.teamId === team.id;
+        return !!(match.teamName && team.name && match.teamName === team.name);
+      },
+      historyForActiveTeam(history) {
+        const list = history || [];
+        const team = this.getActiveTeam();
+        if (!team) return list;
+        return list.filter(m => this.matchBelongsToTeam(m, team));
+      },
+      matchesTeamFilter(match, teamId) {
+        if (!teamId || teamId === 'all') return true;
+        const team = (AppState.teams || []).find(t => t.id === teamId);
+        if (!team) return true;
+        return this.matchBelongsToTeam(match, team);
+      },
+      populatePdfTeamFilter() {
+        const teamSelect = document.getElementById('pdfRangeTeamFilter');
+        if (!teamSelect) return;
+        const team = this.getActiveTeam();
+        teamSelect.innerHTML = '<option value="all">All Teams</option>';
+        (AppState.teams || []).forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.innerText = t.name;
+          teamSelect.appendChild(opt);
+        });
+        teamSelect.value = team ? team.id : 'all';
+      },
+      populatePdfMatchSelect(preferredId) {
+        const select = document.getElementById('pdfSelectMatch');
+        if (!select) return;
+        select.innerHTML = '';
+        const history = this.historyForActiveTeam(AppState.matchHistory || []);
+        const teamLabel = AppState.match.teamName || AppState.currentTeamName || 'Clubstride';
+        if (AppState.clock.seconds > 0 || (AppState.events && AppState.events.length > 0)) {
+          const opt = document.createElement('option');
+          opt.value = 'live';
+          opt.innerText = `[Live] ${teamLabel} vs ${AppState.match.opponent || 'Opponent'} (${AppState.match.ourGoals || 0}-${AppState.match.opponentGoals || 0})`;
+          select.appendChild(opt);
+        }
+        history.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.innerText = `${m.date || 'No Date'} — ${m.teamName || teamLabel} vs ${m.opponent || 'Opponent'} (${m.ourGoals || 0}-${m.opponentGoals || 0}) [${m.title || 'Match'}]`;
+          select.appendChild(opt);
+        });
+        if (!select.options || select.options.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.innerText = 'No matches recorded yet';
+          select.appendChild(opt);
+        }
+        let chosen = '';
+        const options = select.options || [];
+        for (let i = 0; i < options.length; i++) {
+          if (preferredId && options[i].value === preferredId) {
+            chosen = preferredId;
+            break;
+          }
+        }
+        if (!chosen && options[0]) chosen = options[0].value || '';
+        select.value = chosen;
+        if (select.value) this.onPdfMatchSelected(select.value);
+      },
+      syncReportScreensToActiveTeam() {
+        this.populatePdfTeamFilter();
+        const select = document.getElementById('pdfSelectMatch');
+        const current = select ? select.value : null;
+        this.populatePdfMatchSelect(current);
+        this.updatePdfRangePreview();
+      },
       openPdfReportModal(defaultMatchId = null) {
         this.closeModals();
         const modal = document.getElementById('modalPdfReport');
         if (!modal) return;
-        // Populate match select dropdown
-        const select = document.getElementById('pdfSelectMatch');
-        if (select) {
-          select.innerHTML = '';
-          const history = AppState.matchHistory || [];
-          
-          if (AppState.clock.seconds > 0 || (AppState.events && AppState.events.length > 0)) {
-            const opt = document.createElement('option');
-            opt.value = 'live';
-            opt.innerText = `[Live Match] vs ${AppState.match.opponent || 'Opponent'} (${AppState.match.ourGoals || 0}-${AppState.match.opponentGoals || 0})`;
-            select.appendChild(opt);
-          }
-          history.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.id;
-            opt.innerText = `${m.date || 'No Date'} — vs ${m.opponent || 'Opponent'} (${m.ourGoals || 0}-${m.opponentGoals || 0}) [${m.title || 'Match'}]`;
-            select.appendChild(opt);
-          });
-          if (!select.options || select.options.length === 0) {
-            const opt = document.createElement('option');
-            opt.value = '';
-            opt.innerText = 'No matches recorded yet';
-            select.appendChild(opt);
-          }
-          if (defaultMatchId) {
-            select.value = defaultMatchId;
-            this.switchPdfReportMode('single');
-          }
-        }
-        // Populate team filter options for date range
-        const teamSelect = document.getElementById('pdfRangeTeamFilter');
-        if (teamSelect) {
-          teamSelect.innerHTML = '<option value="all">All Teams</option>';
-          if (AppState.teams && AppState.teams.length > 0) {
-            AppState.teams.forEach(t => {
-              const opt = document.createElement('option');
-              opt.value = t.id;
-              opt.innerText = t.name;
-              if (t.id === AppState.currentTeamId) opt.selected = true;
-              teamSelect.appendChild(opt);
-            });
-          }
-        }
-        // Set default dates if empty
+        this.populatePdfTeamFilter();
+        this.populatePdfMatchSelect(defaultMatchId || null);
+        if (defaultMatchId) this.switchPdfReportMode('single');
         const startInput = document.getElementById('pdfRangeStartDate');
-        const endInput = document.getElementById('pdfRangeEndDate');
         if (startInput && !startInput.value) {
           this.applyPdfDatePreset('month');
         } else {
           this.updatePdfRangePreview();
-        }
-        if (select && select.value) {
-          this.onPdfMatchSelected(select.value);
         }
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -3408,10 +3486,7 @@
           const d = m.date || '';
           if (startDate && d < startDate) return false;
           if (endDate && d > endDate) return false;
-          if (teamId && teamId !== 'all') {
-            const team = (AppState.teams || []).find(t => t.id === teamId);
-            if (team && m.teamName && m.teamName !== team.name) return false;
-          }
+          if (!this.matchesTeamFilter(m, teamId)) return false;
           return true;
         });
         if (matched.length === 0) {
@@ -3600,10 +3675,7 @@
           const d = m.date || '';
           if (startDate && d < startDate) return false;
           if (endDate && d > endDate) return false;
-          if (teamId && teamId !== 'all') {
-            const team = (AppState.teams || []).find(t => t.id === teamId);
-            if (team && m.teamName && m.teamName !== team.name) return false;
-          }
+          if (!this.matchesTeamFilter(m, teamId)) return false;
           return true;
         });
         if (matchedMatches.length === 0) {
