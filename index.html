@@ -1927,8 +1927,11 @@
           team.fieldPositions = JSON.parse(JSON.stringify(AppState.match.fieldPositions || {}));
         }
         AppState.currentTeamName = teamName;
+        // The match on the pitch belongs to this club; loadTeam re-seeds the name, this path must too.
+        AppState.match.teamName = teamName;
         this.setHeaderTeamBadge();
         this.saveStorage();
+        this.renderAll();
         this.renderSavedTeamsList();
         this.toast(`Team "${teamName}" saved with theme! `);
       },
@@ -2289,8 +2292,11 @@
           if (teamChanged) {
             this.loadTeam(team.id, true);
           } else {
+            const clubRenamed = AppState.currentTeamName !== team.name;
             AppState.currentTeamId = team.id;
             AppState.currentTeamName = team.name;
+            // A Pro-side club rename arrives under the same team id, so re-seed the match like loadTeam does.
+            if (clubRenamed) AppState.match.teamName = team.name;
             AppState.squad = JSON.parse(JSON.stringify(content.players));
             this.setSharedTeamMetadata(team);
             if (permissionChanged) {

@@ -1111,6 +1111,13 @@ assert.strictEqual(readRoster().cloudTeamId, undefined, 'Cloud metadata cannot l
 App.loadTeam(cloudSnapshot.teamId);
 assert.strictEqual(AppState.squad[0].proId, uuidA);
 assert.strictEqual(AppState.squad[0].name, 'Cloud Player Edited in Lite');
+// A club renamed in Pro arrives on the same team id, and the game on the pitch has to follow it.
+const renamedCloud = advance({ ...clone(readRoster()), teamName: 'Shared Cloud Athletic' });
+incoming(renamedCloud, 'storage');
+assert.strictEqual(AppState.currentTeamName, 'Shared Cloud Athletic');
+assert.strictEqual(AppState.match.teamName, 'Shared Cloud Athletic', 'A Pro club rename pulls through into the Lite match');
+App.openMatchSetupModal();
+assert.strictEqual(dom['inputMatchTeamName'].value, 'Shared Cloud Athletic', 'A new game opens on the renamed club');
 console.log('✓ Cloud team switches stop/reset the live match, preserve unsaved Lite/default and unrelated teams, history and cloud identities');
 
 // ==========================================
@@ -1909,6 +1916,11 @@ App.saveActiveTeam();
 App.toast = realToast;
 assert.strictEqual(AppState.teams[0].shortName, 'SOS', 'A legal abbreviation is stored upper-cased');
 assert.strictEqual(App.activeTeamShortName(), 'SOS', 'and reads back through the helper');
+// Applying the club has to reach the game, not just the header chip.
+assert.strictEqual(AppState.match.teamName, 'Soshanguve Supreme', 'An applied club name lands on the match');
+assert.strictEqual(dom['scoreboardTeam'].innerText, 'SOS', 'and the scoreboard re-renders for the applied club');
+App.openMatchSetupModal();
+assert.strictEqual(dom['inputMatchTeamName'].value, 'Soshanguve Supreme', 'A new game opens on the applied club');
 AppState.teams = savedTeams; AppState.currentTeamId = savedTeamId; AppState.currentTeamName = savedTeamName;
 App.setHeaderTeamBadge();
 console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way, deletes ask first, and tight spots get a short team name');
