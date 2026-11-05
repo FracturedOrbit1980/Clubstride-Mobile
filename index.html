@@ -125,10 +125,19 @@
     /* Ledger print fallback — only the report reaches the page, never the dark app shell */
     @page { size: A4 portrait; margin: 8mm; }
     @media print {
+      html.cs-printing-ledger { color-scheme: light; }
       html.cs-printing-ledger body > *:not(#pdfExportContainer) { display: none !important; }
-      html.cs-printing-ledger #pdfExportContainer { display: block !important; padding: 0 !important; color: #0B1B33 !important; }
+      html.cs-printing-ledger #pdfExportContainer { display: block !important; padding: 0 !important; color: #0B1B33 !important; background: #ffffff !important; }
       html.cs-printing-ledger body { background: #ffffff !important; padding: 0 !important; min-height: 0 !important; }
       #pdfExportContainer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      /* html2canvas paints display:none as a blank page; exporting forces a real box. */
+      #pdfExportContainer.cs-ledger-exporting {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background: #ffffff !important;
+        color: #0B1B33 !important;
+      }
     }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3261,22 +3270,92 @@
       },
       printLedger(container) {
         if (!container) return;
-        container.classList.remove('hidden');
+        this.prepareLedgerForCapture(container);
         document.documentElement.classList.add('cs-printing-ledger');
         window.addEventListener('afterprint', () => {
           document.documentElement.classList.remove('cs-printing-ledger');
-          container.classList.add('hidden');
+          this.restoreLedgerAfterCapture(container);
         }, { once: true });
         window.print();
       },
+      forceLedgerStyle(el, styles) {
+        if (!el || !el.style) return;
+        Object.keys(styles).forEach(prop => {
+          if (typeof el.style.setProperty === 'function') el.style.setProperty(prop, styles[prop], 'important');
+          else el.style[prop] = styles[prop];
+        });
+      },
+      prepareLedgerForCapture(container) {
+        if (!container) return;
+        if (container.classList) {
+          container.classList.remove('hidden');
+          container.classList.add('cs-ledger-exporting');
+        }
+        this.forceLedgerStyle(container, {
+          display: 'block',
+          visibility: 'visible',
+          opacity: '1',
+          position: 'fixed',
+          left: '0',
+          top: '0',
+          width: '794px',
+          'max-width': '794px',
+          background: '#ffffff',
+          color: '#0B1B33',
+          'z-index': '2147483646',
+          transform: 'none',
+          'user-select': 'text',
+          '-webkit-user-select': 'text'
+        });
+        void container.offsetHeight;
+      },
+      restoreLedgerAfterCapture(container) {
+        if (!container) return;
+        if (container.style && typeof container.style.removeProperty === 'function') {
+          ['display', 'visibility', 'opacity', 'position', 'left', 'top', 'width', 'max-width', 'background', 'color', 'z-index', 'transform', 'user-select', '-webkit-user-select'].forEach(prop => {
+            container.style.removeProperty(prop);
+          });
+        }
+        if (container.classList) {
+          container.classList.remove('cs-ledger-exporting');
+          container.classList.add('hidden');
+        }
+      },
+      paintLedgerClone(doc) {
+        if (!doc) return;
+        const root = doc.documentElement;
+        if (root && root.classList) root.classList.remove('dark');
+        if (root && root.style) this.forceLedgerStyle(root, { 'color-scheme': 'light' });
+        if (doc.body) this.forceLedgerStyle(doc.body, { 'user-select': 'text', '-webkit-user-select': 'text', background: '#ffffff' });
+        if (doc.querySelectorAll) {
+          doc.querySelectorAll('link[href*="fonts.g"]').forEach(link => link.remove());
+          doc.querySelectorAll('#pdfExportContainer').forEach(el => {
+            if (el.classList) {
+              el.classList.remove('hidden');
+              el.classList.add('cs-ledger-exporting');
+            }
+            this.forceLedgerStyle(el, {
+              display: 'block',
+              visibility: 'visible',
+              opacity: '1',
+              position: 'static',
+              width: '794px',
+              background: '#ffffff',
+              color: '#0B1B33',
+              'user-select': 'text',
+              '-webkit-user-select': 'text'
+            });
+          });
+        }
+      },
       async exportLedgerPdf(container, fileName) {
         if (!container) return;
+        this.prepareLedgerForCapture(container);
         if (typeof html2pdf === 'undefined') {
           this.toast('PDF engine unavailable — opening the print view instead.', 'card-yellow');
           this.printLedger(container);
           return;
         }
-        container.classList.remove('hidden');
         const opt = {
           margin: [8, 8, 8, 8],
           filename: fileName,
@@ -3287,16 +3366,18 @@
             backgroundColor: '#ffffff',
             logging: false,
             useCORS: true,
-            onclone: (doc) => {
-              doc.querySelectorAll('link[href*="fonts.g"]').forEach(link => link.remove());
-              doc.querySelectorAll('#pdfExportContainer').forEach(el => el.classList.remove('hidden'));
-            }
+            letterRendering: true,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: Math.max(794, container.scrollWidth || 794),
+            windowHeight: Math.max(container.scrollHeight || 1, 1),
+            onclone: (doc) => this.paintLedgerClone(doc)
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         try {
           await html2pdf().set(opt).from(container).save();
-          container.classList.add('hidden');
+          this.restoreLedgerAfterCapture(container);
           this.toast('PDF Exported successfully!');
         } catch (err) {
           console.error('PDF export failed:', err);

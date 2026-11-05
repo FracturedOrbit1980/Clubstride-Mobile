@@ -439,6 +439,10 @@ const exporterCalls = (html.match(/this\.exportLedgerPdf\(/g) || []).length;
 assert.strictEqual(exporterCalls, 3, 'All three report generators should use exportLedgerPdf');
 assert.strictEqual(jsCode.split('window.print()').length - 1, 1, 'Only printLedger may call window.print');
 assert(jsCode.includes("doc.querySelectorAll('link[href*=\"fonts.g\"]').forEach"), 'PDF clone must drop the remote web-font stylesheet');
+assert(jsCode.includes("letterRendering: true"), 'PDF capture should render text even when the app shell is user-select:none');
+assert(jsCode.includes("prepareLedgerForCapture"), 'Exporter must unhide the ledger into a real box before html2canvas runs');
+assert(jsCode.includes("paintLedgerClone"), 'PDF clone must force a visible light-mode ledger');
+assert(jsCode.includes("classList.remove('dark')"), 'PDF clone must drop html.dark so the page is not painted as a black rectangle');
 assert(!jsCode.includes("html2canvas: { scale: 2 }"), 'Reports must not hard-code html2canvas scale 2');
 
 // Printing must isolate the ledger, otherwise the dark app shell prints as blank paper.
