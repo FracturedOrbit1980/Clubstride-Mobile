@@ -1473,11 +1473,42 @@
           list.appendChild(card);
         });
       },
+      applyActiveTeamName(teamName, team = null) {
+        const nextName = (teamName || '').trim() || 'Clubstride FC';
+        const previousNames = [AppState.currentTeamName, AppState.match && AppState.match.teamName]
+          .filter(name => name && name !== nextName);
+        const activeTeam = team || this.getActiveTeam();
+        AppState.currentTeamName = nextName;
+        AppState.match.teamName = nextName;
+        if (activeTeam) {
+          activeTeam.name = nextName;
+          AppState.match.teamId = activeTeam.id;
+        }
+        (AppState.matchHistory || []).forEach(m => {
+          const tagged = activeTeam && m.teamId === activeTeam.id;
+          const named = previousNames.includes(m.teamName) && (!m.teamId || (activeTeam && m.teamId === activeTeam.id));
+          if (tagged || named) {
+            m.teamName = nextName;
+            if (activeTeam) m.teamId = activeTeam.id;
+          }
+        });
+        const badge = document.getElementById('headerTeamNameBadge');
+        if (badge) badge.innerText = nextName.length > 8 ? nextName.substring(0, 8) + '…' : nextName;
+        const currentInput = document.getElementById('inputCurrentTeamName');
+        if (currentInput) currentInput.value = nextName;
+        const matchInput = document.getElementById('inputMatchTeamName');
+        if (matchInput) matchInput.value = nextName;
+        return nextName;
+      },
+      refreshTeamSurfaces() {
+        this.saveStorage();
+        this.renderSavedTeamsList();
+        this.renderAll();
+        this.syncReportScreensToActiveTeam();
+      },
       saveActiveTeam() {
         const teamName = document.getElementById('inputCurrentTeamName').value.trim() || 'My Football Club';
         const teamLogo = localStorage.getItem('Clubstride Mobile_custom_logo') || EMBEDDED_ICON_B64 || './icon-192.png';
-        const previousName = AppState.currentTeamName;
-        const previousId = AppState.currentTeamId;
         if (!AppState.teams) AppState.teams = [];
         let team = AppState.teams.find(t => t.id === AppState.currentTeamId);
         if (!team) {
@@ -1494,7 +1525,6 @@
           AppState.teams.push(team);
           AppState.currentTeamId = team.id;
         } else {
-          team.name = teamName;
           team.logo = teamLogo;
           team.kitColor = AppState.kitColor;
           team.themeStyle = AppState.themeStyle || 'glass';
@@ -1502,25 +1532,8 @@
           team.squad = JSON.parse(JSON.stringify(AppState.squad));
           team.fieldPositions = JSON.parse(JSON.stringify(AppState.match.fieldPositions || {}));
         }
-        AppState.currentTeamName = teamName;
-        // Live and reports read the match record, so the saved team has to land there too.
-        AppState.match.teamName = teamName;
-        AppState.match.teamId = team.id;
-        if (previousId && previousId === team.id && previousName && previousName !== teamName) {
-          (AppState.matchHistory || []).forEach(m => {
-            const tagged = m.teamId && m.teamId === team.id;
-            const named = !m.teamId && m.teamName === previousName;
-            if (tagged || named) {
-              m.teamName = teamName;
-              if (!m.teamId) m.teamId = team.id;
-            }
-          });
-        }
-        document.getElementById('headerTeamNameBadge').innerText = teamName.length > 8 ? teamName.substring(0, 8) + '…' : teamName;
-        this.saveStorage();
-        this.renderSavedTeamsList();
-        this.renderAll();
-        this.syncReportScreensToActiveTeam();
+        this.applyActiveTeamName(teamName, team);
+        this.refreshTeamSurfaces();
         this.toast(`Team "${teamName}" saved with theme! `);
       },
       createNewTeamPrompt() {
@@ -3098,7 +3111,7 @@
                   <div class="font-bold text-sm text-white flex items-center space-x-1.5 truncate">
                     <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
                     <span class="text-cyber-cyan font-bold truncate">LIVE:</span>
-                    <span class="truncate">${AppState.match.title || 'Current Game'}</span>
+                    <span class="truncate">${AppState.match.title || 'Current Game'} — ${AppState.match.teamName || AppState.currentTeamName || 'Clubstride'} vs ${AppState.match.opponent || 'Opponent'}</span>
                   </div>
                   <div class="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
                     <span class="px-1.5 py-0.2 rounded bg-white/10 text-white font-medium">${AppState.match.format || '7'}v${AppState.match.format || '7'}</span>
@@ -4021,20 +4034,14 @@
         const opp = document.getElementById('inputMatchOpponent').value.trim() || 'Echo Strikers';
         const date = document.getElementById('inputMatchDate').value || new Date().toISOString().split('T')[0];
         const fmt = AppState.pendingFormat || AppState.match.format || '7';
-        AppState.match.teamName = teamName;
         AppState.match.title = title;
         AppState.match.opponent = opp;
         AppState.match.date = date;
         AppState.match.format = fmt;
-        document.getElementById('activeMatchTitleDisplay').innerText = `${title} — ${teamName} vs ${opp}`;
-        document.getElementById('activeMatchDateBadge').innerText = date;
-        document.getElementById('activeMatchFormatBadge').innerText = `${fmt}v${fmt}`;
-        document.getElementById('scoreboardTeam').innerText = teamName;
-        document.getElementById('scoreboardOpponent').innerText = opp.split(' ')[0];
+        this.applyActiveTeamName(teamName);
         this.applyFormatDefaults();
-        this.saveStorage();
         this.closeModals();
-        this.renderPitchTokens();
+        this.refreshTeamSurfaces();
         this.toast('Match configuration saved!');
       },
       openAddPlayerModal() {
