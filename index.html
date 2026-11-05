@@ -4926,6 +4926,17 @@
         const scale = Math.min(2, Math.sqrt(8000000 / (w * h)), 8192 / Math.max(w, h));
         return Math.max(1, Math.round(scale * 10) / 10);
       },
+      // html2canvas measures each word through the canvas font shorthand, and a family list that
+      // leads with a webfont or a -apple-system token makes Chrome hand back the advance without its
+      // space, so "Clubstride FC" rasterises as "ClubstrideFC". Inter is never painted in the clone
+      // anyway, so a locally resolvable stack costs nothing the coach can see. Monospace cells keep
+      // theirs because the timer columns have to stay in register.
+      pdfSafeFontStack(root) {
+        [root, ...root.querySelectorAll('*')].forEach(el => {
+          if (/monospace/i.test(el.style.fontFamily || '')) return;
+          el.style.fontFamily = 'Arial, Helvetica, sans-serif';
+        });
+      },
       printLedger(container) {
         if (!container) return;
         container.classList.remove('hidden');
@@ -4956,7 +4967,12 @@
             useCORS: true,
             onclone: (doc) => {
               doc.querySelectorAll('link[href*="fonts.g"]').forEach(link => link.remove());
-              doc.querySelectorAll('#pdfExportContainer').forEach(el => el.classList.remove('hidden'));
+              // Two copies of this container exist in the clone and only the second is rendered,
+              // so every copy has to be prepared.
+              doc.querySelectorAll('#pdfExportContainer').forEach(el => {
+                el.classList.remove('hidden');
+                this.pdfSafeFontStack(el);
+              });
             }
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }

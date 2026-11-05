@@ -189,7 +189,10 @@ const dom = new Proxy({}, {
         options: [],
         children: [],
         appendChild: function(c) { if (this.options) this.options.push(c); if (this.children) this.children.push(c); },
-        querySelectorAll: () => [], addEventListener: () => {}
+        addEventListener: () => {},
+        // The PDF clone walk needs a subtree, or the font-stack pass has nothing to run on.
+        _pdfTree: null,
+        querySelectorAll: function (sel) { return String(sel).includes('*') ? (this._pdfTree || []) : []; },
       };
     }
     return target[prop];
@@ -664,6 +667,23 @@ assert.strictEqual(exporterCalls, 3, 'All three report generators should use exp
 assert.strictEqual(jsCode.split('window.print()').length - 1, 1, 'Only printLedger may call window.print');
 assert(jsCode.includes("doc.querySelectorAll('link[href*=\"fonts.g\"]').forEach"), 'PDF clone must drop the remote web-font stylesheet');
 assert(!jsCode.includes("html2canvas: { scale: 2 }"), 'Reports must not hard-code html2canvas scale 2');
+
+// html2canvas re-measures every word through the canvas font shorthand, and a stack that leads with a
+// webfont or -apple-system token hands back the advance without its space. The clone must land on a
+// locally resolvable stack on every copy of the container - the clone holds two and renders the second.
+assert(jsCode.includes("doc.querySelectorAll('#pdfExportContainer').forEach"), 'PDF clone must prepare every copy of the export container');
+assert(!jsCode.includes("doc.querySelector('#pdfExportContainer')"), 'A single-copy selector patches the container that is never rendered');
+assert(jsCode.includes('this.pdfSafeFontStack(el)'), 'The clone walk must apply the pdf-safe font stack');
+function pdfFontNode(family) { return { style: family ? { fontFamily: family } : {}, querySelectorAll: () => [] }; }
+const pdfRoot = pdfFontNode("'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif");
+const pdfWordmark = pdfFontNode("'Fredoka', 'Inter', sans-serif");
+const pdfTimerCell = pdfFontNode('monospace');
+pdfRoot.querySelectorAll = () => [pdfWordmark, pdfTimerCell];
+App.pdfSafeFontStack(pdfRoot);
+assert(pdfRoot.style.fontFamily === 'Arial, Helvetica, sans-serif', 'Report body must use a locally resolvable stack');
+assert(pdfWordmark.style.fontFamily === 'Arial, Helvetica, sans-serif', 'Wordmark must not keep an unloaded webfont family in the clone');
+assert(pdfTimerCell.style.fontFamily === 'monospace', 'Monospace timer columns must stay monospace so the digits stay in register');
+console.log('✓ PDF clone keeps words apart and leaves the monospace timer cells alone');
 
 // Printing must isolate the ledger, otherwise the dark app shell prints as blank paper.
 assert(html.includes('@media print'), 'Missing @media print rules for the ledger fallback');
