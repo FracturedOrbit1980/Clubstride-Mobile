@@ -610,6 +610,56 @@ assert.strictEqual(renamed.teamName, 'Riverside United');
 assert.strictEqual(renamed.teamId, 'team_riverside');
 console.log('✓ Loading a team updates Live and reports immediately');
 
+// ==========================================
+// TEST 22: Renaming a team updates Live, Stats, and PDFs
+// ==========================================
+AppState.clock.seconds = 90;
+AppState.events = [{ id: 'ev_live', type: 'Goal', playerId: 'r1', playerName: 'Riverside Playmaker', playerNumber: 10, matchTimeSeconds: 20 }];
+App.renderStats();
+let statsHtml = (dom['statsCardsContainer'].children || []).map(c => c.innerHTML || '').join('\n');
+assert(statsHtml.includes('Riverside United'), 'Live stats card should show the renamed team');
+
+App.generateSingleMatchPdf('m_riverside');
+assert(dom['pdfExportContainer'].innerHTML.includes('Riverside United'), 'Single-match PDF should use the renamed team');
+
+App.generateDateRangePdf('2026-10-01', '2026-10-31', riverside.id);
+assert(dom['pdfExportContainer'].innerHTML.includes('Riverside United'), 'Date-range PDF header should use the renamed team');
+assert(dom['pdfExportContainer'].innerHTML.includes('Hilltop'), 'Date-range PDF should keep fixtures after the rename');
+
+App.openPdfReportModal();
+const pdfFilter = dom['pdfRangeTeamFilter'];
+const filterNames = (pdfFilter.options || []).map(o => o.innerText);
+assert(filterNames.includes('Riverside United'), 'PDF team filter should list the renamed team');
+assert(!filterNames.includes('Riverside') || filterNames.includes('Riverside United'));
+
+dom['inputMatchTeamName'].value = 'Riverside XI';
+dom['inputMatchTitle'].value = 'Cup Final';
+dom['inputMatchOpponent'].value = 'Hilltop';
+dom['inputMatchDate'].value = '2026-10-18';
+App.saveMatchSetup();
+assert.strictEqual(AppState.currentTeamName, 'Riverside XI', 'Match setup rename must update the saved team name');
+assert.strictEqual(AppState.match.teamName, 'Riverside XI');
+assert.strictEqual(AppState.teams.find(t => t.id === riverside.id).name, 'Riverside XI');
+assert.strictEqual(dom['scoreboardTeam'].innerText, 'Riverside XI');
+assert(dom['activeMatchTitleDisplay'].innerText.includes('Riverside XI'));
+assert.strictEqual(AppState.matchHistory.find(m => m.id === 'm_riverside').teamName, 'Riverside XI');
+assert.strictEqual(storage['Clubstride Mobile_current_team_name'], 'Riverside XI');
+assert.strictEqual(JSON.parse(storage['Clubstride Mobile_match']).teamName, 'Riverside XI');
+assert.strictEqual(JSON.parse(storage['Clubstride Mobile_teams']).find(t => t.id === riverside.id).name, 'Riverside XI');
+
+App.renderStats();
+statsHtml = (dom['statsCardsContainer'].children || []).map(c => c.innerHTML || '').join('\n');
+assert(statsHtml.includes('Riverside XI'), 'Stats after setup rename should show the new name');
+assert(statsHtml.includes('Cup Final — Riverside XI vs Hilltop') || statsHtml.includes('Riverside XI vs Hilltop'));
+
+App.generateSingleMatchPdf('m_riverside');
+assert(dom['pdfExportContainer'].innerHTML.includes('Riverside XI'), 'PDF after setup rename should show the new name');
+App.generateDateRangePdf('2026-10-01', '2026-10-31', riverside.id);
+assert(dom['pdfExportContainer'].innerHTML.includes('Riverside XI'));
+App.openPdfReportModal();
+assert((dom['pdfRangeTeamFilter'].options || []).some(o => o.innerText === 'Riverside XI'), 'PDF filter after setup rename should use the new name');
+console.log('✓ Renaming a team updates Live, end-game stats, and PDFs');
+
 console.log('\n=========================================');
 console.log('ALL AUTOMATED TESTS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
