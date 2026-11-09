@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Club Stride Mobile - Antigravity UI Preview</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* 1. Glassmorphism Fundamentals */
+    :root {
+      --glass-bg-light: rgba(255, 255, 255, 0.15);
+      --glass-bg-dark: rgba(15, 23, 42, 0.55);
+      --glass-border: 1px solid rgba(255, 255, 255, 0.18);
+      --glass-blur-base: 14px;
+      --glass-blur-deep: 24px;
+      --shadow-rest: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+      --shadow-float: 0 16px 48px -12px rgba(31, 38, 135, 0.35);
+      --shadow-pressed: 0 4px 16px 0 rgba(31, 38, 135, 0.12);
+      --physics-bounce: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      --physics-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0a0f1d 50%, #030712 100%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #ffffff;
+      min-height: 100vh;
+    }
+
+    .antigravity-card {
+      background: var(--glass-bg-light);
+      backdrop-filter: blur(var(--glass-blur-base));
+      -webkit-backdrop-filter: blur(var(--glass-blur-base));
+      border: var(--glass-border);
+      border-radius: 24px;
+      box-shadow: var(--shadow-rest);
+      transition: var(--physics-bounce);
+    }
+    .antigravity-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-float);
+    }
+    .antigravity-card:active {
+      transform: translateY(2px);
+      box-shadow: var(--shadow-pressed);
+      transition: var(--physics-smooth);
+    }
+
+    .antigravity-card-dark {
+      background: var(--glass-bg-dark);
+      backdrop-filter: blur(var(--glass-blur-deep));
+      -webkit-backdrop-filter: blur(var(--glass-blur-deep));
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 24px;
+      box-shadow: var(--shadow-rest);
+      transition: var(--physics-bounce);
+    }
+    .antigravity-card-dark:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-float);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .glass-pill {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(var(--glass-blur-base));
+      -webkit-backdrop-filter: blur(var(--glass-blur-base));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 9999px;
+      transition: var(--physics-bounce);
+    }
+    .glass-pill:hover {
+      background: rgba(255, 255, 255, 0.22);
+      transform: translateY(-2px);
+    }
+
+    .glass-navbar {
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(var(--glass-blur-deep));
+      -webkit-backdrop-filter: blur(var(--glass-blur-deep));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 32px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .ethereal-glow-primary {
+      background: linear-gradient(135deg, rgba(74, 144, 226, 0.9) 0%, rgba(142, 45, 226, 0.9) 100%);
+      box-shadow: 0 10px 30px -5px rgba(142, 45, 226, 0.45);
+    }
+
+    .ethereal-glow-turf {
+      background: linear-gradient(135deg, rgba(39, 174, 96, 0.9) 0%, rgba(46, 204, 113, 0.9) 100%);
+      box-shadow: 0 10px 30px -5px rgba(39, 174, 96, 0.45);
+    }
+
+    .stat-ring-circle {
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+  </style>
+</head>
+<body class="p-4 sm:p-6 pb-28">
+
+  <!-- Mobile Device Frame Container -->
+  <div class="max-w-md mx-auto relative">
+
+    <!-- Top Floating Role & Control Bar -->
+    <div class="antigravity-card p-3 mb-4 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl ethereal-glow-primary flex items-center justify-center font-black text-sm">
+          CS
+        </div>
+        <div>
+          <h1 class="text-xs font-black tracking-wider text-white uppercase">Club Stride Mobile</h1>
+          <p class="text-[11px] text-white/60">Antigravity PWA Architecture</p>
+        </div>
+      </div>
+      <!-- Interactive Role Toggle Switch -->
+      <div class="flex items-center gap-1 bg-black/40 p-1 rounded-2xl border border-white/10">
+        <button id="tab-coach" onclick="setRole('coach')" class="px-3 py-1 rounded-xl text-xs font-bold transition-all bg-cyan-500/30 text-cyan-300 border border-cyan-400/50">
+          Coach
+        </button>
+        <button id="tab-parent" onclick="setRole('parent')" class="px-3 py-1 rounded-xl text-xs font-bold transition-all text-white/60 hover:text-white">
+          Parent
+        </button>
+      </div>
+    </div>
+
+    <!-- Active View Container -->
+    <div id="view-coach" class="space-y-4">
+      <!-- Pro Sync Status Card -->
+      <div class="antigravity-card-dark p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div>
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider">Club Stride Pro Sync</h3>
+              <p class="text-[11px] text-white/60">Master DB • Age Sorting: U11</p>
+            </div>
+          </div>
+          <button id="btn-sync" onclick="triggerSync()" class="glass-pill px-3 py-1 text-xs font-bold text-cyan-300">
+            Sync Now
+          </button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center bg-white/5 p-2 rounded-xl border border-white/10">
+          <div><span class="text-sm font-black text-white">16</span><span class="block text-[10px] text-white/60">ROSTER</span></div>
+          <div><span class="text-sm font-black text-cyan-300">U11</span><span class="block text-[10px] text-white/60">TIER</span></div>
+          <div><span class="text-sm font-black text-emerald-400" id="sync-status">ACTIVE</span><span class="block text-[10px] text-white/60">STATUS</span></div>
+        </div>
+      </div>
+
+      <!-- Tactical Overlay Glass Panel -->
+      <div class="antigravity-card p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-white">Tactical Pitch Overlay</h3>
+          <select id="formation" onchange="changeFormation(this.value)" class="glass-pill px-2 py-0.5 text-xs font-bold text-white bg-slate-900 border border-white/20 outline-none">
+            <option value="4-3-3">4-3-3 Attack</option>
+            <option value="4-4-2">4-4-2 Balanced</option>
+            <option value="3-5-2">3-5-2 Wingers</option>
+          </select>
+        </div>
+        <!-- Simulated Glass Pitch with Draggable/Floating Tokens -->
+        <div class="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-white/20 bg-slate-950/60 p-2 shadow-inner" id="pitch-container">
+          <div class="absolute inset-2 border border-white/20 rounded-xl pointer-events-none"></div>
+          <div class="absolute top-2 bottom-2 left-1/2 border-l border-white/20 pointer-events-none"></div>
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full border border-white/20 pointer-events-none"></div>
+
+          <!-- Tactical Tokens -->
+          <div id="tokens-container" class="absolute inset-0"></div>
+        </div>
+        <p class="text-[10px] text-white/60 mt-2 text-center">Interactive tokens position automatically based on formation</p>
+      </div>
+
+      <!-- Real-Time Stat Modifier Card -->
+      <div class="antigravity-card-dark p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-cyan-400/20 border border-cyan-400 flex items-center justify-center font-black text-xs text-cyan-300">
+              #10
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-white">Amelia Vance (CM)</h4>
+              <p class="text-[10px] text-white/60">Live Match Stat Editor</p>
+            </div>
+          </div>
+          <span class="glass-pill px-2 py-0.5 text-xs font-black text-emerald-300">Rating: 9.1</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center">
+            <span class="text-[10px] text-white/60 mb-1">Goals</span>
+            <div class="flex items-center gap-2">
+              <button onclick="adjustStat('goals', -1)" class="w-6 h-6 rounded-lg glass-pill text-xs font-bold">-</button>
+              <span id="stat-goals" class="text-sm font-black text-white">2</span>
+              <button onclick="adjustStat('goals', 1)" class="w-6 h-6 rounded-lg glass-pill text-xs font-bold">+</button>
+            </div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center">
+            <span class="text-[10px] text-white/60 mb-1">Assists</span>
+            <div class="flex items-center gap-2">
+              <button onclick="adjustStat('assists', -1)" class="w-6 h-6 rounded-lg glass-pill text-xs font-bold">-</button>
+              <span id="stat-assists" class="text-sm font-black text-white">3</span>
+              <button onclick="adjustStat('assists', 1)" class="w-6 h-6 rounded-lg glass-pill text-xs font-bold">+</button>
+            </div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center">
+            <span class="text-[10px] text-white/60 mb-1">Minutes</span>
+            <div class="flex items-center gap-2">
+              <button onclick="adjustStat('minutes', -5)" class="w-6 h-6 rounded-lg glass-pill text-xs font-bold">-</button>
+              <span id="stat-minutes" class="text-sm font-black text-white">45</span>
+              <button onclick="adjustStat('minutes', 5)" class="w-6 h-6 rounded-lg glass-pill text-xs font-bold">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parent View Container (Hidden by Default) -->
+    <div id="view-parent" class="space-y-4 hidden">
+      <!-- Player Profile Standalone Card -->
+      <div class="antigravity-card p-4 relative overflow-hidden">
+        <div class="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-purple-600/20 blur-2xl pointer-events-none"></div>
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 rounded-2xl ethereal-glow-primary flex items-center justify-center font-black text-lg shadow-lg">
+            #10
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-white">Amelia Vance</h3>
+              <span class="glass-pill px-2 py-0.5 text-[10px] font-bold text-amber-300">U11 Member</span>
+            </div>
+            <p class="text-xs text-white/70">Central Midfielder • Echo Strikers</p>
+            <p class="text-[11px] text-emerald-400 font-semibold">Season Form: 94%</p>
+          </div>
+        </div>
+
+        <!-- Real-Time Antigravity Stat Rings -->
+        <div class="pt-3 border-t border-white/10">
+          <h4 class="text-[11px] font-bold uppercase text-white/70 mb-2">Performance Attributes</h4>
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div class="flex flex-col items-center">
+              <div class="relative w-12 h-12 flex items-center justify-center">
+                <svg class="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                  <path stroke="rgba(255,255,255,0.15)" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path stroke="#4A90E2" stroke-width="3" stroke-dasharray="86, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <span class="absolute text-[11px] font-black text-white">86</span>
+              </div>
+              <span class="text-[10px] text-white/60 mt-1 font-semibold">Pace</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <div class="relative w-12 h-12 flex items-center justify-center">
+                <svg class="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                  <path stroke="rgba(255,255,255,0.15)" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path stroke="#2ECC71" stroke-width="3" stroke-dasharray="91, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <span class="absolute text-[11px] font-black text-white">91</span>
+              </div>
+              <span class="text-[10px] text-white/60 mt-1 font-semibold">Pass</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <div class="relative w-12 h-12 flex items-center justify-center">
+                <svg class="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                  <path stroke="rgba(255,255,255,0.15)" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path stroke="#8E2DE2" stroke-width="3" stroke-dasharray="78, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <span class="absolute text-[11px] font-black text-white">78</span>
+              </div>
+              <span class="text-[10px] text-white/60 mt-1 font-semibold">Shot</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <div class="relative w-12 h-12 flex items-center justify-center">
+                <svg class="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                  <path stroke="rgba(255,255,255,0.15)" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path stroke="#27AE60" stroke-width="3" stroke-dasharray="95, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <span class="absolute text-[11px] font-black text-white">95</span>
+              </div>
+              <span class="text-[10px] text-white/60 mt-1 font-semibold">Attend</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fee Collection Portal -->
+      <div class="antigravity-card-dark p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-xs font-black text-white uppercase tracking-wider">Fee Collection Portal</h3>
+            <p class="text-[11px] text-white/60">PayFast & Direct Subs</p>
+          </div>
+          <span class="text-xs font-black text-amber-400" id="due-amt">R 400.00 Due</span>
+        </div>
+        <div class="space-y-2 mb-3">
+          <div class="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10 text-xs">
+            <span>Nov Monthly Club Subs</span>
+            <span class="font-bold text-amber-300">R 250.00 (Due)</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10 text-xs">
+            <span>Youth District Cup Entry</span>
+            <span class="font-bold text-amber-300">R 150.00 (Due)</span>
+          </div>
+        </div>
+        <button id="btn-settle" onclick="settleFees()" class="w-full py-2.5 rounded-xl text-xs font-bold text-white ethereal-glow-turf active:scale-95 transition-all">
+          Settle Outstanding Dues (R 400.00)
+        </button>
+      </div>
+
+      <!-- Standalone Profile Builder Form Snippet -->
+      <div class="antigravity-card p-4">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-white mb-2">Emergency & Medical Profile</h3>
+        <div class="text-xs space-y-1.5 text-white/80">
+          <div class="flex justify-between py-1 border-b border-white/10"><span>Emergency:</span><span class="font-semibold text-white">+27 82 123 4567</span></div>
+          <div class="flex justify-between py-1 border-b border-white/10"><span>Medical Notes:</span><span class="font-semibold text-white">Mild asthma (carries inhaler)</span></div>
+          <div class="flex justify-between py-1"><span>Jersey Size:</span><span class="font-semibold text-white">Youth Medium (#10)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Glassmorphic Bottom Navigation Bar -->
+    <nav class="fixed bottom-4 left-4 right-4 max-w-md mx-auto glass-navbar px-4 py-2.5 flex items-center justify-between z-50">
+      <div class="flex items-center gap-1">
+        <button onclick="setRole('coach')" class="px-3 py-1.5 rounded-xl text-xs font-bold text-cyan-300 flex items-center gap-1.5 bg-white/10">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          <span>Coach</span>
+        </button>
+        <button onclick="setRole('parent')" class="px-3 py-1.5 rounded-xl text-xs font-bold text-amber-300 flex items-center gap-1.5 hover:bg-white/10">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span>Parent</span>
+        </button>
+      </div>
+      <div class="text-[11px] text-white/60 font-semibold">
+        Antigravity v1.0
+      </div>
+    </nav>
+
+  </div>
+
+  <script>
+    const formations = {
+      '4-3-3': [
+        { num: 1, pos: 'GK', x: 12, y: 50, name: 'Devon' },
+        { num: 4, pos: 'CB', x: 30, y: 35, name: 'Carter' },
+        { num: 5, pos: 'CB', x: 30, y: 65, name: 'Preston' },
+        { num: 8, pos: 'CM', x: 55, y: 50, name: 'Amelia' },
+        { num: 9, pos: 'ST', x: 82, y: 50, name: 'Jordan' }
+      ],
+      '4-4-2': [
+        { num: 1, pos: 'GK', x: 12, y: 50, name: 'Devon' },
+        { num: 4, pos: 'CB', x: 30, y: 32, name: 'Carter' },
+        { num: 5, pos: 'CB', x: 30, y: 68, name: 'Preston' },
+        { num: 8, pos: 'CM', x: 55, y: 40, name: 'Amelia' },
+        { num: 9, pos: 'ST', x: 80, y: 40, name: 'Jordan' }
+      ],
+      '3-5-2': [
+        { num: 1, pos: 'GK', x: 12, y: 50, name: 'Devon' },
+        { num: 4, pos: 'CB', x: 28, y: 50, name: 'Carter' },
+        { num: 8, pos: 'CM', x: 50, y: 30, name: 'Amelia' },
+        { num: 5, pos: 'CM', x: 50, y: 70, name: 'Preston' },
+        { num: 9, pos: 'ST', x: 80, y: 50, name: 'Jordan' }
+      ]
+    };
+
+    function renderTokens(formationKey) {
+      const container = document.getElementById('tokens-container');
+      const players = formations[formationKey] || formations['4-3-3'];
+      container.innerHTML = players.map(p => `
+        <div class="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-500" style="left: ${p.x}%; top: ${p.y}%;">
+          <div class="w-7 h-7 rounded-full bg-cyan-500 border border-white text-white font-black text-[11px] flex items-center justify-center shadow-lg hover:scale-125 transition-transform">
+            ${p.num}
+          </div>
+          <span class="block text-[9px] font-bold text-white text-center mt-0.5 drop-shadow">${p.name}</span>
+        </div>
+      `).join('');
+    }
+
+    function changeFormation(val) {
+      renderTokens(val);
+    }
+
+    function setRole(role) {
+      const coachView = document.getElementById('view-coach');
+      const parentView = document.getElementById('view-parent');
+      const tabCoach = document.getElementById('tab-coach');
+      const tabParent = document.getElementById('tab-parent');
+
+      if (role === 'coach') {
+        coachView.classList.remove('hidden');
+        parentView.classList.add('hidden');
+        tabCoach.className = 'px-3 py-1 rounded-xl text-xs font-bold transition-all bg-cyan-500/30 text-cyan-300 border border-cyan-400/50';
+        tabParent.className = 'px-3 py-1 rounded-xl text-xs font-bold transition-all text-white/60 hover:text-white';
+      } else {
+        coachView.classList.add('hidden');
+        parentView.classList.remove('hidden');
+        tabParent.className = 'px-3 py-1 rounded-xl text-xs font-bold transition-all bg-amber-500/30 text-amber-300 border border-amber-400/50';
+        tabCoach.className = 'px-3 py-1 rounded-xl text-xs font-bold transition-all text-white/60 hover:text-white';
+      }
+    }
+
+    function adjustStat(stat, delta) {
+      const el = document.getElementById('stat-' + stat);
+      if (el) {
+        let val = parseInt(el.innerText) + delta;
+        if (val < 0) val = 0;
+        el.innerText = val;
+      }
+    }
+
+    function triggerSync() {
+      const btn = document.getElementById('btn-sync');
+      const status = document.getElementById('sync-status');
+      btn.innerText = 'Syncing...';
+      status.innerText = 'SYNCING';
+      status.className = 'text-sm font-black text-cyan-400 animate-pulse';
+      setTimeout(() => {
+        btn.innerText = 'Synced ✓';
+        status.innerText = 'SYNCED';
+        status.className = 'text-sm font-black text-emerald-400';
+      }, 700);
+    }
+
+    function settleFees() {
+      const due = document.getElementById('due-amt');
+      const btn = document.getElementById('btn-settle');
+      due.innerText = 'R 0.00 (PAID)';
+      due.className = 'text-xs font-black text-emerald-400';
+      btn.innerText = 'Paid in Full ✓';
+      btn.disabled = true;
+      btn.className = 'w-full py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600/50 cursor-not-allowed';
+    }
+
+    // Init pitch
+    renderTokens('4-3-3');
+  </script>
+</body>
+</html>
