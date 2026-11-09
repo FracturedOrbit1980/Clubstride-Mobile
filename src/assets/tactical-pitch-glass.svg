@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" fill="none">
+  <defs>
+    <radialGradient id="pitchGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#1E3A8A" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0.85"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="400" rx="20" fill="url(#pitchGlow)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  <!-- Touchlines & markings with glow -->
+  <rect x="25" y="25" width="550" height="350" rx="8" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+  <line x1="300" y1="25" x2="300" y2="375" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+  <circle cx="300" cy="200" r="55" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+  <circle cx="300" cy="200" r="3" fill="rgba(255,255,255,0.8)"/>
+  <!-- Penalty Boxes -->
+  <rect x="25" y="110" width="90" height="180" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+  <rect x="25" y="150" width="35" height="100" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+  <rect x="485" y="110" width="90" height="180" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+  <rect x="540" y="150" width="35" height="100" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+</svg>

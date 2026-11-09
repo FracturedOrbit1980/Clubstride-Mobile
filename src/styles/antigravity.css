@@ -1,0 +1,129 @@
+/* Antigravity Glassmorphism & Floating Layout System */
+:root {
+  --glass-bg-light: rgba(255, 255, 255, 0.25);
+  --glass-bg-dark: rgba(15, 23, 42, 0.45);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.18);
+  --glass-border-subtle: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-blur-base: 12px;
+  --glass-blur-deep: 24px;
+  --shadow-rest: 0 8px 32px 0 rgba(31, 38, 135, 0.12);
+  --shadow-float: 0 16px 48px -12px rgba(31, 38, 135, 0.25);
+  --shadow-pressed: 0 4px 16px 0 rgba(31, 38, 135, 0.08);
+  --physics-bounce: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --physics-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --grad-club-primary: linear-gradient(135deg, rgba(74, 144, 226, 0.85) 0%, rgba(142, 45, 226, 0.85) 100%);
+  --grad-turf-accent: linear-gradient(135deg, rgba(39, 174, 96, 0.8) 0%, rgba(46, 204, 113, 0.8) 100%);
+}
+
+.antigravity-card {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(var(--glass-blur-base));
+  -webkit-backdrop-filter: blur(var(--glass-blur-base));
+  border: var(--glass-border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-rest);
+  transition: var(--physics-bounce);
+  position: relative;
+  overflow: hidden;
+}
+
+.antigravity-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-float);
+}
+
+.antigravity-card:active {
+  transform: translateY(2px);
+  box-shadow: var(--shadow-pressed);
+  transition: var(--physics-smooth);
+}
+
+.antigravity-card-dark {
+  background: var(--glass-bg-dark);
+  backdrop-filter: blur(var(--glass-blur-base));
+  -webkit-backdrop-filter: blur(var(--glass-blur-base));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  box-shadow: var(--shadow-rest);
+  transition: var(--physics-bounce);
+  position: relative;
+  overflow: hidden;
+}
+
+.antigravity-card-dark:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-float);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.antigravity-card-dark:active {
+  transform: translateY(2px);
+  box-shadow: var(--shadow-pressed);
+  transition: var(--physics-smooth);
+}
+
+.glass-navbar {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(var(--glass-blur-deep));
+  -webkit-backdrop-filter: blur(var(--glass-blur-deep));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 36px;
+  box-shadow: var(--shadow-float);
+  transition: var(--physics-smooth);
+}
+
+.stat-ring-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--physics-bounce);
+}
+
+.stat-ring-container:hover {
+  transform: scale(1.06);
+}
+
+.stat-ring-circle {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(var(--glass-blur-base));
+  -webkit-backdrop-filter: blur(var(--glass-blur-base));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  transition: var(--physics-bounce);
+}
+
+.glass-pill:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.glass-pill:active {
+  transform: translateY(1px);
+  transition: var(--physics-smooth);
+}
+
+.ethereal-glow-primary {
+  background: var(--grad-club-primary);
+  box-shadow: 0 10px 30px -5px rgba(142, 45, 226, 0.4);
+}
+
+.ethereal-glow-turf {
+  background: var(--grad-turf-accent);
+  box-shadow: 0 10px 30px -5px rgba(39, 174, 96, 0.4);
+}
+
+.tactical-glass-overlay {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(var(--glass-blur-deep));
+  -webkit-backdrop-filter: blur(var(--glass-blur-deep));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 28px;
+  box-shadow: var(--shadow-float);
+}

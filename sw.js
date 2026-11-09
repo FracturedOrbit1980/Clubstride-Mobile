@@ -5,6 +5,7 @@ const ASSETS = [
   './manifest.json',
   './tailwind.min.css',
   './clubstride-tokens.css',
+  './src/styles/antigravity.css',
   './html2pdf.bundle.min.js',
   // App / PWA icons
   './icon.png',
