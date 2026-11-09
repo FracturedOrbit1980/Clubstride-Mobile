@@ -15,7 +15,13 @@
   --physics-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --grad-club-primary: linear-gradient(135deg, rgba(74, 144, 226, 0.85) 0%, rgba(142, 45, 226, 0.85) 100%);
   --grad-turf-accent: linear-gradient(135deg, rgba(39, 174, 96, 0.8) 0%, rgba(46, 204, 113, 0.8) 100%);
-  --grad-glass-glow: radial-gradient(circle at 50% 0%, rgba(120, 119, 198, 0.25), transparent 70%);
+  
+  /* Match Day High-Contrast Pitch-Side Tokens */
+  --neon-yellow: #{$neon-yellow};
+  --neon-green: #{$neon-green};
+  --neon-red: #{$neon-red};
+  --neon-cyan: #{$neon-cyan};
+  --touch-fat-min: 58px;
 }
 
 /* Antigravity Glassmorphic Card */
@@ -116,4 +122,91 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 28px;
   box-shadow: $shadow-float;
+}
+
+/* ----------------------------------------------------
+   MATCH DAY MODE: PITCH-SIDE HIGH CONTRAST & FAT TARGETS
+   ---------------------------------------------------- */
+[data-mode="matchday"] {
+  background: #000000 !important;
+  color: #FFFFFF !important;
+
+  .antigravity-card,
+  .antigravity-card-dark {
+    background: rgba(10, 15, 30, 0.95);
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.9);
+  }
+
+  .text-white\/60,
+  .text-white\/70 {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+}
+
+/* Fat-Finger Tactical In-Game Action Bar */
+.matchday-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(5, 10, 20, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 2px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.btn-fat-action {
+  @include fat-touch-target;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+.btn-fat-goal {
+  background: linear-gradient(180deg, #3BE38A 0%, #1FB868 100%);
+  color: #06142B;
+  border: 2px solid #7FF0B4;
+  box-shadow: 0 0 25px rgba(59, 227, 138, 0.4);
+}
+
+.btn-fat-foul {
+  background: linear-gradient(180deg, #FFDD00 0%, #E6B800 100%);
+  color: #1A1A00;
+  border: 2px solid #FFF380;
+  box-shadow: 0 0 25px rgba(255, 221, 0, 0.35);
+}
+
+.btn-fat-sub {
+  background: linear-gradient(180deg, #22D3EE 0%, #0891B2 100%);
+  color: #041E26;
+  border: 2px solid #67E8F9;
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.35);
+}
+
+/* Live Reaction Pulse */
+@keyframes goalPulseRing {
+  0% { transform: scale(0.95); opacity: 1; box-shadow: 0 0 0 0 rgba(59, 227, 138, 0.8); }
+  70% { transform: scale(1.05); opacity: 0.9; box-shadow: 0 0 0 25px rgba(59, 227, 138, 0); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pulse-goal-reaction {
+  animation: goalPulseRing 0.8s ease-out;
 }

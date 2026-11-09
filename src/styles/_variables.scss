@@ -18,6 +18,23 @@ $physics-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 $grad-club-primary: linear-gradient(135deg, rgba(74, 144, 226, 0.85) 0%, rgba(142, 45, 226, 0.85) 100%);
 $grad-turf-accent: linear-gradient(135deg, rgba(39, 174, 96, 0.8) 0%, rgba(46, 204, 113, 0.8) 100%);
 
+// 5. Match Day High-Contrast & Tactile System (Touchline Mode)
+$neon-yellow: #E6FF00;
+$neon-green: #3BE38A;
+$neon-red: #FF3366;
+$neon-cyan: #22D3EE;
+$touch-fat-min: 58px;
+$sunlight-bg: #000000;
+$sunlight-text: #FFFFFF;
+
+@mixin fat-touch-target {
+  min-height: $touch-fat-min;
+  min-width: $touch-fat-min;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 @mixin antigravity-card {
   background: $glass-bg-light;
   backdrop-filter: $glass-blur-base;

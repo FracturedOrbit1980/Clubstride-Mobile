@@ -1,76 +1,85 @@
 /**
  * Club Stride Mobile - Antigravity UI Architecture
  * Page: Dashboard.js - Role-based dynamic routing (Coach View vs. Parent View)
+ * Integrates Pitch-Side UX/UI Architecture (Tier 1 Blueprint, Tier 2 Conductor, Tier 3 Spectator)
  */
 
 import { renderFloatingCard } from '../components/shared/FloatingCard.js';
 import { renderRosterSyncUI } from '../components/coach/RosterSyncUI.js';
+import { renderMatchModeConductor } from '../components/coach/MatchModeConductor.js';
 import { renderTacticalOverlay } from '../components/coach/TacticalOverlay.js';
 import { renderStatEditor } from '../components/coach/StatEditor.js';
+import { renderMatchModeSpectator } from '../components/parent/MatchModeSpectator.js';
 import { renderCollectionPortal } from '../components/parent/CollectionPortal.js';
 import { renderProfileBuilder } from '../components/parent/ProfileBuilder.js';
+import { blueprintSync } from '../services/ClubBlueprintSync.js';
 
-export function renderDashboard({ role = 'coach' } = {}) {
+export function renderDashboard({ role = 'coach', isMatchDayMode = false } = {}) {
   const isCoach = role === 'coach';
 
   return `
-    <div class="dashboard-page space-y-4 pb-24">
-      <!-- Top Dynamic Header -->
+    <div class="dashboard-page space-y-4 pb-28">
+      <!-- Top Dynamic Header with Match Day Mode Toggle -->
       <header class="flex items-center justify-between py-2">
         <div>
           <h1 class="text-xl font-black text-white tracking-tight flex items-center gap-2">
             Clubstride <span class="text-xs px-2 py-0.5 rounded-md font-bold ${isCoach ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'}">${isCoach ? 'COACH' : 'PARENT'}</span>
           </h1>
-          <p class="text-xs text-white/60">${isCoach ? 'Matchday & Pro Sync Hub' : 'Member & Player Portal'}</p>
+          <p class="text-xs text-white/60">${isCoach ? 'Pitch-Side Conductor & Setup' : 'Spectator Compass & Live Pulse'}</p>
         </div>
-        <div class="w-9 h-9 rounded-full overflow-hidden border border-white/20 p-0.5">
-          <img src="./src/assets/${isCoach ? 'avatar-coach.svg' : 'avatar-parent.svg'}" alt="User Avatar" class="w-full h-full object-cover rounded-full"/>
+
+        <div class="flex items-center gap-2">
+          <!-- Touchline Match Day Mode Switch -->
+          <button 
+            id="toggle-matchday-mode" 
+            onclick="window.toggleMatchDayMode && window.toggleMatchDayMode()"
+            class="glass-pill px-2.5 py-1 text-[11px] font-black flex items-center gap-1.5 transition-all ${isMatchDayMode ? 'bg-yellow-400 text-black border-yellow-300' : 'text-yellow-300 border-yellow-400/30'}"
+            title="Toggle High-Contrast Touchline Sunlight Mode"
+          >
+            <span>☀️</span>
+            <span>${isMatchDayMode ? 'PITCH MODE ON' : 'MATCH DAY'}</span>
+          </button>
+
+          <div class="w-9 h-9 rounded-full overflow-hidden border border-white/20 p-0.5">
+            <img src="./src/assets/${isCoach ? 'avatar-coach.svg' : 'avatar-parent.svg'}" alt="User Avatar" class="w-full h-full object-cover rounded-full"/>
+          </div>
         </div>
       </header>
 
-      ${isCoach ? renderCoachView() : renderParentView()}
+      ${isCoach ? renderCoachView(isMatchDayMode) : renderParentView(isMatchDayMode)}
     </div>
   `;
 }
 
-function renderCoachView() {
-  const quickMetricsCard = renderFloatingCard({
-    title: 'Matchday Squad Status',
-    subtitle: 'Under-11 Division A • Match 6',
-    badge: 'LIVE READY',
-    variant: 'default',
-    contentHtml: `
-      <div class="grid grid-cols-3 gap-2 text-center my-2">
-        <div class="p-2 rounded-xl bg-white/10">
-          <span class="block text-lg font-black text-white">14</span>
-          <span class="text-[10px] text-white/70">Attending</span>
-        </div>
-        <div class="p-2 rounded-xl bg-white/10">
-          <span class="block text-lg font-black text-cyan-300">4-3-3</span>
-          <span class="text-[10px] text-white/70">Shape</span>
-        </div>
-        <div class="p-2 rounded-xl bg-white/10">
-          <span class="block text-lg font-black text-emerald-300">94%</span>
-          <span class="text-[10px] text-white/70">Readiness</span>
-        </div>
-      </div>
-    `,
-    actionsHtml: `
-      <button class="flex-1 py-2 rounded-xl text-xs font-bold text-white ethereal-glow-primary active:scale-95 transition-all">
-        Launch Live Match
-      </button>
-    `
-  });
+function renderCoachView(isMatchDayMode) {
+  const activeFixture = blueprintSync.getActiveFixture();
 
   return `
     <section class="space-y-4">
-      <!-- Club Stride Pro 2-Way Sync Banner -->
-      ${renderRosterSyncUI({ syncStatus: 'synced', totalPlayers: 16, activeAgeGroup: 'U11', unpushedChanges: 0 })}
+      <!-- Tier 1: Blueprint Sync Banner ("Push to Match Day") -->
+      <div class="antigravity-card p-4 border border-cyan-400/30">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <span class="text-[10px] font-black uppercase text-cyan-300 tracking-wider">Tier 1: Club Blueprint</span>
+            <h3 class="text-xs font-bold text-white">${activeFixture?.title || 'League Match 6'}</h3>
+          </div>
+          <button 
+            id="btn-push-matchday" 
+            onclick="window.handlePushToMatchDay && window.handlePushToMatchDay()"
+            class="px-3 py-1.5 rounded-xl text-xs font-black text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-300 shadow-lg active:scale-95 transition-all"
+          >
+            Push to Match Day
+          </button>
+        </div>
+        <p class="text-[11px] text-white/70">
+          Syncs fixture, field allocation (${activeFixture?.fieldNumber}), and eligible roster directly to touchline view.
+        </p>
+      </div>
 
-      <!-- Floating Squad Status -->
-      ${quickMetricsCard}
+      <!-- Tier 2: Coach Conductor (In-Game 2D Pitch & Massive Sticky Action Bar) -->
+      ${renderMatchModeConductor()}
 
-      <!-- Interactive Tactical Pitch Overlay -->
+      <!-- Standard Roster & Tactical Lineup Staging (Pre-Match) -->
       ${renderTacticalOverlay({ formation: '4-3-3' })}
 
       <!-- Quick Stat Modifier for Captain/Key Player -->
@@ -79,39 +88,11 @@ function renderCoachView() {
   `;
 }
 
-function renderParentView() {
-  const parentWelcomeCard = renderFloatingCard({
-    title: 'Amelia Vance (#10)',
-    subtitle: 'U11 Strikers • Active Member',
-    badge: 'STANDALONE',
-    variant: 'dark',
-    contentHtml: `
-      <div class="flex items-center gap-3 my-2">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-white font-black text-base shadow-lg">
-          #10
-        </div>
-        <div class="flex-1">
-          <div class="flex justify-between text-xs font-bold text-white mb-1">
-            <span>Season Form</span>
-            <span class="text-emerald-400">92%</span>
-          </div>
-          <div class="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-            <div class="h-full bg-emerald-400 rounded-full" style="width: 92%"></div>
-          </div>
-        </div>
-      </div>
-    `,
-    actionsHtml: `
-      <a href="#player-hub" class="flex-1 py-2 text-center rounded-xl text-xs font-bold text-white ethereal-glow-primary active:scale-95 transition-all">
-        View Full Stat Hub
-      </a>
-    `
-  });
-
+function renderParentView(isMatchDayMode) {
   return `
     <section class="space-y-4">
-      <!-- Player Card Header -->
-      ${parentWelcomeCard}
+      <!-- Tier 3: The Parent (The Compass & The Live Pulse) -->
+      ${renderMatchModeSpectator()}
 
       <!-- Fee Collection Portal -->
       ${renderCollectionPortal()}
