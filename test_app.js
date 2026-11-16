@@ -69,11 +69,11 @@ for (const [, marker, symbol] of proTiles) {
 }
 console.log(`✓ PRO pill wired to ${proTiles.length} Squad-tab tier markers`);
 
-// 5c. THE PRO TILES ARE A COACH UPGRADE PATH, NOT A DEAD LABEL
-const rosterStart = html.indexOf('<section id="section_roster"');
-const rosterEnd = html.indexOf('</section>', rosterStart);
+// 5c. THE PRO TILES ARE CLUSTERED UNDER THE COACH HUB TAB, NOT CLUTTERING SQUAD
+const hubStart = html.indexOf('<section id="section_hub"');
+const hubEnd = html.indexOf('</section>', hubStart);
 const upgradeAt = html.indexOf('id="proUpgradeCard"');
-assert(rosterStart !== -1 && upgradeAt > rosterStart && upgradeAt < rosterEnd, 'Upgrade card must live inside the Squad tab');
+assert(hubStart !== -1 && upgradeAt > hubStart && upgradeAt < hubEnd, 'Upgrade card must live in the Coach Hub section');
 
 const upgradeCtaTag = (html.match(/<a id="upgradeProCta"[^>]+>/) || [])[0] || '';
 assert(upgradeCtaTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Upgrade CTA must fall back to the Pro web app');
@@ -2489,8 +2489,226 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   console.log('✓ Yellow card, Red card, Injury logging and 1-page PDF fit verified');
 }
 
+// ---------------------------------------------------------------------------
+// TEST 48: PHASE 1 STRUCTURE & WORKFLOW OPTIMIZATION
+// 1. Pre-Match Progressive Flow Wizard
+// 2. Live Match Dashboard Hierarchy & Floating Action Menu (FAB)
+// 3. Frictionless Pro/Lite Segmentation & Coach Hub Tab
+// ---------------------------------------------------------------------------
+{
+  // --- 1. PRE-MATCH PROGRESSIVE FLOW WIZARD ---
+  assert.strictEqual(typeof App.setWizardStep, 'function', 'App.setWizardStep exists');
+  assert.strictEqual(typeof App.wizardToggleAvailability, 'function', 'App.wizardToggleAvailability exists');
+  assert.strictEqual(typeof App.wizardSetAllAvailability, 'function', 'App.wizardSetAllAvailability exists');
+  assert.strictEqual(typeof App.wizardMoveToBench, 'function', 'App.wizardMoveToBench exists');
+  assert.strictEqual(typeof App.wizardMoveToStarters, 'function', 'App.wizardMoveToStarters exists');
+  assert.strictEqual(typeof App.wizardAutoPickStarters, 'function', 'App.wizardAutoPickStarters exists');
+
+  // Open wizard: defaults to step 1
+  App.openMatchSetupModal();
+  assert.strictEqual(App.wizardStep, 1, 'Wizard starts on Step 1 (Config)');
+  assert(!dom['modalMatchSetup'].classList.contains('hidden'), 'modalMatchSetup is displayed');
+  assert(!dom['wizardStepContainer_1'].classList.contains('hidden'), 'Step 1 container is active');
+  assert(dom['wizardStepContainer_2'].classList.contains('hidden'), 'Step 2 container is hidden');
+  assert(dom['wizardStepContainer_3'].classList.contains('hidden'), 'Step 3 container is hidden');
+
+  // Navigate to Step 2 (Squad Selection)
+  App.setWizardStep(2);
+  assert.strictEqual(App.wizardStep, 2, 'Wizard moves to Step 2');
+  assert(dom['wizardStepContainer_1'].classList.contains('hidden'), 'Step 1 is now hidden');
+  assert(!dom['wizardStepContainer_2'].classList.contains('hidden'), 'Step 2 is now active');
+
+  // Toggle availability in wizard
+  const firstPlayer = AppState.squad[0];
+  const initialAvail = AppState.match.availability[firstPlayer.id] !== false;
+  App.wizardToggleAvailability(firstPlayer.id);
+  assert.strictEqual(AppState.match.availability[firstPlayer.id], !initialAvail, 'Availability toggled via wizard');
+  App.wizardToggleAvailability(firstPlayer.id); // Toggle back
+  assert.strictEqual(AppState.match.availability[firstPlayer.id], initialAvail, 'Availability restored');
+
+  // Mark all available
+  App.wizardSetAllAvailability(true);
+  AppState.squad.forEach(p => {
+    assert.strictEqual(AppState.match.availability[p.id], true, `Player ${p.name} marked available`);
+  });
+
+  // Navigate to Step 3 (Lineup & Bench assignment)
+  App.setWizardStep(3);
+  assert.strictEqual(App.wizardStep, 3, 'Wizard moves to Step 3');
+  assert(dom['wizardStepContainer_2'].classList.contains('hidden'), 'Step 2 is hidden');
+  assert(!dom['wizardStepContainer_3'].classList.contains('hidden'), 'Step 3 is active');
+
+  // Auto-pick starters by position
+  App.selectFormat('5');
+  App.wizardAutoPickStarters();
+  assert.strictEqual(AppState.match.starters.length, 5, 'Auto-pick filled exactly 5 starters for 5v5 format');
+  assert(AppState.match.bench.length > 0, 'Remaining available players placed on bench');
+
+  // Move starter to bench and bench to starter
+  const starterToBench = AppState.match.starters[0];
+  App.wizardMoveToBench(starterToBench);
+  assert.strictEqual(AppState.match.starters.length, 4, 'Starter was moved to bench');
+  assert(AppState.match.bench.includes(starterToBench), 'Player now on bench');
+
+  App.wizardMoveToStarters(starterToBench);
+  assert.strictEqual(AppState.match.starters.length, 5, 'Player moved back to starters');
+
+  // Complete setup via saveMatchSetup
+  App.saveMatchSetup();
+  assert(dom['modalMatchSetup'].classList.contains('hidden'), 'Wizard modal closed on finish');
+  console.log('✓ Pre-Match Progressive Setup Wizard verified');
+
+  // --- 2. LIVE MATCH DASHBOARD HIERARCHY & FAB MENU ---
+  App.switchTab('live');
+  assert.strictEqual(AppState.activeTab, 'live', 'Live tab is active');
+  assert(!dom['liveMatchFabContainer'].classList.contains('hidden'), 'FAB menu container is visible on live tab');
+
+  // Verify FAB speed dial toggle
+  assert.strictEqual(App._fabOpen, false, 'FAB speed dial starts closed');
+  App.toggleFabMenu();
+  assert.strictEqual(App._fabOpen, true, 'FAB opened on click');
+  assert(!dom['liveFabSpeedDial'].classList.contains('scale-0'), 'Speed dial expands');
+  assert.strictEqual(dom['liveFabIcon'].innerText, '✕', 'FAB icon switches to close icon');
+
+  App.toggleFabMenu(false);
+  assert.strictEqual(App._fabOpen, false, 'FAB closed');
+  assert(dom['liveFabSpeedDial'].classList.contains('scale-0'), 'Speed dial collapses');
+  assert.strictEqual(dom['liveFabIcon'].innerText, '⚡', 'FAB icon resets to action bolt');
+
+  // Switching away from live tab hides the FAB
+  App.switchTab('pitch');
+  assert(dom['liveMatchFabContainer'].classList.contains('hidden'), 'FAB hidden when away from live match');
+  console.log('✓ Live Match Dashboard Hierarchy & Floating Action Menu (FAB) verified');
+
+  // --- 3. FRICTIONLESS PRO/LITE SEGMENTATION & COACH HUB ---
+  App.switchTab('hub');
+  assert.strictEqual(AppState.activeTab, 'hub', 'Coach Hub tab selected');
+  assert(!dom['section_hub'].classList.contains('hidden'), 'Coach Hub section is active');
+  assert(dom['section_pitch'].classList.contains('hidden'), 'Tactics section hidden');
+  assert(dom['section_live'].classList.contains('hidden'), 'Live section hidden');
+  assert(dom['section_roster'].classList.contains('hidden'), 'Squad section hidden');
+
+  // Boundary status badge renders
+  App.renderCoachHub();
+  assert(dom['hubConnectionBadge'].innerText.length > 0, 'Connection badge is populated in Coach Hub');
+
+  // HTML content checks for Pro/Lite segmentation
+  assert(html.includes('id="section_hub"'), 'Dedicated section_hub present in HTML');
+  assert(html.includes('id="tabBtn_hub"'), 'Dedicated tabBtn_hub present in HTML');
+  assert(html.includes('Clubstride Lite</span>'), 'Lite offline ledger boundary defined');
+  assert(html.includes('Clubstride Pro</span>'), 'Pro cloud suite boundary defined');
+  assert(html.includes('Training Days Calendar'), 'Training Days boundary capability listed');
+  assert(html.includes('Attendance Register'), 'Attendance boundary capability listed');
+  assert(html.includes('Cloud Squad Sync'), 'Cloud Sync boundary capability listed');
+
+  console.log('✓ Frictionless Pro/Lite Segmentation & Coach Hub Tab verified');
+}
+
+// ---------------------------------------------------------------------------
+// TEST 49: PHASE 2 ARTWORK, VISUAL DESIGN & UI ENHANCEMENT
+// 1. High-Contrast, Pitch-Side Palette & Outdoor Readability
+// 2. Upgraded Tactical Graphics (2D Pitch, Goal Nets, Corner Arcs & Raglan Kit)
+// 3. Sports Condensed Typography & Bespoke Iconography
+// ---------------------------------------------------------------------------
+{
+  // 1. High-contrast sports palette and tabular condensed typography
+  assert(html.includes('.sports-clock-display'), 'Condensed sports typography declared in touchline CSS');
+  assert(html.includes('.led-volt-live'), 'Neon volt indicator declared for running match clock');
+  assert(html.includes('.led-cyan-paused'), 'High-visibility cyan declared for paused match clock');
+  assert(html.includes('.pitch-turf-stripes'), 'Stadium alternating turf stripes pattern declared');
+
+  // Verify clock toggles neon glow classes on matchClockDisplay
+  AppState.clock.seconds = 300;
+  AppState.clock.running = false;
+  App.updateClockDisplay();
+  assert(dom['matchClockDisplay'].classList.contains('led-cyan-paused'), 'Paused clock displays cyan paused glow');
+  assert(!dom['matchClockDisplay'].classList.contains('led-volt-live'), 'Paused clock drops volt running glow');
+
+  AppState.clock.running = true;
+  App.updateClockDisplay();
+  assert(dom['matchClockDisplay'].classList.contains('led-volt-live'), 'Running live clock glows neon volt');
+  assert(!dom['matchClockDisplay'].classList.contains('led-cyan-paused'), 'Running live clock drops paused cyan');
+  AppState.clock.running = false;
+  App.updateClockDisplay();
+
+  // 2. Upgraded 2D Pitch Graphics
+  assert(html.includes('id="goalNetPattern"'), 'SVG pitch includes realistic 3D goal net pattern');
+  assert(html.includes('<!-- Corner Kick Arcs -->'), 'SVG pitch includes all 4 corner kick quadrants');
+  assert(html.includes('M 2 14 A 12 12'), 'Top-left corner kick quadrant vector rendered');
+  assert(html.includes('M 286 2 A 12 12'), 'Top-right corner kick quadrant vector rendered');
+
+  // Verify upgraded athletic jersey SVG output
+  const testShirtSvg = App.getShirtSvg(10, '#00F5FF', 48);
+  assert(testShirtSvg.includes('viewBox="0 0 100 100"'), 'Shirt SVG keeps 100x100 viewBox');
+  assert(testShirtSvg.includes('Raglan Sleeve Seam Details'), 'Jersey includes modern athletic raglan sleeve styling');
+  assert(testShirtSvg.includes('V-Neck Ribbed Collar'), 'Jersey includes ribbed collar trim');
+  assert(testShirtSvg.includes('Athletic Sleeve Cuff Trims'), 'Jersey includes athletic sleeve cuff trims');
+  assert(testShirtSvg.includes('>10</text>'), 'Jersey renders bold condensed squad number');
+
+  // 3. Bespoke Minimalist Sports Icons
+  assert(html.includes('id="ci-sub-arrows"'), 'SVG sprite includes bespoke substitution arrows symbol');
+  assert(html.includes('id="ci-injury-cross"'), 'SVG sprite includes bespoke injury medical badge symbol');
+  assert(html.includes('id="ci-trophy"'), 'SVG sprite includes bespoke match trophy symbol');
+
+  // Verify player tokens keep role-tinted badges and fluid micro-animations
+  assert(html.includes('.player-token.dragging'), 'Dynamic dragging elevation and neon shadow defined');
+
+  console.log('✓ High-Contrast Sports Palette & Outdoor Readability verified');
+  console.log('✓ Upgraded 2D Pitch Graphics (Corner Arcs, Nets & Raglan Kit) verified');
+  console.log('✓ Sports Condensed Typography & Bespoke Iconography verified');
+}
+
+
+// ---------------------------------------------------------------------------
+// TEST 50: WhatsApp Removal, Clustered Pro Hub Tab, and Offline Save & Primary Club Sync
+// ---------------------------------------------------------------------------
+{
+  // 1. Verify WhatsApp button is removed from squad list
+  App.renderRoster();
+  const squadHtml = dom['squadPodsList'].innerHTML;
+  assert(!squadHtml.includes('WhatsApp'), 'WhatsApp button removed from squad roster cards');
+  assert(!html.includes('Review and send to WhatsApp'), 'WhatsApp subtitle removed from player assessment modal');
+  assert(!html.includes('Send to WhatsApp to Review Stats'), 'WhatsApp action button removed from player assessment modal');
+
+  // 2. Verify all Pro items clustered under section_hub
+  const rosterSecStart = html.indexOf('<section id="section_roster"');
+  const rosterSecEnd = html.indexOf('</section>', rosterSecStart);
+  const rosterSecContent = html.substring(rosterSecStart, rosterSecEnd);
+  assert(!rosterSecContent.includes('id="proUpgradeCard"'), 'Squad section is clean of proUpgradeCard');
+  assert(!rosterSecContent.includes('data-pro='), 'Squad section has 0 data-pro tiles');
+
+  const hubSecStart = html.indexOf('<section id="section_hub"');
+  const hubSecEnd = html.indexOf('</section>', hubSecStart);
+  const hubSecContent = html.substring(hubSecStart, hubSecEnd);
+  assert(hubSecContent.includes('id="proUpgradeCard"'), 'Coach Hub houses the proUpgradeCard');
+  assert(hubSecContent.includes('data-pro="training"'), 'Coach Hub houses Training Pro tile');
+  assert(hubSecContent.includes('data-pro="attendance"'), 'Coach Hub houses Attendance Pro tile');
+  assert(hubSecContent.includes('data-pro="squad"'), 'Coach Hub houses Squad Registry Pro tile');
+  assert(hubSecContent.includes('data-pro="register-pdf"'), 'Coach Hub houses Register PDF Pro tile');
+
+  // 3. Verify Offline Save & Primary Club Sync functionality
+  assert(typeof App.saveOffline === 'function', 'App.saveOffline function exists');
+  assert(typeof App.syncToPrimaryClub === 'function', 'App.syncToPrimaryClub function exists');
+
+  let toastMsg = '';
+  const origToast = App.toast;
+  App.toast = (msg) => { toastMsg = msg; };
+
+  App.saveOffline();
+  assert(toastMsg.includes('Saved locally'), 'saveOffline saves locally and alerts user');
+
+  App.syncToPrimaryClub();
+  assert(toastMsg.includes('Synced to Primary Club'), 'syncToPrimaryClub syncs to primary club and alerts user');
+  const storedRoster = JSON.parse(storage['cs.lite.roster.v1']);
+  assert.strictEqual(storedRoster.teamId, 'lite-default', 'Synced roster persists to primary club lite-default');
+  assert(storedRoster.players.length > 0, 'Synced roster preserves squad players');
+
+  App.toast = origToast;
+  console.log('? WhatsApp removal, Clustered Pro Hub Tab, and Offline Save & Primary Club Sync verified');
+}
+
 console.log('\n=========================================');
-console.log('ALL 47 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 49 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 

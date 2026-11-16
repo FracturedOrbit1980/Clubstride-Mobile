@@ -111,6 +111,47 @@
     /* Toasts land above the dock instead of covering the Lite/Pro row and the match card. */
     #toastPod { top: auto; bottom: calc(env(safe-area-inset-bottom, 16px) + 96px); }
     #lineupPanel { scroll-margin-top: 84px; }
+    .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    /* PHASE 2: High-Contrast Sports Tactical Palette & Condensed Typography */
+    .sports-clock-display {
+      font-family: ui-monospace, 'DIN Alternate', 'Oswald', 'Barlow Condensed', 'Impact', SFMono-Regular, monospace;
+      font-feature-settings: 'tnum' 1, 'lnum' 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.05em;
+      font-weight: 900;
+    }
+    .led-volt-live {
+      color: #CCFF00 !important;
+      text-shadow: 0 0 14px rgba(204, 255, 0, 0.75), 0 0 28px rgba(204, 255, 0, 0.4);
+    }
+    .led-cyan-paused {
+      color: #22D3EE !important;
+      text-shadow: 0 0 12px rgba(34, 211, 238, 0.6), 0 0 24px rgba(34, 211, 238, 0.3);
+    }
+    .pitch-turf-stripes {
+      background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 42px, rgba(0, 0, 0, 0.07) 42px, rgba(0, 0, 0, 0.07) 84px);
+    }
+    .player-token {
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      touch-action: none;
+    }
+    .player-token:hover {
+      transform: translate(-50%, -50%) scale(1.08);
+      z-index: 30;
+    }
+    .player-token.dragging {
+      transform: translate(-50%, -50%) scale(1.18) !important;
+      z-index: 40 !important;
+      filter: drop-shadow(0 12px 24px rgba(0, 245, 255, 0.65));
+    }
+    .sub-candidate-pulse {
+      animation: subPulse 1.8s infinite ease-in-out;
+    }
+    @keyframes subPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 227, 138, 0.5); }
+      50% { box-shadow: 0 0 16px 3px rgba(59, 227, 138, 0.8); }
+    }
+    .live-fab-speed-dial { transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
     .short-name-input { width: 84px; flex-shrink: 0; }
     /* The header actions keep their own width, so the lockup scales to whatever the flex line leaves it */
     #appHeaderIcon { max-width: min(190px, 100%); }
@@ -253,6 +294,9 @@
     <symbol id="ci-stats" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><rect x="5" y="12" width="3" height="5" rx="1"/><rect x="10.5" y="7" width="3" height="10" rx="1"/><rect x="16" y="4" width="3" height="13" rx="1"/></symbol>
     <symbol id="ci-sub-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5"/><path d="M6 11l6-6 6 6"/></symbol>
     <symbol id="ci-sub-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v15"/><path d="M6 13l6 6 6-6"/></symbol>
+        <symbol id="ci-sub-arrows" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h12M13 13l4 4-4 4"/><path d="M20 7H8M11 3L7 7l4 4"/></symbol>
+    <symbol id="ci-injury-cross" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></symbol>
+    <symbol id="ci-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4M18 9h2a2 2 0 0 0 2-2V5h-4"/><path d="M6 4h12v6a6 6 0 0 1-12 0V4z"/><path d="M12 16v4M8 20h8"/></symbol>
     <symbol id="ci-sub-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20V5"/><path d="M4 9l4-4 4 4"/><path d="M16 4v15"/><path d="M12 15l4 4 4-4"/></symbol>
     <symbol id="ci-tactics" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 12h18"/><circle cx="12" cy="12" r="2.5"/><path d="M7 7l2 2M9 7l-2 2M15 15l2 2M17 15l-2 2"/></symbol>
     <symbol id="ci-teams" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
@@ -318,7 +362,7 @@
       </button>
     </div>
     <!-- PRIMARY SEGMENT TABS -->
-    <div class="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-obsidian-900 border border-white/10 text-xs font-semibold">
+    <div class="grid grid-cols-5 gap-1.5 p-1 rounded-2xl bg-obsidian-900 border border-white/10 text-xs font-semibold">
       <button id="tabBtn_pitch" onclick="App.switchTab('pitch')" class="py-2 rounded-xl text-center transition flex flex-col items-center justify-center bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold shadow-md">
         <span>Tactics</span>
       </button>
@@ -330,6 +374,9 @@
       </button>
       <button id="tabBtn_stats" onclick="App.switchTab('stats')" class="py-2 rounded-xl text-center transition flex flex-col items-center justify-center text-slate-400 hover:text-white">
         <span>Stats</span>
+      </button>
+      <button id="tabBtn_hub" onclick="App.switchTab('hub')" class="py-2 rounded-xl text-center transition flex flex-col items-center justify-center text-slate-400 hover:text-white">
+        <span>Coach Hub</span>
       </button>
     </div>
     <!-- TAB 1: TACTICS & PITCH VIEW -->
@@ -362,30 +409,39 @@
       <div class="relative w-full rounded-lite-xl overflow-hidden p-2.5 transition-all duration-300 pitch-night" id="pitchCanvasContainer">
         <!-- SVG SOCCER PITCH MARKINGS -->
         <div class="relative w-full aspect-[3/4.2] rounded-lite border-2 border-white/60 overflow-hidden" id="pitchField">
-          <!-- Grass Stripes Texture -->
-          <div class="absolute inset-0 flex flex-col pointer-events-none opacity-15">
-            <div class="flex-1 bg-white"></div><div class="flex-1"></div>
-            <div class="flex-1 bg-white"></div><div class="flex-1"></div>
-            <div class="flex-1 bg-white"></div><div class="flex-1"></div>
-            <div class="flex-1 bg-white"></div><div class="flex-1"></div>
-          </div>
-          <!-- Pitch Vector Geometry -->
-          <svg class="absolute inset-0 w-full h-full pointer-events-none stroke-white/80 fill-none stroke-[1.8]" viewBox="0 0 300 420">
+                    <!-- Grass Stripes Texture -->
+          <div class="absolute inset-0 flex flex-col pointer-events-none pitch-turf-stripes opacity-35"></div>
+          <!-- Pitch Vector Geometry: Precision Scalable Vector Markings -->
+          <svg class="absolute inset-0 w-full h-full pointer-events-none stroke-white/85 fill-none stroke-[1.8]" viewBox="0 0 300 420" style="filter: drop-shadow(0 0 1px rgba(0,0,0,0.5));">
+            <defs>
+              <pattern id="goalNetPattern" width="6" height="6" patternUnits="userSpaceOnUse">
+                <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="rgba(255,255,255,0.25)" stroke-width="0.8" />
+              </pattern>
+            </defs>
+            <!-- Goal Mouths with 3D Depth Net Pattern -->
+            <rect x="115" y="-3" width="70" height="5" class="stroke-white/90" fill="url(#goalNetPattern)" />
+            <rect x="115" y="418" width="70" height="5" class="stroke-white/90" fill="url(#goalNetPattern)" />
+            <!-- Touchlines and Goal Lines -->
             <rect x="2" y="2" width="296" height="416" rx="6" />
+            <!-- Corner Kick Arcs -->
+            <path d="M 2 14 A 12 12 0 0 1 14 2" />
+            <path d="M 286 2 A 12 12 0 0 1 298 14" />
+            <path d="M 2 406 A 12 12 0 0 0 14 418" />
+            <path d="M 286 418 A 12 12 0 0 0 298 406" />
+            <!-- Halfway Line & Center Circle -->
             <line x1="2" y1="210" x2="298" y2="210" />
             <circle cx="150" cy="210" r="42" />
             <circle cx="150" cy="210" r="3" class="fill-white" />
-            <!-- Penalty Boxes -->
+            <!-- Top Penalty Box (18-yard) & Goal Area (6-yard) -->
             <rect x="65" y="2" width="170" height="65" />
             <rect x="100" y="2" width="100" height="24" />
             <path d="M 115 67 A 38 38 0 0 0 185 67" />
             <circle cx="150" cy="48" r="2.5" class="fill-white" />
+            <!-- Bottom Penalty Box (18-yard) & Goal Area (6-yard) -->
             <rect x="65" y="353" width="170" height="65" />
             <rect x="100" y="394" width="100" height="24" />
             <path d="M 115 353 A 38 38 0 0 1 185 353" />
             <circle cx="150" cy="372" r="2.5" class="fill-white" />
-            <rect x="115" y="-3" width="70" height="5" class="stroke-white/90" />
-            <rect x="115" y="418" width="70" height="5" class="stroke-white/90" />
           </svg>
           <!-- FIELD TOKENS LAYER (Drag & Drop) -->
           <div id="pitchTokensLayer" class="absolute inset-0 select-none"></div>
@@ -453,10 +509,10 @@
           </div>
           <!-- CENTER column: match clock -->
           <div class="flex flex-col items-center justify-center flex-shrink-0 px-1" style="max-width:34%">
-            <div id="matchClockDisplay" class="font-mono font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300" style="font-size:2rem;line-height:1">
+            <div id="matchClockDisplay" class="sports-clock-display led-cyan-paused font-black tracking-wider text-center" style="font-size:2.25rem;line-height:1;min-height:2.5rem;display:flex;align-items:center;justify-content:center;">
               00:00
             </div>
-            <p id="clockStatusSubtext" class="text-cyber-cyan font-medium mt-1 text-center" style="font-size:0.65rem;line-height:1.15;max-width:96px">Clock Paused — Ready to Kickoff</p>
+            <p id="clockStatusSubtext" class="text-cyber-cyan font-semibold mt-1 text-center tracking-wide" style="font-size:0.68rem;line-height:1.2;max-width:110px">Clock Paused — Ready to Kickoff</p>
           </div>
           <!-- AWAY column -->
           <div class="flex flex-col items-center min-w-0" style="flex:1 1 0%;max-width:33%">
@@ -510,7 +566,6 @@
             </button>
           </div>
         </div>
-      </div>
       <!-- ONE-TAP LIVE SUB ROTATION BOARD -->
       <div class="glass-card rounded-lite p-4 space-y-3">
         <div class="flex items-center justify-between">
@@ -546,6 +601,36 @@
           <div class="text-slate-500 text-center py-4 italic">No match events logged yet</div>
         </div>
       </div>
+      <!-- FLOATING ACTION BUTTON (FAB) MENU FOR SECONDARY MATCH ACTIONS -->
+      <div id="liveMatchFabContainer" class="fixed right-4 z-40 hidden flex flex-col items-end pointer-events-none" style="bottom: calc(env(safe-area-inset-bottom, 16px) + 72px);">
+        <!-- FAB Speed Dial Items (Upward Expandable) -->
+        <div id="liveFabSpeedDial" class="flex flex-col items-end space-y-2 pointer-events-auto transition-all duration-300 origin-bottom scale-0 opacity-0 mb-2">
+          <!-- Register Goal Action -->
+          <button type="button" onclick="App.openEventModal('Goal'); App.toggleFabMenu(false);" class="flex items-center space-x-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold text-xs shadow-2xl hover:brightness-110 active:scale-95 transition min-h-[44px]">
+            <span class="ci-goal flex-shrink-0"><svg class="ci ci-16" aria-hidden="true"><use href="#ci-goal"></use></svg></span>
+            <span>+ Goal (Scorer &amp; Assist)</span>
+          </button>
+          <!-- Yellow Card Action -->
+          <button type="button" onclick="App.openCardModal('YellowCard'); App.toggleFabMenu(false);" class="flex items-center space-x-2 px-3.5 py-2.5 rounded-2xl bg-amber-500 text-obsidian-950 font-extrabold text-xs shadow-2xl hover:brightness-110 active:scale-95 transition min-h-[44px]">
+            <span class="flex-shrink-0">🟨</span>
+            <span>Record Yellow Card</span>
+          </button>
+          <!-- Red Card Action -->
+          <button type="button" onclick="App.openCardModal('RedCard'); App.toggleFabMenu(false);" class="flex items-center space-x-2 px-3.5 py-2.5 rounded-2xl bg-red-600 text-white font-extrabold text-xs shadow-2xl hover:brightness-110 active:scale-95 transition min-h-[44px]">
+            <span class="flex-shrink-0">🟥</span>
+            <span>Record Red Card</span>
+          </button>
+          <!-- Injury Action -->
+          <button type="button" onclick="App.openCardModal('Injury'); App.toggleFabMenu(false);" class="flex items-center space-x-2 px-3.5 py-2.5 rounded-2xl bg-amber-600 text-white font-extrabold text-xs shadow-2xl hover:brightness-110 active:scale-95 transition min-h-[44px]">
+            <span class="flex-shrink-0">🩹</span>
+            <span>Record Injury</span>
+          </button>
+        </div>
+        <!-- Main FAB Trigger -->
+        <button type="button" id="liveFabTriggerBtn" onclick="App.toggleFabMenu()" class="pointer-events-auto rounded-full bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black flex items-center justify-center shadow-2xl active:scale-90 transition border-2 border-white/20 min-h-[44px] min-w-[44px]" style="width:52px;height:52px;" title="Quick Match Actions (Goal, Cards, Injury)" aria-label="Quick Match Actions">
+          <span id="liveFabIcon" class="text-2xl transition-transform duration-200">⚡</span>
+        </button>
+      </div>
     </section>
     <!-- TAB 3: SQUAD REGISTRY & EDITABLE POSITIONS -->
     <section id="section_roster" class="space-y-4 hidden">
@@ -566,31 +651,24 @@
       </div>
       <!-- Squad Cards Pod Container -->
       <div id="squadPodsList" class="space-y-2.5"></div>
-      <!-- CLUBSTRIDE PRO TIER — coach upgrade path; tiles keep the CI PRO pill from cs-init.js -->
-      <div id="proUpgradeCard" class="glass-card rounded-lite p-4 space-y-3">
-        <div class="space-y-1">
-          <p class="text-[10px] font-black uppercase tracking-wider" style="color: var(--cs-amber-300);">For coaches</p>
-          <h3 class="text-sm font-bold text-white">Upgrade to Clubstride Pro</h3>
-          <p class="text-xs text-slate-400">Set training days, take the register and keep the squad in one coach app.</p>
+      <!-- OFFLINE SQUAD PERSISTENCE & PRIMARY SYNC BAR -->
+      <div class="p-3 rounded-2xl bg-obsidian-950/80 border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyber-mint animate-pulse"></span>
+          <span class="text-slate-300 font-semibold">100% Offline Pitch Ledger</span>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div data-pro="training" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
-            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-training"></use></svg></span>
-            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Training Days</span>
-          </div>
-          <div data-pro="attendance" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
-            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-attendance"></use></svg></span>
-            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Attendance</span>
-          </div>
-          <div data-pro="squad" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
-            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-squad"></use></svg></span>
-            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Squad Registry</span>
-          </div>
-          <div data-pro="register-pdf" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
-            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-pdf-export"></use></svg></span>
-            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Register PDF</span>
-          </div>
+        <div class="flex items-center space-x-2">
+          <button type="button" onclick="App.saveOffline()" class="chip-btn px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-[11px] font-semibold active:scale-95 transition flex items-center space-x-1" title="Save offline state immediately">
+            <svg class="ci ci-14" aria-hidden="true"><use href="#ci-lock"></use></svg>
+            <span>Save Offline</span>
+          </button>
+          <button type="button" onclick="App.syncToPrimaryClub()" class="chip-btn px-2.5 py-1 rounded-xl bg-cyber-mint/15 hover:bg-cyber-mint/25 border border-cyber-mint/30 text-cyber-mint text-[11px] font-bold active:scale-95 transition flex items-center space-x-1" title="Sync current squad & match logs to primary club">
+            <svg class="ci ci-14" aria-hidden="true"><use href="#ci-teams"></use></svg>
+            <span>Sync to Primary Club</span>
+          </button>
         </div>
+      </div>
+
         <a id="upgradeProCta" href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="chip-btn w-full py-3 rounded-2xl font-black text-xs uppercase tracking-wider text-center flex items-center justify-center active:scale-95 transition" style="background: linear-gradient(90deg, var(--cs-amber-300), var(--cs-amber-500)); color: #0b0f17; box-shadow: 0 0 22px rgba(251, 191, 36, 0.22);">Upgrade to Pro</a>
         <p class="text-[10px] text-slate-400 leading-relaxed">Opens Clubstride Pro inside this app with a Back to Lite control. Your Lite squad and saved matches come with you - sign in or create a coach account to use them. Pro needs a connection; Lite keeps working offline.</p>
         <p id="upgradeProOffline" role="status" aria-live="polite" class="hidden text-[11px] leading-relaxed" style="color: var(--cs-amber-300);">You're offline. Open Clubstride Pro once you're back online - Lite keeps working offline.</p>
@@ -648,6 +726,180 @@
       </div>
       <div id="statsCardsContainer" class="space-y-2.5"></div>
     </section>
+    <!-- TAB 5: COACH HUB (Offline vs Pro Segmentation) -->
+    <section id="section_hub" class="space-y-4 hidden">
+      <!-- OFFLINE SAVE & PRIMARY CLUB SYNC PANEL -->
+      <div class="glass-card rounded-lite p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="space-y-0.5">
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+              <svg class="ci ci-18 text-cyber-mint" aria-hidden="true"><use href="#ci-teams"></use></svg>
+              <span>Primary Club &amp; Offline Sync Center</span>
+            </h3>
+            <p id="offlineSyncStatus" class="text-xs text-slate-400">Manage pitchside offline saves and sync roster data to your primary club</p>
+          </div>
+          <span id="hubPrimaryClubBadge" class="text-[10px] px-2.5 py-1 rounded-xl bg-cyber-mint/15 text-cyber-mint border border-cyber-mint/30 font-bold">Primary Club Active</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" id="btnSaveOffline" onclick="App.saveOffline()" class="chip-btn py-2.5 px-3 rounded-xl bg-obsidian-950 border border-white/15 hover:border-cyber-cyan/50 text-white text-xs font-bold flex items-center justify-center space-x-1.5 active:scale-95 transition shadow-sm">
+            <svg class="ci ci-16 text-cyber-cyan" aria-hidden="true"><use href="#ci-lock"></use></svg>
+            <span>Save Offline</span>
+          </button>
+          <button type="button" id="btnSyncPrimaryClub" onclick="App.syncToPrimaryClub()" class="chip-btn py-2.5 px-3 rounded-xl bg-cyber-mint/20 border border-cyber-mint/40 hover:bg-cyber-mint/30 text-cyber-mint text-xs font-bold flex items-center justify-center space-x-1.5 active:scale-95 transition shadow-sm">
+            <svg class="ci ci-16" aria-hidden="true"><use href="#ci-teams"></use></svg>
+            <span>Sync to Primary Club</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CLUBSTRIDE PRO TIER — coach upgrade path; tiles keep the CI PRO pill from cs-init.js -->
+      <div id="proUpgradeCard" class="glass-card rounded-lite p-4 space-y-3">
+        <div class="space-y-1">
+          <p class="text-[10px] font-black uppercase tracking-wider" style="color: var(--cs-amber-300);">For coaches</p>
+          <h3 class="text-sm font-bold text-white">Upgrade to Clubstride Pro</h3>
+          <p class="text-xs text-slate-400">Set training days, take the register and keep the squad in one coach app.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div data-pro="training" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
+            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-training"></use></svg></span>
+            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Training Days</span>
+          </div>
+          <div data-pro="attendance" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
+            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-attendance"></use></svg></span>
+            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Attendance</span>
+          </div>
+          <div data-pro="squad" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
+            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-squad"></use></svg></span>
+            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Squad Registry</span>
+          </div>
+          <div data-pro="register-pdf" class="py-2 px-2 rounded-xl bg-obsidian-900 border border-white/10 flex flex-col items-center space-y-1">
+            <span class="ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-pdf-export"></use></svg></span>
+            <span class="text-[9px] text-slate-300 font-bold uppercase tracking-wider">Register PDF</span>
+          </div>
+        </div>
+      <!-- HERO STATUS: OFFLINE (LITE) VS ONLINE (PRO) BOUNDARY -->
+      <div class="glass-card rounded-lite p-4 space-y-3 relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+              <span>Coach Hub</span>
+              <span id="hubConnectionBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30 font-bold">100% Offline Ready</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Clubstride Lite pitch ledger boundaries &amp; connected Pro cloud features</p>
+          </div>
+        </div>
+        <!-- BOUNDARY MATRIX -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs">
+          <!-- LITE (OFFLINE) COLUMN -->
+          <div class="p-3 rounded-xl bg-obsidian-950/80 border border-cyber-cyan/30 space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-white/10">
+              <span class="font-extrabold text-cyber-cyan flex items-center space-x-1.5">
+                <span>⚡ Clubstride Lite</span>
+              </span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-cyber-cyan/15 text-cyber-cyan font-bold">Offline Matchday</span>
+            </div>
+            <p class="text-[11px] text-slate-300">Self-contained pitchside match companion. Runs completely locally on device with zero internet required.</p>
+            <ul class="space-y-1 text-[11px] text-slate-300">
+              <li class="flex items-center space-x-1.5"><span class="text-cyber-mint font-bold">✓</span><span>Tactical Pitch Board &amp; Drag Formations</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-cyber-mint font-bold">✓</span><span>Live Stopwatch &amp; Playing Time Timers</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-cyber-mint font-bold">✓</span><span>One-Tap Tactical Substitution Engine</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-cyber-mint font-bold">✓</span><span>Goals, Yellow/Red Cards &amp; Injury Logs</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-cyber-mint font-bold">✓</span><span>Single &amp; Date Range PDF Match Ledgers</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-cyber-mint font-bold">✓</span><span>Local Storage Survives Offline Restarts</span></li>
+            </ul>
+          </div>
+          <!-- PRO (ONLINE) COLUMN -->
+          <div class="p-3 rounded-xl bg-obsidian-950/80 border border-amber-400/30 space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-white/10">
+              <span class="font-extrabold text-amber-300 flex items-center space-x-1.5">
+                <span>☁️ Clubstride Pro</span>
+              </span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-amber-400/15 text-amber-300 font-bold">Cloud Connected</span>
+            </div>
+            <p class="text-[11px] text-slate-300">Advanced club suite for training days, registers and multi-coach sync. Connects when internet is available.</p>
+            <ul class="space-y-1 text-[11px] text-slate-300">
+              <li class="flex items-center space-x-1.5"><span class="text-amber-400 font-bold">★</span><span>Training Days Calendar &amp; Drill Planner</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-amber-400 font-bold">★</span><span>Attendance Register &amp; Season Load</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-amber-400 font-bold">★</span><span>Squad Cloud Sync Across Devices</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-amber-400 font-bold">★</span><span>Multi-Coach Roster Sharing &amp; Collab</span></li>
+              <li class="flex items-center space-x-1.5"><span class="text-amber-400 font-bold">★</span><span>Club Cloud Backups &amp; Player Profiles</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRO FEATURE SUITES -->
+      <div class="glass-card rounded-lite p-4 space-y-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Pro Connected Tools</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <!-- Training Days -->
+          <div class="p-3 rounded-xl bg-obsidian-950 border border-white/10 flex flex-col justify-between space-y-2">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="ci-primary"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-training"></use></svg></span>
+                <span class="text-xs font-bold text-white">Training Days</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug">Schedule weekly training sessions, drill practices and track player physical load.</p>
+            </div>
+            <a href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="chip-btn py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-xs font-semibold text-center transition">
+              Open Training in Pro →
+            </a>
+          </div>
+          <!-- Attendance -->
+          <div class="p-3 rounded-xl bg-obsidian-950 border border-white/10 flex flex-col justify-between space-y-2">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="ci-primary"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-attendance"></use></svg></span>
+                <span class="text-xs font-bold text-white">Attendance Register</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug">Digital practice roll-call register. Monitor player attendance rates across the season.</p>
+            </div>
+            <a href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="chip-btn py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-xs font-semibold text-center transition">
+              Open Attendance in Pro →
+            </a>
+          </div>
+          <!-- Cloud Sync -->
+          <div class="p-3 rounded-xl bg-obsidian-950 border border-white/10 flex flex-col justify-between space-y-2">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="ci-primary"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-squad"></use></svg></span>
+                <span class="text-xs font-bold text-white">Cloud Squad Sync</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug">Sync squad lists, custom formations, kit styles, and game history across devices.</p>
+            </div>
+            <a href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="chip-btn py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-xs font-semibold text-center transition">
+              Open Cloud Sync →
+            </a>
+          </div>
+          <!-- Multi-Coach Sharing -->
+          <div class="p-3 rounded-xl bg-obsidian-950 border border-white/10 flex flex-col justify-between space-y-2">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="ci-primary"><svg class="ci ci-20" aria-hidden="true"><use href="#ci-settings"></use></svg></span>
+                <span class="text-xs font-bold text-white">Staff Collaboration</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug">Invite assistant coaches, physios, and managers with role-based match permissions.</p>
+            </div>
+            <a href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="chip-btn py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-xs font-semibold text-center transition">
+              Manage Staff in Pro →
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRO LAUNCH CTA -->
+      <div class="glass-card rounded-lite p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="space-y-0.5">
+            <h4 class="text-sm font-bold text-white">Open Clubstride Pro</h4>
+            <p class="text-xs text-slate-400">Seamlessly runs in-app with instant Back to Lite switch</p>
+          </div>
+          <a href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/" onclick="return App.openProUpgrade(event)" class="chip-btn px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wide text-center active:scale-95 transition" style="background: linear-gradient(90deg, var(--cs-amber-300), var(--cs-amber-500)); color: #0b0f17; box-shadow: 0 0 18px rgba(251, 191, 36, 0.25);">
+            Launch Pro
+          </a>
+        </div>
+      </div>
+    </section>
   </main>
   <!-- BOTTOM FLOATING PWA NAVIGATION DOCK -->
   <nav class="fixed bottom-0 left-0 right-0 z-50 bg-obsidian-950/95 backdrop-blur-xl border-t border-white/10 px-4 pt-2 flex items-center justify-around pb-safe pwa-dock">
@@ -667,16 +919,41 @@
       <span class="text-xl ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-stats"></use></svg></span>
       <span class="text-[10px] font-bold mt-0.5">Stats</span>
     </button>
+    <button onclick="App.switchTab('hub')" class="dock-btn flex-1 py-1 flex flex-col items-center text-slate-400 hover:text-white transition active:scale-90" data-dock="hub">
+      <span class="text-xl ci-primary"><svg class="ci ci-24" aria-hidden="true"><use href="#ci-settings"></use></svg></span>
+      <span class="text-[10px] font-bold mt-0.5">Coach Hub</span>
+    </button>
   </nav>
   <!-- MODALS -->
-  <!-- 1. MATCH SETUP MODAL -->
+  <!-- 1. PRE-MATCH PROGRESSIVE SETUP WIZARD -->
   <div id="modalMatchSetup" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
+    <div class="glass-card max-w-md w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900 max-h-[92vh] overflow-y-auto">
+      <!-- HEADER WITH CLOSE -->
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-bold text-white">Match Configuration</h3>
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <span>Pre-Match Setup Wizard</span>
+          </h3>
+          <p id="wizardSubheader" class="text-xs text-slate-400">Step 1 of 3: Match Configuration</p>
+        </div>
         <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
-      <div class="space-y-3 text-xs">
+
+      <!-- PROGRESSIVE STEP TABS -->
+      <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-obsidian-950 border border-white/10 text-xs font-semibold text-center">
+        <button type="button" id="wizardStepBtn_1" onclick="App.setWizardStep(1)" class="py-2 rounded-lg transition font-bold bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 shadow-sm">
+          1. Config
+        </button>
+        <button type="button" id="wizardStepBtn_2" onclick="App.setWizardStep(2)" class="py-2 rounded-lg transition text-slate-400 hover:text-white">
+          2. Squad
+        </button>
+        <button type="button" id="wizardStepBtn_3" onclick="App.setWizardStep(3)" class="py-2 rounded-lg transition text-slate-400 hover:text-white">
+          3. Lineup
+        </button>
+      </div>
+
+      <!-- STEP 1: MATCH PARAMETERS & FORMAT -->
+      <div id="wizardStepContainer_1" class="space-y-3 text-xs">
         <div>
           <label class="text-slate-400 font-medium block mb-1">Your Team Name</label>
           <input type="text" id="inputMatchTeamName" class="w-full bg-obsidian-950 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-cyber-cyan" placeholder="e.g. Clubstride FC" />
@@ -702,11 +979,78 @@
             <button type="button" onclick="App.selectFormat('11')" class="format-btn py-2 rounded-xl bg-obsidian-950 border border-white/10 text-center font-bold text-slate-300" data-fmt="11">11v11</button>
           </div>
         </div>
+        <div class="flex items-center space-x-2 pt-2">
+          <button type="button" onclick="App.saveMatchSetup()" class="px-3 py-2.5 rounded-xl bg-obsidian-950 hover:bg-obsidian-800 border border-white/15 text-slate-300 text-xs font-semibold">
+            Quick Save
+          </button>
+          <button type="button" onclick="App.setWizardStep(2)" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95 text-center">
+            Next: Select Squad →
+          </button>
+        </div>
       </div>
-      <div class="flex space-x-2 pt-2">
-        <button onclick="App.saveMatchSetup()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95">
-          Save & Apply
-        </button>
+
+      <!-- STEP 2: SQUAD REGISTRY & AVAILABILITY -->
+      <div id="wizardStepContainer_2" class="space-y-3 text-xs hidden">
+        <div class="flex items-center justify-between pb-1 border-b border-white/10">
+          <div>
+            <span class="font-bold text-white">Squad Availability</span>
+            <p class="text-[11px] text-slate-400"><span id="wizardSquadAvailableCount" class="text-cyber-mint font-bold">0</span> / <span id="wizardSquadTotalCount">0</span> available for match</p>
+          </div>
+          <button type="button" onclick="App.openAddPlayerModal()" class="chip-btn px-2.5 py-1.5 rounded-xl bg-cyber-cyan/15 hover:bg-cyber-cyan/25 border border-cyber-cyan/30 text-cyber-cyan text-xs font-bold active:scale-95 transition">
+            + Add Player
+          </button>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button type="button" onclick="App.wizardSetAllAvailability(true)" class="chip-btn flex-1 py-1 rounded-lg bg-cyber-mint/15 text-cyber-mint border border-cyber-mint/30 font-medium text-[11px]">Mark All Available</button>
+          <button type="button" onclick="App.wizardSetAllAvailability(false)" class="chip-btn flex-1 py-1 rounded-lg bg-white/5 text-slate-400 border border-white/10 font-medium text-[11px]">Reset</button>
+        </div>
+        <!-- Scrollable Squad Roster in Wizard -->
+        <div id="wizardSquadList" class="space-y-1.5 max-h-56 overflow-y-auto pr-1"></div>
+        <div class="flex items-center space-x-2 pt-2">
+          <button type="button" onclick="App.setWizardStep(1)" class="px-4 py-2.5 rounded-xl bg-obsidian-950 hover:bg-obsidian-800 border border-white/15 text-slate-300 text-xs font-semibold">
+            ← Back
+          </button>
+          <button type="button" onclick="App.setWizardStep(3)" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold text-xs tracking-wide shadow-md active:scale-95 text-center">
+            Next: Assign Lineup →
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: STARTERS VS BENCH RESERVES -->
+      <div id="wizardStepContainer_3" class="space-y-3 text-xs hidden">
+        <div class="flex items-center justify-between pb-1 border-b border-white/10">
+          <div>
+            <span class="font-bold text-white">Starting Lineup vs Reserves</span>
+            <div id="wizardStarterQuotaBadge" class="text-[11px] font-bold text-cyber-mint mt-0.5">7/7 Starters Selected</div>
+          </div>
+          <button type="button" onclick="App.wizardAutoPickStarters()" class="chip-btn px-2.5 py-1.5 rounded-xl bg-obsidian-950 hover:bg-obsidian-800 border border-cyber-cyan/30 text-cyber-cyan text-[11px] font-semibold active:scale-95 transition" title="Sort by designated pitch position (GK → DEF → MID → FWD)">
+            Auto-Pick
+          </button>
+        </div>
+        <!-- Starters Section -->
+        <div>
+          <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1 flex items-center justify-between">
+            <span>Starters</span>
+            <span id="wizardStartersCount" class="text-cyber-cyan font-mono">0</span>
+          </div>
+          <div id="wizardStartersList" class="space-y-1 max-h-40 overflow-y-auto pr-1"></div>
+        </div>
+        <!-- Bench Section -->
+        <div class="pt-2 border-t border-white/10">
+          <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1 flex items-center justify-between">
+            <span>Bench Reserves</span>
+            <span id="wizardBenchCount" class="text-slate-400 font-mono">0</span>
+          </div>
+          <div id="wizardBenchList" class="space-y-1 max-h-36 overflow-y-auto pr-1"></div>
+        </div>
+        <div class="flex items-center space-x-2 pt-2">
+          <button type="button" onclick="App.setWizardStep(2)" class="px-4 py-2.5 rounded-xl bg-obsidian-950 hover:bg-obsidian-800 border border-white/15 text-slate-300 text-xs font-semibold">
+            ← Back
+          </button>
+          <button type="button" onclick="App.saveMatchSetup()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-black text-xs tracking-wide shadow-md active:scale-95 text-center">
+            Complete Setup &amp; Apply ✓
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -768,6 +1112,7 @@
       </div>
     </div>
   </div>
+
   <!-- 5. SAVE CUSTOM FORMATION MODAL -->
   <div id="modalSaveFormation" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="glass-card max-w-sm w-full rounded-lite-xl p-5 space-y-4 border border-white/15 bg-obsidian-900">
@@ -1837,6 +2182,45 @@
         this.saveStorage();
         this.toast(`Team style set: ${style.toUpperCase()} `);
       },
+      saveOffline() {
+        this.saveStorage();
+        this.syncActiveTeamSquad(true);
+        this.publishLiteRoster(false);
+        this.publishLiteMatches();
+        this.toast('Saved locally (100% Offline ready)', 'lock');
+        const badge = document.getElementById('hubConnectionBadge');
+        if (badge) badge.innerText = 'Saved Offline (Local)';
+        const syncStatus = document.getElementById('offlineSyncStatus');
+        if (syncStatus) syncStatus.innerText = 'All changes saved locally to device';
+      },
+      syncToPrimaryClub() {
+        this.syncActiveTeamSquad(true);
+        this.saveStorage();
+        if (!AppState.teams) AppState.teams = [];
+        let primaryClub = AppState.teams.find(t => t.id === 'lite-default');
+        if (!primaryClub) {
+          primaryClub = {
+            id: 'lite-default',
+            name: 'Clubstride FC',
+            squad: JSON.parse(JSON.stringify(AppState.squad || []))
+          };
+          AppState.teams.unshift(primaryClub);
+        }
+        if (AppState.currentTeamId === 'lite-default' || !AppState.currentTeamId) {
+          primaryClub.squad = JSON.parse(JSON.stringify(AppState.squad || []));
+          primaryClub.name = AppState.currentTeamName || 'Clubstride FC';
+          primaryClub.kitColor = AppState.kitColor;
+          primaryClub.formation = AppState.match.formation;
+        }
+        this.publishLiteRoster(true);
+        this.publishLiteMatches();
+        const primaryName = primaryClub.name || 'Clubstride FC';
+        const syncStatus = document.getElementById('offlineSyncStatus');
+        if (syncStatus) syncStatus.innerText = `Synced to Primary Club: ${primaryName}`;
+        const hubBadge = document.getElementById('hubConnectionBadge');
+        if (hubBadge) hubBadge.innerText = 'Synced to Primary Club';
+        this.toast(`Synced to Primary Club: ${primaryName}`, 'teams');
+      },
       renderSavedTeamsList() {
         const list = document.getElementById('savedTeamsList');
         const countBadge = document.getElementById('savedTeamsCount');
@@ -2159,7 +2543,7 @@
       updateRosterReadOnlyControls() {
         const readOnly = AppState.readOnly === true;
         if (readOnly && AppState.activeTab !== 'roster') this.switchTab('roster');
-        ['pitch', 'live', 'stats'].forEach(tab => {
+        ['pitch', 'live', 'stats', 'hub'].forEach(tab => {
           const button = document.getElementById('tabBtn_' + tab);
           const dock = document.querySelector(`.dock-btn[data-dock="${tab}"]`);
           if (button) button.disabled = readOnly;
@@ -2873,10 +3257,11 @@
           return;
         }
         AppState.activeTab = tab;
-        ['pitch', 'live', 'roster', 'stats'].forEach(t => {
+        ['pitch', 'live', 'roster', 'stats', 'hub'].forEach(t => {
           const sec = document.getElementById('section_' + t);
           const btn = document.getElementById('tabBtn_' + t);
           const dock = document.querySelector(`.dock-btn[data-dock="${t}"]`);
+          if (!sec || !btn) return;
           if (t === tab) {
             sec.classList.remove('hidden');
             btn.className = 'py-2 rounded-xl text-center transition flex flex-col items-center justify-center bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 font-bold shadow-md';
@@ -2893,10 +3278,21 @@
             }
           }
         });
-        if (tab === 'live') this.renderLiveBoard();
+        if (tab === 'live') {
+          this.renderLiveBoard();
+          const fab = document.getElementById('liveMatchFabContainer');
+          if (fab) fab.classList.remove('hidden');
+        } else {
+          const fab = document.getElementById('liveMatchFabContainer');
+          if (fab) {
+            fab.classList.add('hidden');
+            this.toggleFabMenu(false);
+          }
+        }
         if (tab === 'roster') this.renderRoster();
         if (tab === 'stats') this.renderStats();
         if (tab === 'pitch') this.renderPitchTokens();
+        if (tab === 'hub') this.renderCoachHub();
       },
       jumpToLineupPanel() {
         const panel = document.getElementById('lineupPanel');
@@ -2932,12 +3328,27 @@
         const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
         return (yiq >= 140) ? '#06142B' : '#ffffff';
       },
-      getShirtSvg(number, kitColor, size = 48, strokeColor = 'rgba(255,255,255,0.35)') {
+      getShirtSvg(number, kitColor, size = 48, strokeColor = 'rgba(255,255,255,0.45)') {
         const textColor = this.getContrastTextColor(kitColor);
-        const collarColor = textColor === '#ffffff' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)';
+        const collarColor = textColor === '#ffffff' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)';
+        const accentColor = textColor === '#ffffff' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)';
+        const numStr = String(number == null ? '' : number).trim();
+        const isWhiteText = textColor.toLowerCase() === '#ffffff';
+        // High-contrast keyline outline: solid black on white numbers, solid white on dark numbers
+        const numStrokeColor = isWhiteText ? '#000000' : '#ffffff';
+        const numFontSize = numStr.length <= 1 ? 38 : (numStr.length === 2 ? 31 : 24);
+        const numLetterSpacing = numStr.length >= 2 ? '-1.5' : '0';
+        const strokeWidth = numStr.length <= 1 ? 4.5 : 3.8;
         return `
           <svg width="${size}" height="${size}" viewBox="0 0 100 100" class="filter drop-shadow-md transition-transform" style="overflow: visible;">
-            <!-- Jersey Body & Sleeves -->
+            <defs>
+              <linearGradient id="jerseyShading_${number}_${size}" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18" />
+                <stop offset="50%" stop-color="#ffffff" stop-opacity="0.0" />
+                <stop offset="100%" stop-color="#000000" stop-opacity="0.25" />
+              </linearGradient>
+            </defs>
+            <!-- Modern Athletic Soccer Jersey Body & Raglan Sleeves -->
             <path d="M 33 16 
                      C 37 23, 63 23, 67 16 
                      L 88 27 
@@ -2955,22 +3366,44 @@
                   stroke="${strokeColor}" 
                   stroke-width="2.5" 
                   stroke-linejoin="round" />
-            <!-- V-Neck Collar detail -->
-            <path d="M 34 17 C 40 25, 60 25, 66 17" fill="none" stroke="${collarColor}" stroke-width="3" stroke-linecap="round" />
-            <!-- Sleeve Trim Left & Right -->
-            <line x1="13" y1="28" x2="22" y2="46" stroke="${collarColor}" stroke-width="2" />
-            <line x1="87" y1="28" x2="78" y2="46" stroke="${collarColor}" stroke-width="2" />
-            <!-- Jersey Shirt Number -->
-            <text x="50" y="66" 
+            <!-- Athletic Jersey Shading Overlay -->
+            <path d="M 33 16 
+                     C 37 23, 63 23, 67 16 
+                     L 88 27 
+                     L 78 47 
+                     L 71 42 
+                     L 71 85 
+                     C 71 87, 69 88, 66 88 
+                     L 34 88 
+                     C 31 88, 29 87, 29 85 
+                     L 29 42 
+                     L 22 47 
+                     L 12 27 
+                     Z" 
+                  fill="url(#jerseyShading_${number}_${size})" />
+            <!-- Raglan Sleeve Seam Details -->
+            <path d="M 33 16 L 29 42" fill="none" stroke="${accentColor}" stroke-width="2" stroke-linecap="round" />
+            <path d="M 67 16 L 71 42" fill="none" stroke="${accentColor}" stroke-width="2" stroke-linecap="round" />
+            <!-- V-Neck Ribbed Collar -->
+            <path d="M 34 17 C 40 25, 60 25, 66 17" fill="none" stroke="${collarColor}" stroke-width="3.5" stroke-linecap="round" />
+            <!-- Athletic Sleeve Cuff Trims -->
+            <line x1="13" y1="28" x2="21" y2="46" stroke="${collarColor}" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="87" y1="28" x2="79" y2="46" stroke="${collarColor}" stroke-width="2.5" stroke-linecap="round" />
+            <!-- Bold Squad Number (Condensed Tabular Sports Font) -->
+            <text x="50" y="55" 
+                  font-family="'DIN Condensed', 'DIN Alternate', 'Impact', 'Barlow Condensed', 'Arial Black', sans-serif" 
+                  font-size="${numFontSize}" 
+                  font-weight="900" 
+                  letter-spacing="${numLetterSpacing}" 
+                  fill="${textColor}" 
+                  stroke="${numStrokeColor}" 
+                  stroke-width="${strokeWidth}" 
+                  paint-order="stroke fill" 
+                  stroke-linejoin="round" 
+                  stroke-linecap="round" 
                   text-anchor="middle" 
                   dominant-baseline="central" 
-                  fill="${textColor}" 
-                  font-size="28" 
-                  font-weight="900" 
-                  font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
-                  letter-spacing="-1">
-              ${number}
-            </text>
+                  style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); font-variant-numeric: tabular-nums;">${number}</text>
           </svg>
         `;
       },
@@ -3252,15 +3685,22 @@
           token.style.transform = 'translate(-50%, -50%)';
           token.innerHTML = `
             <div class="relative flex items-center justify-center transition-transform hover:scale-105 active:scale-110">
-              ${this.getShirtSvg(p.number, AppState.kitColor, 46)}
+              ${this.getShirtSvg(p.number, AppState.kitColor, 50)}
               ${!AppState.clock.running ? `
                 <button type="button" onclick="event.stopPropagation(); App.sendToBench('${pid}')" title="Move to Bench" class="token-bench-btn absolute -top-1.5 -right-1.5 rounded-full bg-obsidian-900 border border-white/30 text-amber-300 hover:text-white flex items-center justify-center text-[10px] font-bold shadow-md transition hover:scale-110 active:scale-95 z-20">
                   <svg class="ci ci-16" aria-hidden="true"><use href="#ci-sub-out"></use></svg>
                 </button>
               ` : ''}
             </div>
-            <div class="mt-0.5 px-2 py-0.5 rounded-full bg-obsidian-950/90 border border-white/20 text-[10px] font-bold text-white tracking-wide shadow-md whitespace-nowrap">
-              ${p.name.split(' ')[0]} <span class="text-cyber-cyan text-[8px]">${p.position}</span>
+            <div class="mt-0.5 px-2 py-0.5 rounded-full bg-obsidian-950/95 border border-white/25 text-[10px] font-bold text-white tracking-wide shadow-lg whitespace-nowrap flex items-center space-x-1">
+              <span class="text-cyber-cyan font-black">#${p.number}</span>
+              <span>${p.name.split(' ')[0]}</span>
+              <span class="text-[9px] font-black px-1 rounded ${
+                p.position === 'GK' ? 'bg-amber-400/20 text-amber-300' :
+                p.position === 'CB' || p.position === 'LB' || p.position === 'RB' || p.position === 'DEF' ? 'bg-cyan-400/20 text-cyan-300' :
+                p.position === 'CM' || p.position === 'LM' || p.position === 'RM' || p.position === 'MID' ? 'bg-emerald-400/20 text-emerald-300' :
+                'bg-lime-400/25 text-lime-300'
+              }">${p.position}</span>
             </div>
           `;
           container.appendChild(token);
@@ -3294,7 +3734,7 @@
           chip.className = 'flex items-center space-x-2.5 px-3 py-1.5 rounded-2xl bg-obsidian-950 border border-white/10 hover:border-cyber-cyan/40 text-xs text-left transition active:scale-95 flex-shrink-0';
           chip.innerHTML = `
             <div class="flex-shrink-0">
-              ${this.getShirtSvg(p.number, '#303A4A', 28, 'rgba(255,255,255,0.2)')}
+              ${this.getShirtSvg(p.number, '#303A4A', 34, 'rgba(255,255,255,0.25)')}
             </div>
             <div>
               <div class="text-white font-semibold text-xs leading-none flex items-center space-x-1.5">
@@ -3364,6 +3804,7 @@
           const token = e.target.closest('.player-token');
           if (!token) return;
           activeEl = token;
+          activeEl.classList.add('dragging');
           activeEl.setPointerCapture(e.pointerId);
           activeEl.style.zIndex = 100;
         };
@@ -3385,6 +3826,7 @@
         const onPointerUp = (e) => {
           if (!activeEl) return;
           try { activeEl.releasePointerCapture(e.pointerId); } catch (_) {}
+          activeEl.classList.remove('dragging');
           activeEl.style.zIndex = 10;
           const movedPid = activeEl.dataset.playerId;
           const parked = movedPid && AppState.match.fieldPositions[movedPid];
@@ -3657,7 +4099,17 @@
         this.toast('Period set to ' + period);
       },
       updateClockDisplay() {
-        document.getElementById('matchClockDisplay').innerText = this.formatTime(AppState.clock.seconds);
+        const clockEl = document.getElementById('matchClockDisplay');
+        if (clockEl) {
+          clockEl.innerText = this.formatTime(AppState.clock.seconds);
+          if (AppState.clock.running) {
+            clockEl.classList.remove('led-cyan-paused');
+            clockEl.classList.add('led-volt-live');
+          } else {
+            clockEl.classList.remove('led-volt-live');
+            clockEl.classList.add('led-cyan-paused');
+          }
+        }
         AppState.match.starters.forEach(pid => {
           const el = document.getElementById('liveTimer_' + pid);
           if (el) el.innerText = this.formatTime(AppState.playerTimers[pid] || 0);
@@ -4328,6 +4780,225 @@
           }
         });
       },
+      // PRE-MATCH SETUP WIZARD PROGRESSIVE FLOW
+      wizardStep: 1,
+      setWizardStep(step) {
+        this.wizardStep = step;
+        const sub = document.getElementById('wizardSubheader');
+        const titles = {
+          1: 'Step 1 of 3: Match Configuration',
+          2: 'Step 2 of 3: Squad Selection & Availability',
+          3: 'Step 3 of 3: Starting Lineup vs Bench Reserves'
+        };
+        if (sub) sub.innerText = titles[step] || 'Pre-Match Setup';
+        [1, 2, 3].forEach(s => {
+          const btn = document.getElementById(`wizardStepBtn_${s}`);
+          const cont = document.getElementById(`wizardStepContainer_${s}`);
+          if (btn) {
+            if (s === step) {
+              btn.className = 'py-2 rounded-lg transition font-bold bg-gradient-to-r from-cyber-cyan to-cyber-mint text-obsidian-950 shadow-sm';
+            } else {
+              btn.className = 'py-2 rounded-lg transition text-slate-400 hover:text-white';
+            }
+          }
+          if (cont) {
+            cont.classList[s === step ? 'remove' : 'add']('hidden');
+          }
+        });
+        if (step === 2) this.renderWizardSquad();
+        if (step === 3) this.renderWizardLineup();
+      },
+      renderWizardSquad() {
+        const container = document.getElementById('wizardSquadList');
+        if (!container) return;
+        container.innerHTML = '';
+        const squad = AppState.squad || [];
+        const availMap = AppState.match.availability || {};
+        let availCount = 0;
+        squad.forEach(p => {
+          const isAvail = availMap[p.id] !== false;
+          if (isAvail) availCount++;
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between p-2 rounded-xl bg-obsidian-950 border border-white/8';
+          row.innerHTML = `
+            <div class="flex items-center space-x-2 min-w-0">
+              <span class="w-6 h-6 rounded-lg bg-white/10 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">#${p.number}</span>
+              <div class="truncate">
+                <span class="text-white font-bold text-xs block truncate">${p.name}</span>
+                <span class="text-[10px] text-cyber-cyan font-semibold uppercase">${p.position || 'Player'}</span>
+              </div>
+            </div>
+            <button type="button" onclick="App.wizardToggleAvailability('${p.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition ${isAvail ? 'bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/40' : 'bg-white/5 text-slate-400 border border-white/10'}">
+              ${isAvail ? '✓ Available' : '✕ Absent'}
+            </button>
+          `;
+          container.appendChild(row);
+        });
+        const cntAvail = document.getElementById('wizardSquadAvailableCount');
+        const cntTotal = document.getElementById('wizardSquadTotalCount');
+        if (cntAvail) cntAvail.innerText = availCount;
+        if (cntTotal) cntTotal.innerText = squad.length;
+      },
+      wizardToggleAvailability(pid) {
+        if (!AppState.match.availability) AppState.match.availability = {};
+        const current = AppState.match.availability[pid] !== false;
+        AppState.match.availability[pid] = !current;
+        if (current) {
+          AppState.match.starters = (AppState.match.starters || []).filter(id => id !== pid);
+          AppState.match.bench = (AppState.match.bench || []).filter(id => id !== pid);
+        } else {
+          if (!AppState.match.starters.includes(pid) && !AppState.match.bench.includes(pid)) {
+            AppState.match.bench.push(pid);
+          }
+        }
+        this.renderWizardSquad();
+      },
+      wizardSetAllAvailability(status) {
+        if (!AppState.match.availability) AppState.match.availability = {};
+        (AppState.squad || []).forEach(p => {
+          AppState.match.availability[p.id] = status;
+        });
+        if (!status) {
+          AppState.match.starters = [];
+          AppState.match.bench = [];
+        } else {
+          this.applyFormatDefaults();
+        }
+        this.renderWizardSquad();
+      },
+      renderWizardLineup() {
+        const fmt = AppState.pendingFormat || AppState.match.format || '7';
+        const quota = parseInt(fmt, 10);
+        const starters = AppState.match.starters || [];
+        const bench = AppState.match.bench || [];
+        const startersList = document.getElementById('wizardStartersList');
+        const benchList = document.getElementById('wizardBenchList');
+        const quotaBadge = document.getElementById('wizardStarterQuotaBadge');
+        const startersCount = document.getElementById('wizardStartersCount');
+        const benchCount = document.getElementById('wizardBenchCount');
+
+        if (startersCount) startersCount.innerText = `${starters.length} / ${quota}`;
+        if (benchCount) benchCount.innerText = bench.length;
+        if (quotaBadge) {
+          if (starters.length === quota) {
+            quotaBadge.className = 'text-[11px] font-bold text-cyber-mint mt-0.5';
+            quotaBadge.innerText = `✓ ${starters.length}/${quota} Starters Selected (${quota}v${quota})`;
+          } else {
+            quotaBadge.className = 'text-[11px] font-bold text-amber-300 mt-0.5';
+            quotaBadge.innerText = `⚠️ ${starters.length}/${quota} Starters (Need ${quota})`;
+          }
+        }
+        if (startersList) {
+          startersList.innerHTML = '';
+          if (starters.length === 0) {
+            startersList.innerHTML = '<p class="text-[11px] text-slate-500 italic py-1">No starters assigned yet.</p>';
+          } else {
+            starters.forEach(pid => {
+              const p = (AppState.squad || []).find(item => item.id === pid);
+              if (!p) return;
+              const row = document.createElement('div');
+              row.className = 'flex items-center justify-between p-1.5 px-2 rounded-xl bg-obsidian-950 border border-cyber-cyan/20';
+              row.innerHTML = `
+                <div class="flex items-center space-x-2 truncate">
+                  <span class="w-5 h-5 rounded bg-cyber-cyan/20 text-cyber-cyan font-bold text-[10px] flex items-center justify-center flex-shrink-0">#${p.number}</span>
+                  <span class="text-white text-xs font-semibold truncate">${p.name}</span>
+                  <span class="text-[9px] text-slate-400 uppercase font-mono">${p.position}</span>
+                </div>
+                <button type="button" onclick="App.wizardMoveToBench('${p.id}')" class="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] font-semibold border border-white/10">
+                  Bench ⬇
+                </button>
+              `;
+              startersList.appendChild(row);
+            });
+          }
+        }
+        if (benchList) {
+          benchList.innerHTML = '';
+          if (bench.length === 0) {
+            benchList.innerHTML = '<p class="text-[11px] text-slate-500 italic py-1">No reserves on bench.</p>';
+          } else {
+            bench.forEach(pid => {
+              const p = (AppState.squad || []).find(item => item.id === pid);
+              if (!p) return;
+              const row = document.createElement('div');
+              row.className = 'flex items-center justify-between p-1.5 px-2 rounded-xl bg-obsidian-950 border border-white/8';
+              row.innerHTML = `
+                <div class="flex items-center space-x-2 truncate">
+                  <span class="w-5 h-5 rounded bg-white/10 text-slate-300 font-bold text-[10px] flex items-center justify-center flex-shrink-0">#${p.number}</span>
+                  <span class="text-slate-300 text-xs font-medium truncate">${p.name}</span>
+                  <span class="text-[9px] text-slate-400 uppercase font-mono">${p.position}</span>
+                </div>
+                <button type="button" onclick="App.wizardMoveToStarters('${p.id}')" class="px-2 py-0.5 rounded-lg bg-cyber-mint/15 hover:bg-cyber-mint/25 text-cyber-mint text-[11px] font-semibold border border-cyber-mint/30">
+                  Start ⬆
+                </button>
+              `;
+              benchList.appendChild(row);
+            });
+          }
+        }
+      },
+      wizardMoveToBench(pid) {
+        if (!AppState.match.starters.includes(pid)) return;
+        AppState.match.starters = AppState.match.starters.filter(id => id !== pid);
+        if (!AppState.match.bench.includes(pid)) AppState.match.bench.push(pid);
+        this.renderWizardLineup();
+        this.renderPitchTokens();
+      },
+      wizardMoveToStarters(pid) {
+        if (!AppState.match.bench.includes(pid)) return;
+        const fmt = AppState.pendingFormat || AppState.match.format || '7';
+        const quota = parseInt(fmt, 10);
+        if (AppState.match.starters.length >= quota) {
+          this.toast(`Starting lineup already has ${quota} starters for ${quota}v${quota}. Bench a player first.`);
+          return;
+        }
+        AppState.match.bench = AppState.match.bench.filter(id => id !== pid);
+        AppState.match.starters.push(pid);
+        this.renderWizardLineup();
+        this.renderPitchTokens();
+      },
+      wizardAutoPickStarters() {
+        const fmt = AppState.pendingFormat || AppState.match.format || '7';
+        const quota = parseInt(fmt, 10);
+        const avail = (AppState.squad || []).filter(p => AppState.match.availability[p.id] !== false);
+        avail.sort((a, b) => this.getPositionRank(a.position) - this.getPositionRank(b.position));
+        AppState.match.starters = avail.slice(0, quota).map(p => p.id);
+        AppState.match.bench = avail.slice(quota).map(p => p.id);
+        this.renderWizardLineup();
+        this.renderPitchTokens();
+        this.toast('Starters auto-assigned by position rank (GK → DEF → MID → FWD)!');
+      },
+      // FLOATING ACTION MENU (FAB) FOR LIVE MATCH ACTIONS
+      _fabOpen: false,
+      toggleFabMenu(forceState) {
+        this._fabOpen = forceState !== undefined ? !!forceState : !this._fabOpen;
+        const speedDial = document.getElementById('liveFabSpeedDial');
+        const icon = document.getElementById('liveFabIcon');
+        if (speedDial) {
+          if (this._fabOpen) {
+            speedDial.classList.remove('scale-0', 'opacity-0');
+            speedDial.classList.add('scale-100', 'opacity-100');
+          } else {
+            speedDial.classList.remove('scale-100', 'opacity-100');
+            speedDial.classList.add('scale-0', 'opacity-0');
+          }
+        }
+        if (icon) {
+          icon.style.transform = this._fabOpen ? 'rotate(45deg)' : 'rotate(0deg)';
+          icon.innerText = this._fabOpen ? '✕' : '⚡';
+        }
+      },
+      // COACH HUB RENDER
+      renderCoachHub() {
+        const badge = document.getElementById('hubConnectionBadge');
+        if (badge) {
+          const isOnline = typeof navigator !== 'undefined' && navigator.onLine === true;
+          badge.className = isOnline
+            ? 'text-[10px] px-2 py-0.5 rounded-full bg-cyber-mint/20 text-cyber-mint border border-cyber-mint/30 font-bold'
+            : 'text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 font-bold';
+          badge.innerText = isOnline ? '🌐 Connected — Ready for Cloud Sync' : '⚡ 100% Offline Ready (Zero Internet Needed)';
+        }
+      },
       deleteMatchHistory(matchId) {
         if (!confirm('Are you sure you want to remove this match from history?')) return;
         const selected = new Set(this.selectedTeamHistory());
@@ -4434,33 +5105,39 @@
         list.innerHTML = '';
         AppState.events.forEach(ev => {
           const item = document.createElement('div');
-          item.className = 'p-2.5 rounded-xl bg-obsidian-950 border border-white/5 flex items-center justify-between';
-          let icon = '<svg class="ci ci-20 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg>';
+          let borderAccent = 'border-white/5';
+          let icon = '<svg class="ci ci-20 ci-goal text-cyber-mint" aria-hidden="true"><use href="#ci-goal"></use></svg>';
           let text = '';
           if (ev.type === 'Goal') {
-            icon = '<svg class="ci ci-20 ci-goal" aria-hidden="true"><use href="#ci-goal"></use></svg>';
+            borderAccent = ev.side === 'opponent' ? 'border-red-500/25' : 'border-cyber-mint/30 shadow-[0_0_12px_rgba(0,255,136,0.1)]';
+            icon = '<svg class="ci ci-20 ci-goal text-cyber-mint" aria-hidden="true"><use href="#ci-goal"></use></svg>';
             const word = ev.ownGoal ? 'OWN GOAL' : ev.side === 'opponent' ? 'OPPONENT GOAL' : 'GOAL';
             const tint = ev.ownGoal ? 'text-amber-400' : ev.side === 'opponent' ? 'text-red-400' : 'text-cyber-mint';
             text = ev.playerNumber === undefined
               ? `<span class="font-bold ${tint}">${word}</span>`
               : `<span class="font-bold ${tint}">${word}</span> by #${ev.playerNumber} ${ev.playerName}`;
           } else if (ev.type === 'Assist') {
-            icon = '<svg class="ci ci-20 ci-assist" aria-hidden="true"><use href="#ci-assist"></use></svg>';
+            borderAccent = 'border-sky-500/25';
+            icon = '<svg class="ci ci-20 ci-assist text-sky-400" aria-hidden="true"><use href="#ci-assist"></use></svg>';
             text = `<span class="font-bold text-sky-400">ASSIST</span> by #${ev.playerNumber} ${ev.playerName}`;
           } else if (ev.type === 'Sub') {
-            // Use SubBadge components for sub-in / sub-out icons in timeline
-            icon = '<span data-sub-badge="in-24" class="cs-sub-inline"></span><span data-sub-badge="out-24" class="cs-sub-inline"></span>';
+            borderAccent = 'border-cyber-cyan/25';
+            icon = '<svg class="ci ci-20 text-cyber-cyan" aria-hidden="true"><use href="#ci-sub-arrows"></use></svg>';
             text = `<span class="font-bold" style="color:var(--cs-match-sub-in,#3BE38A)">IN</span> #${ev.playerInNum} ${ev.playerIn} <span class="text-slate-400 mx-0.5">|</span> <span class="font-bold" style="color:var(--cs-match-sub-out,#FF8A80)">OUT</span> #${ev.playerOutNum} ${ev.playerOut}`;
           } else if (this.isYellowCard(ev)) {
+            borderAccent = 'border-amber-400/30 bg-amber-950/20';
             icon = '<svg class="ci ci-20 ci-card-yellow" aria-hidden="true"><use href="#ci-card-yellow"></use></svg>';
             text = `<span class="font-bold text-amber-400">YELLOW CARD</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
           } else if (this.isRedCard(ev)) {
+            borderAccent = 'border-red-500/30 bg-red-950/20';
             icon = '<svg class="ci ci-20 ci-card-red" aria-hidden="true"><use href="#ci-card-red"></use></svg>';
             text = `<span class="font-bold ci-card-red">RED CARD</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
           } else if (ev.type === 'Injury') {
+            borderAccent = 'border-orange-500/30 bg-orange-950/20';
             icon = '<svg class="ci ci-20 ci-injury" aria-hidden="true"><use href="#ci-injury"></use></svg>';
             text = `<span class="font-bold ci-injury">INJURY</span> #${ev.playerNumber} ${ev.playerName}${ev.reason ? ' <span class="text-slate-400 font-normal">(' + ev.reason + ')</span>' : ''}`;
           }
+          item.className = 'p-2.5 rounded-xl bg-obsidian-950 border ' + borderAccent + ' flex items-center justify-between transition-all';
           item.innerHTML = `
             <div class="flex items-center space-x-2 min-w-0 flex-1">
               <span class="text-base flex-shrink-0 inline-flex items-center gap-0.5">${icon}</span>
@@ -5680,12 +6357,13 @@
         const filenameSafe = (targetMatch.title || 'Match').replace(/[^a-zA-Z0-9_-]/g, '_');
         this.exportLedgerPdf(el, `Clubstride_${filenameSafe}_${targetMatch.date || 'report'}.pdf`);
       },
-      openMatchSetupModal() {
+      openMatchSetupModal(initialStep = 1) {
         document.getElementById('inputMatchTeamName').value = AppState.match.teamName || AppState.currentTeamName || 'Clubstride FC';
         document.getElementById('inputMatchTitle').value = AppState.match.title;
         document.getElementById('inputMatchOpponent').value = AppState.match.opponent;
         document.getElementById('inputMatchDate').value = AppState.match.date || this.localDateIso();
         this.selectFormat(AppState.match.format);
+        this.setWizardStep(initialStep);
         const m = document.getElementById('modalMatchSetup');
         m.classList.remove('hidden');
         m.classList.add('flex');
@@ -5900,6 +6578,8 @@
         this.renderRoster();
         this.renderPitchTokens();
         this.renderBenchReserves();
+        if (typeof this.renderWizardSquad === 'function') this.renderWizardSquad();
+        if (typeof this.renderWizardLineup === 'function') this.renderWizardLineup();
       },
       PRO_URL: 'https://fracturedorbit1980.github.io/Clubstride-Pro-Web/',
       openProUpgrade(event) {
