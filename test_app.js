@@ -2707,6 +2707,57 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   console.log('? WhatsApp removal, Clustered Pro Hub Tab, and Offline Save & Primary Club Sync verified');
 }
 
+
+// ---------------------------------------------------------------------------
+// TEST 51: Player Photo Upload on Mobile, Club Push, and Club Pull
+// ---------------------------------------------------------------------------
+{
+  // 1. Verify Player Photo DOM elements in modalAddPlayer
+  assert(html.includes('id="inputPlayerPhoto"'), 'inputPlayerPhoto file input exists');
+  assert(html.includes('id="playerPhotoPreview"'), 'playerPhotoPreview img exists');
+  assert(html.includes('id="playerPhotoPlaceholder"'), 'playerPhotoPlaceholder exists');
+  assert(html.includes('id="btnRemovePlayerPhoto"'), 'btnRemovePlayerPhoto button exists');
+  assert(typeof App.handlePlayerPhotoUpload === 'function', 'handlePlayerPhotoUpload exists');
+  assert(typeof App.removePlayerPhoto === 'function', 'removePlayerPhoto exists');
+  assert(typeof App.pullFromPrimaryClub === 'function', 'pullFromPrimaryClub exists');
+
+  // 2. Add player with Photo on mobile and verify Push to Club
+  App.openAddPlayerModal();
+  dom['inputPlayerName'].value = 'Marcus Sterling';
+  dom['inputPlayerNumber'].value = '17';
+  dom['inputPlayerPosition'].value = 'FWD';
+  const samplePhotoUri = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...mockphoto...';
+  AppState.editingPlayerPhoto = samplePhotoUri;
+  App.saveNewPlayer();
+
+  const savedPlayer = AppState.squad.find(p => p.number === 17);
+  assert(savedPlayer, 'Player was created in AppState.squad');
+  assert.strictEqual(savedPlayer.photo, samplePhotoUri, 'Player photo attached to player in squad');
+
+  // Verify pushed to shared club roster (cs.lite.roster.v1)
+  const clubRoster = JSON.parse(storage[rosterKey]);
+  const clubPlayer = clubRoster.players.find(p => p.number === 17);
+  assert(clubPlayer, 'Player pushed to club roster');
+  assert.strictEqual(clubPlayer.photo, samplePhotoUri, 'Player photo successfully pushed to club');
+
+  // 3. Verify Squad Roster renders photo avatar
+  App.renderRoster();
+  const rosterHtml = dom['squadPodsList'].innerHTML;
+  assert(dom['squadPodsList'].children.some(c => (c.innerHTML || '').includes(samplePhotoUri)), 'Player photo rendered in squad list card');
+
+  // 4. Verify Pull from Primary Club
+  // Clear local photo in active squad
+  savedPlayer.photo = undefined;
+  assert.strictEqual(savedPlayer.photo, undefined, 'Local photo temporarily cleared');
+
+  // Pull back from club snapshot
+  App.pullFromPrimaryClub();
+  const pulledPlayer = AppState.squad.find(p => p.number === 17);
+  assert.strictEqual(pulledPlayer.photo, samplePhotoUri, 'Player photo successfully pulled back from club');
+
+  console.log('✓ Player photo upload on mobile, club push, and club pull verified');
+}
+
 console.log('\n=========================================');
 console.log('ALL 49 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');

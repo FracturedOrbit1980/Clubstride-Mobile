@@ -662,6 +662,10 @@
             <svg class="ci ci-14" aria-hidden="true"><use href="#ci-lock"></use></svg>
             <span>Save Offline</span>
           </button>
+          <button type="button" onclick="App.pullFromPrimaryClub()" class="chip-btn px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-[11px] font-semibold active:scale-95 transition flex items-center space-x-1" title="Pull roster and player photos from primary club">
+            <svg class="ci ci-14" aria-hidden="true"><use href="#ci-attendance"></use></svg>
+            <span>Pull from Club</span>
+          </button>
           <button type="button" onclick="App.syncToPrimaryClub()" class="chip-btn px-2.5 py-1 rounded-xl bg-cyber-mint/15 hover:bg-cyber-mint/25 border border-cyber-mint/30 text-cyber-mint text-[11px] font-bold active:scale-95 transition flex items-center space-x-1" title="Sync current squad & match logs to primary club">
             <svg class="ci ci-14" aria-hidden="true"><use href="#ci-teams"></use></svg>
             <span>Sync to Primary Club</span>
@@ -740,14 +744,18 @@
           </div>
           <span id="hubPrimaryClubBadge" class="text-[10px] px-2.5 py-1 rounded-xl bg-cyber-mint/15 text-cyber-mint border border-cyber-mint/30 font-bold">Primary Club Active</span>
         </div>
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <button type="button" id="btnSaveOffline" onclick="App.saveOffline()" class="chip-btn py-2.5 px-3 rounded-xl bg-obsidian-950 border border-white/15 hover:border-cyber-cyan/50 text-white text-xs font-bold flex items-center justify-center space-x-1.5 active:scale-95 transition shadow-sm">
-            <svg class="ci ci-16 text-cyber-cyan" aria-hidden="true"><use href="#ci-lock"></use></svg>
+        <div class="grid grid-cols-3 gap-2 pt-1">
+          <button type="button" id="btnSaveOffline" onclick="App.saveOffline()" class="chip-btn py-2 px-2 rounded-xl bg-obsidian-950 border border-white/15 hover:border-cyber-cyan/50 text-white text-[11px] font-bold flex items-center justify-center space-x-1 active:scale-95 transition shadow-sm">
+            <svg class="ci ci-14 text-cyber-cyan" aria-hidden="true"><use href="#ci-lock"></use></svg>
             <span>Save Offline</span>
           </button>
-          <button type="button" id="btnSyncPrimaryClub" onclick="App.syncToPrimaryClub()" class="chip-btn py-2.5 px-3 rounded-xl bg-cyber-mint/20 border border-cyber-mint/40 hover:bg-cyber-mint/30 text-cyber-mint text-xs font-bold flex items-center justify-center space-x-1.5 active:scale-95 transition shadow-sm">
-            <svg class="ci ci-16" aria-hidden="true"><use href="#ci-teams"></use></svg>
-            <span>Sync to Primary Club</span>
+          <button type="button" onclick="App.pullFromPrimaryClub()" class="chip-btn py-2 px-2 rounded-xl bg-white/5 border border-white/15 hover:bg-white/10 text-slate-200 text-[11px] font-semibold flex items-center justify-center space-x-1 active:scale-95 transition shadow-sm">
+            <svg class="ci ci-14" aria-hidden="true"><use href="#ci-attendance"></use></svg>
+            <span>Pull Club</span>
+          </button>
+          <button type="button" id="btnSyncPrimaryClub" onclick="App.syncToPrimaryClub()" class="chip-btn py-2 px-2 rounded-xl bg-cyber-mint/20 border border-cyber-mint/40 hover:bg-cyber-mint/30 text-cyber-mint text-[11px] font-bold flex items-center justify-center space-x-1 active:scale-95 transition shadow-sm">
+            <svg class="ci ci-14" aria-hidden="true"><use href="#ci-teams"></use></svg>
+            <span>Push / Sync</span>
           </button>
         </div>
       </div>
@@ -1062,6 +1070,36 @@
         <button onclick="App.closeModals()" class="sheet-close rounded-full bg-white/10 text-slate-300 flex items-center justify-center text-sm">✕</button>
       </div>
       <div class="space-y-3 text-xs">
+        <!-- Player Photo Avatar Upload & Preview -->
+        <div class="flex items-center space-x-3 pb-2 border-b border-white/10">
+          <div class="relative cursor-pointer group flex-shrink-0" onclick="document.getElementById('inputPlayerPhoto').click()" title="Tap to take or choose photo">
+            <img id="playerPhotoPreview" src="" class="hidden w-14 h-14 rounded-2xl object-cover ring-2 ring-cyber-cyan/50 bg-obsidian-950 shadow-md" alt="Player Photo" />
+            <div id="playerPhotoPlaceholder" class="w-14 h-14 rounded-2xl border-2 border-dashed border-white/20 hover:border-cyber-cyan/60 flex flex-col items-center justify-center text-slate-400 hover:text-white transition bg-obsidian-950/80">
+              <svg class="ci ci-20" aria-hidden="true"><use href="#ci-camera"></use></svg>
+              <span class="text-[9px] font-bold mt-0.5">Photo</span>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-cyber-cyan text-obsidian-950 flex items-center justify-center text-[10px] font-black shadow">
+              <svg class="ci ci-12" aria-hidden="true"><use href="#ci-camera"></use></svg>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-bold text-white flex items-center space-x-1.5">
+              <span>Player Headshot</span>
+              <span class="text-[9px] text-cyber-mint font-semibold bg-cyber-mint/15 px-1.5 py-0.2 rounded">Club Sync</span>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-0.5">Pulls from club &amp; pushes back on save.</p>
+            <div class="flex items-center space-x-2 mt-1.5">
+              <button type="button" onclick="document.getElementById('inputPlayerPhoto').click()" class="chip-btn px-2.5 py-1 rounded-lg bg-cyber-cyan/15 hover:bg-cyber-cyan/25 text-cyber-cyan border border-cyber-cyan/30 text-[10px] font-semibold flex items-center space-x-1 active:scale-95 transition">
+                <svg class="ci ci-12" aria-hidden="true"><use href="#ci-camera"></use></svg>
+                <span>Take / Upload Photo</span>
+              </button>
+              <button type="button" id="btnRemovePlayerPhoto" onclick="App.removePlayerPhoto()" class="hidden chip-btn px-2 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-[10px] font-semibold active:scale-95 transition">
+                Remove
+              </button>
+            </div>
+            <input type="file" id="inputPlayerPhoto" accept="image/*" capture="user" class="hidden" onchange="App.handlePlayerPhotoUpload(event)" />
+          </div>
+        </div>
         <div>
           <label class="text-slate-400 font-medium block mb-1">Full Name</label>
           <input type="text" id="inputPlayerName" class="w-full bg-obsidian-950 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-cyber-cyan" placeholder="e.g. Liam Vance" />
@@ -2221,6 +2259,90 @@
         if (hubBadge) hubBadge.innerText = 'Synced to Primary Club';
         this.toast(`Synced to Primary Club: ${primaryName}`, 'teams');
       },
+      handlePlayerPhotoUpload(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+          this.toast('Please select an image file', 'card-yellow');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 180;
+            let w = img.width, h = img.height;
+            if (w > h) {
+              if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+            } else {
+              if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const dataUri = canvas.toDataURL('image/jpeg', 0.82);
+            AppState.editingPlayerPhoto = dataUri;
+            this.updatePlayerPhotoPreview(dataUri);
+            this.toast('Player photo attached');
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      },
+      removePlayerPhoto() {
+        AppState.editingPlayerPhoto = null;
+        this.updatePlayerPhotoPreview(null);
+        const fileInput = document.getElementById('inputPlayerPhoto');
+        if (fileInput) fileInput.value = '';
+      },
+      updatePlayerPhotoPreview(dataUri) {
+        const preview = document.getElementById('playerPhotoPreview');
+        const placeholder = document.getElementById('playerPhotoPlaceholder');
+        const removeBtn = document.getElementById('btnRemovePlayerPhoto');
+        if (dataUri) {
+          if (preview) { preview.src = dataUri; preview.classList.remove('hidden'); }
+          if (placeholder) placeholder.classList.add('hidden');
+          if (removeBtn) removeBtn.classList.remove('hidden');
+        } else {
+          if (preview) { preview.src = ''; preview.classList.add('hidden'); }
+          if (placeholder) placeholder.classList.remove('hidden');
+          if (removeBtn) removeBtn.classList.add('hidden');
+        }
+      },
+      pullFromPrimaryClub() {
+        let pulled = false;
+        try {
+          const source = localStorage.getItem('cs.lite.roster.v1');
+          if (source) {
+            const snapshot = JSON.parse(source);
+            if (snapshot && Array.isArray(snapshot.players)) {
+              AppState.squad = JSON.parse(JSON.stringify(snapshot.players));
+              pulled = true;
+            }
+          }
+        } catch (_) {}
+        if (!pulled && AppState.teams) {
+          const primary = AppState.teams.find(t => t.id === 'lite-default');
+          if (primary && Array.isArray(primary.squad)) {
+            AppState.squad = JSON.parse(JSON.stringify(primary.squad));
+            pulled = true;
+          }
+        }
+        if (pulled) {
+          this.saveStorage();
+          this.renderRoster();
+          this.renderPitchTokens();
+          this.renderBenchReserves();
+          if (typeof this.renderWizardSquad === 'function') this.renderWizardSquad();
+          this.toast('✓ Pulled squad & player photos from club', 'teams');
+          const status = document.getElementById('offlineSyncStatus');
+          if (status) status.innerText = 'Roster & photos updated from primary club';
+        } else {
+          this.toast('Primary club roster not found in local storage', 'card-yellow');
+        }
+      },
       renderSavedTeamsList() {
         const list = document.getElementById('savedTeamsList');
         const countBadge = document.getElementById('savedTeamsCount');
@@ -2600,7 +2722,8 @@
           if (!object(player) || !id(player.id) || ids.has(player.id) || !text(player.name, 200) ||
             !Number.isInteger(player.number) || player.number < 0 || player.number > 99 ||
             !text(player.position, 40) || (player.proId !== undefined && (!uuid(player.proId) || proIds.has(player.proId.toLowerCase()))) ||
-            (player.available !== undefined && typeof player.available !== 'boolean')) {
+            (player.available !== undefined && typeof player.available !== 'boolean') ||
+            (player.photo !== undefined && (typeof player.photo !== 'string' || player.photo.length > 500000))) {
             throw new Error('Invalid or duplicate shared player');
           }
           ids.add(player.id);
@@ -2616,6 +2739,7 @@
             const p = { id: player.id, name: player.name, number: player.number, position: player.position };
             if (player.proId !== undefined) p.proId = player.proId;
             if (player.available !== undefined) p.available = player.available;
+            if (player.photo) p.photo = player.photo;
             return p;
           })
         };
@@ -3877,8 +4001,13 @@
           card.className = 'glass-card rounded-lite p-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-2 transition hover:border-white/20';
           card.innerHTML = `
             <div class="flex items-center space-x-3 min-w-0">
-              <div class="flex-shrink-0 flex items-center justify-center">
-                ${this.getShirtSvg(p.number, shirtColor, 40, isStarter ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)')}
+              <div class="flex-shrink-0 flex items-center justify-center cursor-pointer" onclick="App.openEditPlayerModal('${p.id}')" title="Tap to view or change player photo">
+                ${p.photo ? `
+                  <div class="relative w-10 h-10">
+                    <img src="${p.photo}" class="w-10 h-10 rounded-xl object-cover ring-2 ring-white/20 shadow-md bg-obsidian-950" alt="${p.name}" />
+                    <span class="absolute -bottom-1 -right-1 px-1 py-0.2 rounded-md bg-obsidian-950 border border-white/20 text-[9px] font-black text-cyber-cyan shadow">#${p.number}</span>
+                  </div>
+                ` : this.getShirtSvg(p.number, shirtColor, 40, isStarter ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)')}
               </div>
               <div class="min-w-0">
                 <div class="font-bold text-sm text-white flex items-center space-x-2 min-w-0">
@@ -6509,6 +6638,10 @@
       openAddPlayerModal() {
         if (!this.rosterMutationAllowed()) return;
         AppState.editingPlayerId = null;
+        AppState.editingPlayerPhoto = null;
+        this.updatePlayerPhotoPreview(null);
+        const fileInput = document.getElementById('inputPlayerPhoto');
+        if (fileInput) fileInput.value = '';
         const title = document.getElementById('modalAddPlayerTitle');
         if (title) title.innerText = 'Add Squad Player';
         document.getElementById('inputPlayerName').value = '';
@@ -6524,6 +6657,10 @@
         const p = AppState.squad.find(item => item.id === pid);
         if (!p) return;
         AppState.editingPlayerId = pid;
+        AppState.editingPlayerPhoto = p.photo || null;
+        this.updatePlayerPhotoPreview(p.photo || null);
+        const fileInput = document.getElementById('inputPlayerPhoto');
+        if (fileInput) fileInput.value = '';
         const title = document.getElementById('modalAddPlayerTitle');
         if (title) title.innerText = 'Edit Squad Player';
         document.getElementById('inputPlayerName').value = p.name;
@@ -6556,6 +6693,10 @@
             p.name = name;
             p.number = num;
             p.position = pos;
+            if (AppState.editingPlayerPhoto !== undefined) {
+              if (AppState.editingPlayerPhoto) p.photo = AppState.editingPlayerPhoto;
+              else delete p.photo;
+            }
             this.toast(`Player #${num} ${name} updated! `);
           }
           AppState.editingPlayerId = null;
@@ -6568,12 +6709,18 @@
             name: name,
             position: pos
           };
+          if (AppState.editingPlayerPhoto) {
+            newPlayer.photo = AppState.editingPlayerPhoto;
+          }
           AppState.squad.push(newPlayer);
           AppState.match.availability[newPlayer.id] = true;
           AppState.match.bench.push(newPlayer.id);
           this.toast(`Player #${num} ${name} added to squad!`);
         }
+        AppState.editingPlayerPhoto = null;
         this.saveStorage();
+        this.syncActiveTeamSquad(true);
+        this.publishLiteRoster(false);
         this.closeModals();
         this.renderRoster();
         this.renderPitchTokens();
