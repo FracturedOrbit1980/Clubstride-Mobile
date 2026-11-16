@@ -2801,8 +2801,133 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   console.log('✓ Pitch line visibility and unrestricted full-pitch player movement verified');
 }
 
+// ---------------------------------------------------------------------------
+// TEST 53: Bidirectional Synchronization between Clubstride Lite and Pro Web
+// ---------------------------------------------------------------------------
+{
+  // 1. Verify Lite publishes both roster and matches when opening Pro shell
+  let publishedMatchesCalled = false;
+  const originalPublishMatches = App.publishLiteMatches;
+  App.publishLiteMatches = function() {
+    publishedMatchesCalled = true;
+    return originalPublishMatches.apply(this, arguments);
+  };
+  
+  // Set proShell and proFrame mocks
+  dom['proShell'].style.display = 'none';
+  App.openProShell(false);
+  assert(publishedMatchesCalled, 'openProShell must publish matches for Pro consumption');
+  App.publishLiteMatches = originalPublishMatches;
+
+  // 2. Verify postSyncToPro sends complete state payload
+  const mockTarget = {
+    messages: [],
+    postMessage(msg, origin) {
+      this.messages.push({ msg, origin });
+    }
+  };
+  const syncPayload = App.postSyncToPro(mockTarget);
+  assert.strictEqual(syncPayload.type, 'cs-lite-sync', 'Sync payload type is cs-lite-sync');
+  assert.strictEqual(syncPayload.source, 'clubstride-lite', 'Payload source identified as clubstride-lite');
+  assert(syncPayload.roster, 'Sync payload includes roster data');
+  assert(Array.isArray(syncPayload.roster.players), 'Sync payload roster includes player list');
+  assert(mockTarget.messages.length > 0, 'Target window received postMessage payload');
+  assert.strictEqual(mockTarget.messages[0].msg.type, 'cs-lite-sync', 'Message dispatched to window matches cs-lite-sync');
+
+  // 3. Verify handleProMessage responds to Pro ping/ready with Lite sync
+  const callerWindow = {
+    received: [],
+    postMessage(msg) { this.received.push(msg); }
+  };
+  App.handleProMessage({
+    source: callerWindow,
+    data: { type: 'cs-pro-ping' }
+  });
+  assert(callerWindow.received.some(m => m.type === 'cs-lite-sync'), 'Pro ping receives cs-lite-sync response');
+
+  // 4. Verify handleProMessage ingests Pro roster update
+  const newProPlayer = {
+    id: 'pro-p99',
+    name: 'Pro Star',
+    number: 99,
+    position: 'FWD'
+  };
+  const proRosterPayload = {
+    version: 1,
+    installationId: AppState.sharedInstallationId || App.getLiteInstallationId(),
+    teamId: String(AppState.currentTeamId || 'lite-default'),
+    teamName: 'Pro United FC',
+    revision: new Date(Date.now() + 50000).toISOString(),
+    players: [newProPlayer]
+  };
+  App.handleProMessage({
+    source: callerWindow,
+    data: {
+      type: 'cs-pro-sync',
+      roster: proRosterPayload
+    }
+  });
+  assert(AppState.squad.some(p => p.id === 'pro-p99' && p.number === 99), 'Lite ingested player from Pro sync');
+  assert.strictEqual(AppState.currentTeamName, 'Pro United FC', 'Lite team name updated from Pro sync');
+
+  // 5. Verify handleProMessage ingests Pro matches update
+  const scope = App.matchScope();
+  const proMatch = {
+    id: 'm_pro_101',
+    title: 'Cup Final',
+    teamName: 'Pro United FC',
+    opponent: 'Rivals FC',
+    date: '2026-11-20',
+    format: '7',
+    formation: '2-3-1',
+    ourGoals: 3,
+    opponentGoals: 1,
+    durationSeconds: 2400,
+    period: '2nd Half',
+    status: 'completed',
+    endedAt: new Date().toISOString(),
+    recordedAt: new Date().toISOString(),
+    starters: ['pro-p99'],
+    bench: [],
+    players: [newProPlayer],
+    events: [{
+      id: 'e_g1',
+      type: 'Goal',
+      playerId: 'pro-p99',
+      matchTimeSeconds: 600,
+      period: '1st Half',
+      timestamp: new Date().toISOString()
+    }],
+    playerTimers: { 'pro-p99': 2400 }
+  };
+  const proMatchesPayload = {
+    version: 1,
+    installationId: scope.installationId,
+    teamId: scope.teamId,
+    revision: new Date(Date.now() + 60000).toISOString(),
+    matches: [proMatch],
+    live: null,
+    removed: []
+  };
+  App.handleProMessage({
+    source: callerWindow,
+    data: {
+      type: 'cs-pro-matches-update',
+      matches: proMatchesPayload
+    }
+  });
+  assert(AppState.matchHistory.some(m => m.id === 'm_pro_101' && m.title === 'Cup Final'), 'Lite match history updated from Pro match update');
+
+  // 6. Verify closeProShell closes shell and ingests shared changes
+  dom['proShell'].style.display = 'flex';
+  App.closeProShell(false);
+  assert.strictEqual(dom['proShell'].style.display, 'none', 'Pro shell closed');
+
+  console.log('✓ Bidirectional synchronization between Clubstride Lite and Pro Web verified');
+}
+
 console.log('\n=========================================');
-console.log('ALL 49 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
+console.log('ALL 50 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');
 
 

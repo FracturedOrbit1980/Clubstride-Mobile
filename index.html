@@ -2272,6 +2272,7 @@
         }
         this.publishLiteRoster(true);
         this.publishLiteMatches();
+        this.postSyncToPro();
         const primaryName = primaryClub.name || 'Clubstride FC';
         const syncStatus = document.getElementById('offlineSyncStatus');
         if (syncStatus) syncStatus.innerText = `Synced to Primary Club: ${primaryName}`;
@@ -2351,6 +2352,7 @@
           }
         }
         if (pulled) {
+          this.requestProSync();
           this.saveStorage();
           this.renderRoster();
           this.renderPitchTokens();
@@ -2360,6 +2362,7 @@
           const status = document.getElementById('offlineSyncStatus');
           if (status) status.innerText = 'Roster & photos updated from primary club';
         } else {
+          this.requestProSync();
           this.toast('Primary club roster not found in local storage', 'card-yellow');
         }
       },
@@ -2719,6 +2722,140 @@
         });
         window.addEventListener('cs-lite-roster-change', () => this.applySharedRoster());
         window.addEventListener('focus', () => { this.applySharedRoster(); this.applySharedMatches(); });
+        window.addEventListener('message', event => this.handleProMessage(event));
+        if (typeof BroadcastChannel !== 'undefined') {
+          try {
+            this._csChannel = new BroadcastChannel('cs_sync_channel');
+            this._csChannel.onmessage = event => this.handleProMessage(event);
+          } catch (_) {}
+        }
+      },
+      handleProMessage(event) {
+        if (!event || !event.data) return;
+        let data = event.data;
+        if (typeof data === 'string') {
+          try {
+            if (data.startsWith('{') && data.endsWith('}')) {
+              data = JSON.parse(data);
+            } else {
+              return;
+            }
+          } catch (_) { return; }
+        }
+        if (!data || typeof data !== 'object') return;
+
+        const msgType = data.type || data.action;
+        if (!msgType) return;
+
+        // Pro requests sync or announces readiness
+        if (['cs-pro-ready', 'cs-pro-ping', 'cs-sync-request', 'cs-pro-sync-request', 'cs-get-data'].includes(msgType)) {
+          this.postSyncToPro(event.source);
+          return;
+        }
+
+        // Pro requests closing the in-app shell
+        if (['cs-pro-close', 'cs-close-shell', 'cs-lite-close-pro'].includes(msgType)) {
+          this.closeProShell(false);
+          return;
+        }
+
+        // Pro pushes roster or matches updates
+        let updatedRoster = false;
+        let updatedMatches = false;
+
+        if (['cs-pro-sync', 'cs-pro-roster-update', 'cs-roster-update', 'cs-sync-push'].includes(msgType) && data.roster) {
+          const applied = this.applySharedRoster(true, data.roster);
+          if (applied) updatedRoster = true;
+        }
+
+        if (['cs-pro-sync', 'cs-pro-matches-update', 'cs-matches-update', 'cs-sync-push'].includes(msgType) && data.matches) {
+          const applied = this.applySharedMatches(true, data.matches);
+          if (applied) updatedMatches = true;
+        }
+
+        if (updatedRoster || updatedMatches) {
+          this.renderAll();
+          this.toast('Synced with Clubstride Pro Web', 'teams');
+          const syncStatus = document.getElementById('offlineSyncStatus');
+          if (syncStatus) syncStatus.innerText = 'Synchronized with Pro Web (' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ')';
+          const badge = document.getElementById('hubConnectionBadge');
+          if (badge) badge.innerText = 'Connected & Synced';
+
+          if (event.source && typeof event.source.postMessage === 'function') {
+            try {
+              event.source.postMessage({
+                type: 'cs-sync-ack',
+                status: 'ok',
+                roster: updatedRoster,
+                matches: updatedMatches
+              }, '*');
+            } catch (_) {}
+          }
+        }
+      },
+      postSyncToPro(targetWindow = null) {
+        let roster = null;
+        try {
+          const raw = localStorage.getItem('cs.lite.roster.v1');
+          roster = raw ? JSON.parse(raw) : null;
+        } catch (_) {}
+        if (!roster) {
+          roster = this.currentSharedRosterContent();
+        }
+
+        const scope = this.matchScope();
+        let matches = null;
+        try {
+          const raw = localStorage.getItem(scope.key);
+          matches = raw ? JSON.parse(raw) : null;
+        } catch (_) {}
+
+        const payload = {
+          type: 'cs-lite-sync',
+          source: 'clubstride-lite',
+          installationId: this.getLiteInstallationId(),
+          teamId: String(AppState.currentTeamId || 'lite-default'),
+          teamName: String(AppState.currentTeamName || 'Clubstride FC'),
+          roster,
+          matches
+        };
+
+        const targets = [];
+        if (targetWindow && typeof targetWindow.postMessage === 'function') {
+          targets.push(targetWindow);
+        }
+        const frame = document.getElementById('proFrame');
+        if (frame && frame.contentWindow && !targets.includes(frame.contentWindow)) {
+          targets.push(frame.contentWindow);
+        }
+
+        targets.forEach(t => {
+          try {
+            t.postMessage(payload, '*');
+          } catch (_) {}
+        });
+
+        if (this._csChannel) {
+          try {
+            this._csChannel.postMessage(payload);
+          } catch (_) {}
+        }
+        return payload;
+      },
+      requestProSync() {
+        const payload = {
+          type: 'cs-lite-sync-request',
+          source: 'clubstride-lite',
+          installationId: this.getLiteInstallationId(),
+          teamId: String(AppState.currentTeamId || 'lite-default')
+        };
+        const frame = document.getElementById('proFrame');
+        if (frame && frame.contentWindow && typeof frame.contentWindow.postMessage === 'function') {
+          try { frame.contentWindow.postMessage(payload, '*'); } catch (_) {}
+        }
+        if (this._csChannel) {
+          try { this._csChannel.postMessage(payload); } catch (_) {}
+        }
       },
       validateSharedRoster(snapshot) {
         const object = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -2777,13 +2914,15 @@
           cloudTeamId: AppState.cloudTeamId, ownerId: AppState.ownerId, readOnly: AppState.readOnly
         });
       },
-      applySharedRoster(force = false) {
+      applySharedRoster(force = false, externalSnapshot = null) {
         if (this._applyingSharedRoster) return false;
         let snapshot, content;
         try {
-          const source = localStorage.getItem('cs.lite.roster.v1');
+          const source = externalSnapshot
+            ? (typeof externalSnapshot === 'string' ? externalSnapshot : JSON.stringify(externalSnapshot))
+            : localStorage.getItem('cs.lite.roster.v1');
           if (!source) return false;
-          snapshot = JSON.parse(source);
+          snapshot = typeof source === 'string' ? JSON.parse(source) : source;
           // Validate every row before touching good local data, including repeat revisions.
           content = this.validateSharedRoster(snapshot);
           this._sharedRosterInvalid = false;
@@ -2792,6 +2931,9 @@
           this._sharedRosterInvalid = true;
           this.reportStorageFailure('incomingRoster', 'Shared roster is invalid or unavailable. Your Lite roster is retained; save your roster explicitly to recover sharing.');
           return false;
+        }
+        if (externalSnapshot) {
+          try { localStorage.setItem('cs.lite.roster.v1', JSON.stringify(snapshot)); } catch (_) {}
         }
         const fingerprint = JSON.stringify(content);
         if (!force && fingerprint === JSON.stringify(this.currentSharedRosterContent(snapshot.installationId))) {
@@ -3155,20 +3297,25 @@
           return this.applySharedMatches(true);
         } catch (_) { this._matchRestoreBlocked = true; return false; }
       },
-      applySharedMatches(force = false) {
+      applySharedMatches(force = false, externalSnapshot = null) {
         if (AppState.readOnly || this._applyingSharedMatches) return false; // Parent scope is deliberately never read.
         let scope, snapshot;
         try {
           scope = this.matchScope();
-          const source = localStorage.getItem(scope.key);
+          const source = externalSnapshot
+            ? (typeof externalSnapshot === 'string' ? externalSnapshot : JSON.stringify(externalSnapshot))
+            : localStorage.getItem(scope.key);
           if (!source) return false;
-          snapshot = this.validateSharedMatches(JSON.parse(source), scope);
+          snapshot = this.validateSharedMatches(typeof source === 'string' ? JSON.parse(source) : source, scope);
           this.reportStorageFailure('incomingMatches', '');
           this._matchRestoreBlocked = false;
         } catch (e) {
           this._matchRestoreBlocked = true;
           this.reportStorageFailure('incomingMatches', 'Incoming match snapshot is invalid or unavailable. Current matches and legacy history are retained.');
           return false;
+        }
+        if (externalSnapshot) {
+          try { localStorage.setItem(scope.key, JSON.stringify(snapshot)); } catch (_) {}
         }
         const previous = this._matchSnapshots?.get(scope.key);
         if (!force && previous && snapshot.revision < previous.revision) return false;
@@ -6787,7 +6934,15 @@
         if (shell.style.display === 'flex') return;
         // Refresh the same-origin snapshot before Pro reads it, including on shell reopen.
         if (!this.publishLiteRoster()) return;
-        if (!frame.getAttribute('src')) frame.setAttribute('src', this.PRO_URL);
+        this.publishLiteMatches();
+        frame.onload = () => {
+          this.postSyncToPro();
+        };
+        if (!frame.getAttribute('src')) {
+          frame.setAttribute('src', this.PRO_URL);
+        } else {
+          this.postSyncToPro();
+        }
         if (!fromHistory) {
           try {
             history.pushState({ csProShell: true }, '');
@@ -6818,6 +6973,10 @@
         if (!fromHistory && pushed) {
           try { history.back(); } catch (err) { /* history unavailable */ }
         }
+        // Seamlessly ingest changes made by coach in Pro Web while shell was open
+        this.applySharedRoster(true);
+        this.applySharedMatches(true);
+        this.renderAll();
       },
       closeModals() {
         AppState.editingPlayerId = null;
