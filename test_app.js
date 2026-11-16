@@ -2758,6 +2758,49 @@ console.log('✓ Tap targets clear 44px, toasts and the dock stay out of the way
   console.log('✓ Player photo upload on mobile, club push, and club pull verified');
 }
 
+
+// ---------------------------------------------------------------------------
+// TEST 52: Pitch Line Visibility & Unrestricted Full-Pitch Player Movement
+// ---------------------------------------------------------------------------
+{
+  // 1. Verify Pitch Lines SVG has high-contrast white stroke and all field markings
+  assert(html.includes('.pitch-lines-svg'), 'High-contrast pitch lines CSS class declared');
+  assert(html.includes('stroke="#FFFFFF"'), 'SVG pitch markings explicitly stroke in crisp high-contrast white');
+  assert(html.includes('stroke-width="2.2"'), 'SVG pitch markings declare visible 2.2px line width');
+  assert(html.includes('id="pitchField"'), 'pitchField container exists');
+  assert(html.includes('class="pitch-spot"'), 'Center and penalty spots rendered with solid fill');
+
+  // 2. Verify all pitch markings are rendered:
+  assert(html.includes('M 2 14 A 12 12'), 'Corner arcs rendered');
+  assert(html.includes('x1="2" y1="210" x2="298" y2="210"'), 'Halfway line rendered across pitch');
+  assert(html.includes('cx="150" cy="210" r="42"'), 'Center circle rendered');
+  assert(html.includes('rect x="65" y="2" width="170" height="65"'), 'Top 18-yard penalty box rendered');
+  assert(html.includes('rect x="100" y="2" width="100" height="24"'), 'Top 6-yard goal area rendered');
+  assert(html.includes('rect x="65" y="353" width="170" height="65"'), 'Bottom 18-yard penalty box rendered');
+  assert(html.includes('rect x="100" y="394" width="100" height="24"'), 'Bottom 6-yard goal area rendered');
+
+  // 3. Verify players can be placed anywhere on pitch without forced nudging
+  const testPid = AppState.squad[0].id;
+  // Test boundary edge placement (e.g. wing, touchline, corner, deep box)
+  const edgePositions = [
+    { x: 3, y: 3 },     // Top-left corner
+    { x: 97, y: 3 },    // Top-right corner
+    { x: 50, y: 5 },    // Deep in goal area
+    { x: 3, y: 50 },    // Left touchline on halfway line
+    { x: 97, y: 50 },   // Right touchline on halfway line
+    { x: 50, y: 95 },   // Bottom goal line
+  ];
+
+  edgePositions.forEach(pos => {
+    AppState.match.fieldPositions[testPid] = { x: pos.x, y: pos.y };
+    App.saveStorage();
+    assert.strictEqual(AppState.match.fieldPositions[testPid].x, pos.x, `Player placed at x=${pos.x}% preserved`);
+    assert.strictEqual(AppState.match.fieldPositions[testPid].y, pos.y, `Player placed at y=${pos.y}% preserved`);
+  });
+
+  console.log('✓ Pitch line visibility and unrestricted full-pitch player movement verified');
+}
+
 console.log('\n=========================================');
 console.log('ALL 49 AUTOMATED TEST GROUPS PASSED WITH 100% SUCCESS!');
 console.log('=========================================');

@@ -131,6 +131,26 @@
     .pitch-turf-stripes {
       background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 42px, rgba(0, 0, 0, 0.07) 42px, rgba(0, 0, 0, 0.07) 84px);
     }
+    .pitch-lines-svg {
+      stroke: #ffffff !important;
+      stroke-width: 2.2px !important;
+      fill: none;
+      filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.85));
+    }
+    .pitch-lines-svg path,
+    .pitch-lines-svg line {
+      stroke: #ffffff !important;
+      stroke-width: 2.2px !important;
+      fill: none;
+    }
+    .pitch-lines-svg rect:not(#goalNetPattern *) {
+      stroke: #ffffff !important;
+      stroke-width: 2.2px !important;
+    }
+    .pitch-lines-svg circle.pitch-spot {
+      fill: #ffffff !important;
+      stroke: none !important;
+    }
     .player-token {
       transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
       touch-action: none;
@@ -408,40 +428,40 @@
       <!-- INTERACTIVE SOCCER PITCH -->
       <div class="relative w-full rounded-lite-xl overflow-hidden p-2.5 transition-all duration-300 pitch-night" id="pitchCanvasContainer">
         <!-- SVG SOCCER PITCH MARKINGS -->
-        <div class="relative w-full aspect-[3/4.2] rounded-lite border-2 border-white/60 overflow-hidden" id="pitchField">
+        <div class="relative w-full aspect-[3/4.2] rounded-lite border-2 border-white/80 overflow-hidden bg-emerald-950/90 shadow-2xl" id="pitchField">
                     <!-- Grass Stripes Texture -->
           <div class="absolute inset-0 flex flex-col pointer-events-none pitch-turf-stripes opacity-35"></div>
           <!-- Pitch Vector Geometry: Precision Scalable Vector Markings -->
-          <svg class="absolute inset-0 w-full h-full pointer-events-none stroke-white/85 fill-none stroke-[1.8]" viewBox="0 0 300 420" style="filter: drop-shadow(0 0 1px rgba(0,0,0,0.5));">
+          <svg class="pitch-lines-svg absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 300 420" stroke="#FFFFFF" stroke-width="2.2" fill="none" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));">
             <defs>
               <pattern id="goalNetPattern" width="6" height="6" patternUnits="userSpaceOnUse">
-                <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="rgba(255,255,255,0.25)" stroke-width="0.8" />
+                <path d="M 0 3 L 6 3 M 3 0 L 3 6" stroke="rgba(255,255,255,0.35)" stroke-width="0.8" />
               </pattern>
             </defs>
             <!-- Goal Mouths with 3D Depth Net Pattern -->
-            <rect x="115" y="-3" width="70" height="5" class="stroke-white/90" fill="url(#goalNetPattern)" />
-            <rect x="115" y="418" width="70" height="5" class="stroke-white/90" fill="url(#goalNetPattern)" />
+            <rect x="115" y="-3" width="70" height="5" stroke="#FFFFFF" stroke-width="2.2" fill="url(#goalNetPattern)" />
+            <rect x="115" y="418" width="70" height="5" stroke="#FFFFFF" stroke-width="2.2" fill="url(#goalNetPattern)" />
             <!-- Touchlines and Goal Lines -->
-            <rect x="2" y="2" width="296" height="416" rx="6" />
+            <rect x="2" y="2" width="296" height="416" rx="6" stroke="#FFFFFF" stroke-width="2.2" />
             <!-- Corner Kick Arcs -->
-            <path d="M 2 14 A 12 12 0 0 1 14 2" />
-            <path d="M 286 2 A 12 12 0 0 1 298 14" />
-            <path d="M 2 406 A 12 12 0 0 0 14 418" />
-            <path d="M 286 418 A 12 12 0 0 0 298 406" />
+            <path d="M 2 14 A 12 12 0 0 1 14 2" stroke="#FFFFFF" stroke-width="2.2" />
+            <path d="M 286 2 A 12 12 0 0 1 298 14" stroke="#FFFFFF" stroke-width="2.2" />
+            <path d="M 2 406 A 12 12 0 0 0 14 418" stroke="#FFFFFF" stroke-width="2.2" />
+            <path d="M 286 418 A 12 12 0 0 0 298 406" stroke="#FFFFFF" stroke-width="2.2" />
             <!-- Halfway Line & Center Circle -->
-            <line x1="2" y1="210" x2="298" y2="210" />
-            <circle cx="150" cy="210" r="42" />
-            <circle cx="150" cy="210" r="3" class="fill-white" />
+            <line x1="2" y1="210" x2="298" y2="210" stroke="#FFFFFF" stroke-width="2.2" />
+            <circle cx="150" cy="210" r="42" stroke="#FFFFFF" stroke-width="2.2" fill="none" />
+            <circle cx="150" cy="210" r="3.5" class="pitch-spot" fill="#FFFFFF" />
             <!-- Top Penalty Box (18-yard) & Goal Area (6-yard) -->
-            <rect x="65" y="2" width="170" height="65" />
-            <rect x="100" y="2" width="100" height="24" />
-            <path d="M 115 67 A 38 38 0 0 0 185 67" />
-            <circle cx="150" cy="48" r="2.5" class="fill-white" />
+            <rect x="65" y="2" width="170" height="65" stroke="#FFFFFF" stroke-width="2.2" />
+            <rect x="100" y="2" width="100" height="24" stroke="#FFFFFF" stroke-width="2.2" />
+            <path d="M 115 67 A 38 38 0 0 0 185 67" stroke="#FFFFFF" stroke-width="2.2" />
+            <circle cx="150" cy="48" r="3" class="pitch-spot" fill="#FFFFFF" />
             <!-- Bottom Penalty Box (18-yard) & Goal Area (6-yard) -->
-            <rect x="65" y="353" width="170" height="65" />
-            <rect x="100" y="394" width="100" height="24" />
-            <path d="M 115 353 A 38 38 0 0 1 185 353" />
-            <circle cx="150" cy="372" r="2.5" class="fill-white" />
+            <rect x="65" y="353" width="170" height="65" stroke="#FFFFFF" stroke-width="2.2" />
+            <rect x="100" y="394" width="100" height="24" stroke="#FFFFFF" stroke-width="2.2" />
+            <path d="M 115 353 A 38 38 0 0 1 185 353" stroke="#FFFFFF" stroke-width="2.2" />
+            <circle cx="150" cy="372" r="3" class="pitch-spot" fill="#FFFFFF" />
           </svg>
           <!-- FIELD TOKENS LAYER (Drag & Drop) -->
           <div id="pitchTokensLayer" class="absolute inset-0 select-none"></div>
@@ -3938,8 +3958,9 @@
           const rect = field.getBoundingClientRect();
           let x = ((e.clientX - rect.left) / rect.width) * 100;
           let y = ((e.clientY - rect.top) / rect.height) * 100;
-          x = Math.max(8, Math.min(92, x));
-          y = Math.max(8, Math.min(92, y));
+          // Full pitch freedom: allow positioning anywhere from touchline to touchline
+          x = Math.max(3, Math.min(97, x));
+          y = Math.max(3, Math.min(97, y));
           activeEl.style.left = `${x}%`;
           activeEl.style.top = `${y}%`;
           const pid = activeEl.dataset.playerId;
@@ -3955,10 +3976,9 @@
           const movedPid = activeEl.dataset.playerId;
           const parked = movedPid && AppState.match.fieldPositions[movedPid];
           if (parked) {
-            const safe = App.keepOffPitchLines(parked);
-            AppState.match.fieldPositions[movedPid] = safe;
-            activeEl.style.left = `${safe.x}%`;
-            activeEl.style.top = `${safe.y}%`;
+            // Keep exactly where the coach dropped the player on the pitch
+            activeEl.style.left = `${parked.x}%`;
+            activeEl.style.top = `${parked.y}%`;
           }
           activeEl = null;
           App.saveStorage();
