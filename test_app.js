@@ -76,7 +76,7 @@ const upgradeAt = html.indexOf('id="proUpgradeCard"');
 assert(hubStart !== -1 && upgradeAt > hubStart && upgradeAt < hubEnd, 'Upgrade card must live in the Coach Hub section');
 
 const upgradeCtaTag = (html.match(/<a id="upgradeProCta"[^>]+>/) || [])[0] || '';
-assert(upgradeCtaTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Upgrade CTA must fall back to the Pro web app');
+assert(upgradeCtaTag.includes('href="https://fracturedorbit1980.github.io/Football/pro/"'), 'Upgrade CTA must fall back to the Pro web app');
 assert(!upgradeCtaTag.includes('target="_blank"'), 'Upgrade CTA must open Pro in-app, not in a new tab');
 assert(!upgradeCtaTag.includes('rel="noopener noreferrer"'), 'Upgrade CTA no longer opens a tab, so the noopener rel should be gone');
 assert(upgradeCtaTag.includes('onclick="return App.openProUpgrade(event)"'), 'Upgrade CTA must run the in-app Pro shell');
@@ -96,7 +96,7 @@ const firstTabAt = html.indexOf('id="section_pitch"');
 assert(viewSwitchAt > html.indexOf('<main'), 'View switch must sit in the main viewport');
 assert(viewSwitchAt < firstTabAt, 'View switch must come before the tab sections so every tab shows it');
 const proViewTag = (html.match(/<a id="proViewBtn"[^>]+>/) || [])[0] || '';
-assert(proViewTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'View switch must fall back to the Pro web app');
+assert(proViewTag.includes('href="https://fracturedorbit1980.github.io/Football/pro/"'), 'View switch must fall back to the Pro web app');
 assert(!proViewTag.includes('target="_blank"'), 'View switch must open Pro in-app, not in a new tab');
 assert(proViewTag.includes('onclick="return App.openProUpgrade(event)"'), 'View switch must run the in-app Pro shell');
 assert(html.includes('id="liteViewBtn" aria-pressed="true"'), 'Lite must read as the selected view');
@@ -126,7 +126,7 @@ assert(!frameTag.includes('src='), 'Pro iframe must stay lazy until the coach as
 assert(html.includes('id="proBackBtn"'), 'Pro shell needs a Back to Lite control');
 assert(html.includes('aria-label="Back to Clubstride Lite"'), 'Back control needs an accessible label');
 assert(html.includes('href="#ci-back"'), 'Back control must use the sprite back icon');
-assert(html.includes('PRO_URL: \'https://fracturedorbit1980.github.io/Clubstride-Pro-Web/\''), 'Pro URL must live in one constant for the shell');
+assert(html.includes('PRO_URL: \'https://fracturedorbit1980.github.io/Football/pro/\''), 'Pro URL must live in one constant for the shell');
 assert(html.includes('history.pushState({ csProShell: true }'), 'Opening Pro must push a history entry so hardware back closes it');
 assert(html.includes("addEventListener('popstate'"), 'Hardware back must close the shell instead of leaving Lite');
 assert(html.includes("event.key === 'Escape'"), 'Escape must close the shell');
@@ -134,7 +134,7 @@ console.log('✓ Pro renders in an in-app shell with history-aware Back to Lite'
 
 // 5e. THE BRAND LOCKUP IS THE LITE/PRO SWITCH
 const brandTag = (html.match(/<a id="brandSwitch"[^>]+>/) || [])[0] || '';
-assert(brandTag.includes('href="https://fracturedorbit1980.github.io/Clubstride-Pro-Web/"'), 'Header logo must fall back to the Pro web app');
+assert(brandTag.includes('href="https://fracturedorbit1980.github.io/Football/pro/"'), 'Header logo must fall back to the Pro web app');
 assert(!brandTag.includes('target="_blank"'), 'Header logo must open Pro in-app, not in a new tab');
 assert(brandTag.includes('onclick="return App.openProUpgrade(event)"'), 'Header logo must run the in-app Pro shell');
 assert(brandTag.includes('aria-label="Switch to Clubstride Pro"'), 'Header logo needs a switch label for screen readers');
